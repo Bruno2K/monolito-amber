@@ -26,6 +26,7 @@ let ownerA: Agent;
 let ownerB: Agent;
 let coordinator: Agent;
 let approver: Agent;
+let requesterApprover: Agent;
 let viewer: Agent;
 let unenrolledApprover: Agent;
 let coordinatorUserId: string;
@@ -84,6 +85,8 @@ beforeAll(async () => {
 
   coordinator = await inviteToProject("coordinator", "PROJECT_COORDINATOR");
   approver = await inviteToProject("approver", "GOVERNANCE_APPROVER");
+  requesterApprover = await inviteToProject("dual", "PROJECT_COORDINATOR");
+  await assignProjectRole(`dual-${suffix}@example.com`, "GOVERNANCE_APPROVER");
   viewer = await inviteToProject("viewer", "VIEWER");
   unenrolledApprover = await inviteToProject("approver-open", "GOVERNANCE_APPROVER");
 
@@ -91,6 +94,7 @@ beforeAll(async () => {
   approverUserId = (await approver.get("/api/v1/auth/session")).body.userId;
   const enrolled = await enrollTotp(approver);
   approverSecret = enrolled.secret;
+  await enrollTotp(requesterApprover);
 }, 180_000);
 
 afterAll(async () => {
@@ -126,6 +130,14 @@ async function inviteToProject(label: string, templateKey: string): Promise<Agen
     .send({ templateKey });
   expect(assigned.status).toBeLessThan(400);
   return agent;
+}
+
+async function assignProjectRole(email: string, templateKey: string): Promise<void> {
+  const members = await ownerA.get(`/api/v1/projects/${projectA}/members`);
+  const row = members.body.find((item: { email: string }) => item.email === email);
+  expect(row).toBeTruthy();
+  const assigned = await ownerA.post(`/api/v1/projects/${projectA}/members/${row.id}/roles`).send({ templateKey });
+  expect(assigned.status).toBeLessThan(400);
 }
 
 describe("PF-1.6 Governance / Gates / Formal Exceptions", () => {
@@ -337,7 +349,7 @@ describe("PF-1.6 Governance / Gates / Formal Exceptions", () => {
       .send({ expectedVersion: evaluated.body.version });
     expect(cannotRelease.status).toBe(409);
 
-    const requested = await coordinator
+    const requested = await requesterApprover
       .post(`/api/v1/projects/${projectA}/exceptions`)
       .set("Idempotency-Key", `ex-req-${suffix}`)
       .send({
@@ -350,11 +362,12 @@ describe("PF-1.6 Governance / Gates / Formal Exceptions", () => {
     expect(requested.body.satisfiesRequirement).toBe(false);
     exceptionId = requested.body.id;
 
-    const selfApprove = await coordinator
+    const selfApprove = await requesterApprover
       .post(`/api/v1/projects/${projectA}/exceptions/${exceptionId}/approve`)
       .set("Idempotency-Key", `ex-self-${suffix}`)
       .send({});
     expect(selfApprove.status).toBe(403);
+    expect(selfApprove.body.code).toBe("SOD_VIOLATION");
 
     const approved = await approver
       .post(`/api/v1/projects/${projectA}/exceptions/${exceptionId}/approve`)
@@ -369,7 +382,7 @@ describe("PF-1.6 Governance / Gates / Formal Exceptions", () => {
     expect(afterApprove.body.requirements[0].coveredByException).toBe(true);
     expect(afterApprove.body.status).not.toBe("READY");
 
-    const selfRelease = await coordinator
+    const selfRelease = await requesterApprover
       .post(`/api/v1/projects/${projectA}/gates/${blockedGateId}/release`)
       .set("Idempotency-Key", `rel-self-${suffix}`)
       .send({ expectedVersion: afterApprove.body.version });

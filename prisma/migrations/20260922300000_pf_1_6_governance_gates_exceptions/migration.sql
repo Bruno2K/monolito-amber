@@ -1,5 +1,5 @@
 -- PF-1.6: Governance / Gates / Formal Exceptions.
--- Additive only. Formal Exception is the sole bypass. No gate.override / forceRelease.
+-- Additive only. Formal Exception is the sole bypass.
 -- READY ≠ RELEASED. Exception never marks a requirement SATISFIED.
 -- RELEASED ≠ RELEASED_WITH_EXCEPTION. Exception is requirement-specific.
 
