@@ -10,6 +10,10 @@ jobs:
     name: PF-1.0 foundation gates
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # Schema validate/generate read the URL; no live database is required here.
+      DATABASE_URL: postgresql://amber:amber@127.0.0.1:5432/amber
+      SKIP_DB: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
