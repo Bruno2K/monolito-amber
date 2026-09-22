@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  foundation:
+    name: PF-1.0 foundation gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm prisma:generate
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test:unit
+      - name: Security stubs (fail closed if skipped)
+        run: pnpm test:security
+      - name: Assert no gate.override
+        run: pnpm assert:no-gate-override
+      - name: Integration tests (Testcontainers)
+        run: pnpm test:integration
+      - name: Build
+        run: pnpm build
+      - name: OpenAPI generate + validate
+        run: |
+          SKIP_DB=1 pnpm openapi:generate
+          pnpm openapi:validate
+      - name: Migration validate
+        run: pnpm prisma:validate
