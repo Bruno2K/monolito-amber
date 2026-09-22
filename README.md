@@ -6,9 +6,13 @@ This repository is the real product. **`Bruno2K/amber` is the Product Vision lan
 
 Official commercial name remains OPEN; **Amber** is the technical name.
 
-## PF-1.6 — Governance / Gates / Formal Exceptions
+## Platform Foundation (PF-1.0..1.6) — complete
 
-Gates, typed requirements, Formal Exceptions, and durable release evidence (ADR-017). **READY ≠ RELEASED.** Exception coverage does not satisfy a requirement. **RELEASED ≠ RELEASED_WITH_EXCEPTION.** Formal Exception is the sole bypass. **No Governance UI. No Gate Templates. No `gate.override`.**
+PF-1.0 through PF-1.6 are merged on `main` (`887d598ef69eb6898e445810863511e291cbee49`). Current Work Item is **PF-1.7 — Platform Foundation Exit Reconciliation** (docs only). Exit Gate: READY_FOR_FINAL_REVIEW. Next slice requires Governor **HUMAN_ACTIVATION_REQUIRED**.
+
+This repository is **PUBLIC** (portfolio). Do not commit secrets.
+
+Foundation delivered: identity, org-owned roles, ProjectMembership, Documents/Revisions, Coordination/Impact, Planning Tasks/Milestones, Governance Gates and Formal Exceptions (ADR-017). **READY ≠ RELEASED.** Formal Exception is the sole bypass. **No Governance UI. No Gate Templates. No `gate.override`.**
 
 PF-1.0 planted the Modular Monolith layout, Prisma, catalog seed, and security stubs.
 

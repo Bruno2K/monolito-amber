@@ -4,6 +4,8 @@ Operating documentation for the **Modular Monolith** product repository `Bruno2K
 
 This is not the Product Vision landing (`Bruno2K/amber`).
 
+`Bruno2K/monolito-amber` is **PUBLIC** by design (portfolio). No secrets or live credentials in git.
+
 ## Binding specifications
 
 | Work item | Status | URL |
@@ -30,6 +32,6 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [development](./development/local-setup.md) — local, tests, migrations
 - [agentic](./agentic/context.md) — agent operating context, harness, loop, roles
 
-## Out of scope for PF-1.6
+## Deferred after Platform Foundation (PF-1.0..1.6)
 
 Gate Templates; Governance UX; Planning Gantt / critical path; Impact dashboard / Issue board / coordination timeline; BIM/IFC/BCF viewers; analytics; AI; Kubernetes; microservices; CQRS; event sourcing; Kafka; invented permissions; a second Gate bypass (`gate.override`); final Documents, Coordination, Planning, or Governance UX.
