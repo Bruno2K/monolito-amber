@@ -1,59 +1,66 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { Banner, Button, ErrorText } from "../../components/ui";
+import { api } from "../../lib/api";
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+interface OrgRow {
+  id: string;
+  name: string;
+  status: string;
+  type: string;
+  active: boolean;
+}
 
-export default function OrgSwitchStubPage() {
-  const [organizationId, setOrganizationId] = useState("");
-  const [tokenHash, setTokenHash] = useState("");
-  const [result, setResult] = useState<string>("");
+export default function OrgSwitchPage() {
+  const [orgs, setOrgs] = useState<OrgRow[]>([]);
+  const [error, setError] = useState("");
 
-  async function onSubmit(event: FormEvent) {
+  async function refresh() {
+    const { status, body } = await api<OrgRow[]>("/api/v1/organizations");
+    if (status >= 400) {
+      setError("Sign in to switch organization");
+      return;
+    }
+    setOrgs(body);
+  }
+
+  useEffect(() => {
+    void refresh();
+  }, []);
+
+  async function onSwitch(event: FormEvent, organizationId: string) {
     event.preventDefault();
-    const response = await fetch(`${apiBase}/api/v1/auth/active-organization`, {
+    const { status } = await api("/api/v1/auth/active-organization", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-session-token-hash": tokenHash,
-      },
       body: JSON.stringify({ organizationId }),
     });
-    const body = await response.text();
-    setResult(`${response.status} ${body}`);
+    if (status >= 400) {
+      setError("Organization switch denied");
+      return;
+    }
+    await refresh();
   }
 
   return (
     <>
-      <p className="shell-banner">Foundation stub — not a product screen</p>
-      <h1>Org-switch stub</h1>
-      <p>
-        Exercises session-bound Organization binding. Path/body <code>organizationId</code> is a
-        routing hint only; the API re-validates ACTIVE membership and binds the session
-        server-side.
-      </p>
-      <form onSubmit={onSubmit}>
-        <label htmlFor="token">Session token hash (dev header)</label>
-        <input
-          id="token"
-          value={tokenHash}
-          onChange={(e) => setTokenHash(e.target.value)}
-          autoComplete="off"
-        />
-        <label htmlFor="org">Target organization id</label>
-        <input
-          id="org"
-          value={organizationId}
-          onChange={(e) => setOrganizationId(e.target.value)}
-          autoComplete="off"
-        />
-        <button type="submit">Switch organization</button>
-      </form>
-      {result ? (
-        <pre>
-          <code>{result}</code>
-        </pre>
-      ) : null}
+      <Banner>Org switcher — session-bound tenant, not a product screen</Banner>
+      <h1>Switch organization</h1>
+      <p>The active Organization is stored on the server session. Client org ids are never authority.</p>
+      <ErrorText>{error}</ErrorText>
+      <ul className="org-list">
+        {orgs.map((org) => (
+          <li key={org.id}>
+            <strong>{org.name}</strong> — {org.status} / {org.type}
+            {org.active ? " (active)" : null}
+            {!org.active && org.status === "ACTIVE" ? (
+              <form onSubmit={(event) => onSwitch(event, org.id)}>
+                <Button>Switch</Button>
+              </form>
+            ) : null}
+          </li>
+        ))}
+      </ul>
     </>
   );
 }

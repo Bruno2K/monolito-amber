@@ -4,7 +4,7 @@ You are working in `Bruno2K/monolito-amber`, the canonical Amber Modular Monolit
 
 ## Current slice
 
-**PF-1.0 — Platform Foundation Bootstrap** (Issue #1). Foundation only.
+**PF-1.1 — Identity & Organizations** (Issue #3). AuthN / membership / session-bound org. No product Gate/Document pages.
 
 ## Encode only FACT / APPROVED
 

@@ -1,6 +1,6 @@
 # ADR index
 
-Material decisions encoded for PF-1.0. Format: Status / Context / Decision / Alternatives / Consequences / Implementation Implications / Supersedes.
+Material decisions encoded for PF-1.0 and PF-1.1. Format: Status / Context / Decision / Alternatives / Consequences / Implementation Implications / Supersedes.
 
 Candidates from 0.6–0.8 that are **not** yet product slices (Planning/Governance tables, Impact handler) stay documented here as accepted architecture, not as implemented workflows.
 
@@ -16,3 +16,5 @@ Candidates from 0.6–0.8 that are **not** yet product slices (Planning/Governan
 | [ADR-008](./ADR-008-audit-insert-only.md) | Audit insert-only + `organization.read_audit` |
 | [ADR-009](./ADR-009-scan-status-fail-closed.md) | `scan_status` fail-closed (vendor OPEN) |
 | [ADR-010](./ADR-010-outbox-idempotency.md) | Transactional outbox + Idempotency-Key + optimistic version |
+| [ADR-011](./ADR-011-authentication-identity.md) | Authentication Identity separate from User |
+| [ADR-012](./ADR-012-mfa-totp.md) | MFA TOTP foundation + freshness hooks |

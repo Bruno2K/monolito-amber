@@ -2,7 +2,7 @@
 
 Core chain (APPROVED 0.1): **Revision → Impact → Issue → Task → Milestone → Gate**.
 
-PF-1.0 does **not** implement that chain. It plants identity, tenancy, catalog, audit, file-trust, and job primitives so later slices do not invent policy.
+PF-1.1 does **not** implement that chain. It implements Identity & Organizations so later slices do not invent AuthN/AuthZ policy.
 
 ## Aggregates (working hypothesis from 0.1)
 

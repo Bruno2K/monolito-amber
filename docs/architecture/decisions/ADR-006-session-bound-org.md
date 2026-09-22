@@ -1,7 +1,7 @@
 # ADR-006 — Session-bound active Organization
 
 ## Status
-Accepted (F-04 design; isolation tests are implementation evidence)
+Accepted (F-04 implemented in PF-1.1)
 
 ## Context
 User identity is global; Organization is the tenant. Client-supplied `organizationId` / `projectId` must never establish authority.
@@ -17,7 +17,7 @@ The authenticated session carries `activeOrganizationId` set at login or via `PO
 Org-switch is an explicit, audited server action. Subsequent requests use the new binding only.
 
 ## Implementation Implications
-PF-1.0 ships the skeleton + fail-closed stubs. Full Identity slice follows.
+PF-1.1 binds `amber_session` (HttpOnly, Secure outside local, SameSite=Lax), re-validates ACTIVE membership on switch, audits `ORG_SWITCHED`, and ships HTTP F-04 negatives.
 
 ## Supersedes
 None

@@ -1,9 +1,10 @@
 # State machines
 
-Encoded for implementers. **Not wired as product APIs in PF-1.0.**
+Encoded for implementers. Product Document/Coordination/Planning/Gate machines are **not** wired as APIs in PF-1.1.
 
 ## Organization membership
-`INVITED → ACTIVE → SUSPENDED | REMOVED`
+`INVITED → ACTIVE → SUSPENDED | REMOVED`  
+`REMOVED → INVITED` on re-invitation (same row; soft history).
 
 ## Document
 `ACTIVE | ARCHIVED`

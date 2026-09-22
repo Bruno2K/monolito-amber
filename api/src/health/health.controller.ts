@@ -11,7 +11,7 @@ export class HealthController {
     return {
       status: "ok",
       service: "amber-api",
-      slice: "PF-1.0",
+      slice: "PF-1.1",
     };
   }
 }

@@ -69,3 +69,16 @@ button {
 nav a {
   margin-right: 1rem;
 }
+
+.hint,
+.error {
+  font-size: 0.9rem;
+}
+
+.error {
+  color: #8a3b12;
+}
+
+.org-list {
+  padding-left: 1.2rem;
+}

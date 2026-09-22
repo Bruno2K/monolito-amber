@@ -2,10 +2,10 @@
 
 Exact module names from APPROVED 0.1. Feature code does **not** join across module schemas; compose via application services and IDs.
 
-| Module | Owns | Notes for PF-1.0 |
+| Module | Owns | Notes for PF-1.1 |
 | --- | --- | --- |
-| Identity & Access | User, credential, session, invite, reset, MFA TOTP skeleton | AuthN floors from 0.2A |
-| Organizations | Organization, membership, Role/Permission definitions | Seed 0.2A catalog + templates |
+| Identity & Access | User, AuthenticationIdentity, credential, session, invite, reset, MFA TOTP | AuthN floors from 0.2A |
+| Organizations | Organization, membership, Role/Permission definitions | Seed 0.2A catalog + templates; membership lifecycle |
 | Projects | Project (empreendimento), later disciplines/membership | Skeleton only |
 | Documents & Revisions | Document, Revision, current pointer, files | **Not implemented.** File-trust primitive (`scan_status`) only |
 | Coordination | Impact, Issue, comments, evidence | **Not implemented.** Outbox event name reserved |
