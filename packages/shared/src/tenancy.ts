@@ -2,6 +2,7 @@ import { DenyByDefaultError } from "./errors.js";
 
 export type MembershipStatus = "INVITED" | "ACTIVE" | "SUSPENDED" | "REMOVED";
 export type MembershipType = "INTERNAL" | "EXTERNAL" | "ADMINISTRATIVE";
+export type ProjectMembershipStatus = "ACTIVE" | "SUSPENDED" | "REMOVED";
 
 export interface SessionBinding {
   userId: string;
@@ -60,6 +61,52 @@ export function assertProjectInOrganization(input: {
 }): void {
   if (!input.projectOrganizationId || input.projectOrganizationId !== input.authorizedOrganizationId) {
     throw new DenyByDefaultError("Project is not bound to the authorized Organization");
+  }
+}
+
+/**
+ * Path/body/query projectId is routing intent only. The server must verify
+ * the Project exists in the session-bound Organization before any grant.
+ */
+export function resolveAuthorizedProject(input: {
+  projectId: string | null | undefined;
+  projectOrganizationId: string | null | undefined;
+  authorizedOrganizationId: string;
+  clientProjectId?: string | null;
+  pathProjectId?: string | null;
+}): string {
+  if (!input.projectId) {
+    throw new DenyByDefaultError("Project context is required");
+  }
+  assertProjectInOrganization({
+    projectOrganizationId: input.projectOrganizationId,
+    authorizedOrganizationId: input.authorizedOrganizationId,
+  });
+  if (input.pathProjectId && input.pathProjectId !== input.projectId) {
+    throw new DenyByDefaultError("Path projectId does not match the authorized Project");
+  }
+  if (input.clientProjectId && input.clientProjectId !== input.projectId) {
+    throw new DenyByDefaultError("Client projectId is not authoritative and does not match the authorized Project");
+  }
+  return input.projectId;
+}
+
+export function assertActiveProjectMembership(status: ProjectMembershipStatus | null | undefined): void {
+  if (status !== "ACTIVE") {
+    throw new DenyByDefaultError("Project membership is not ACTIVE");
+  }
+}
+
+export function assertOperationalRoleDefinition(input: {
+  roleOrganizationId: string | null | undefined;
+  authorizedOrganizationId: string;
+  isSystemTemplate?: boolean;
+}): void {
+  if (!input.roleOrganizationId || input.isSystemTemplate === true) {
+    throw new DenyByDefaultError("Amber Role Templates are not operational AuthZ grants");
+  }
+  if (input.roleOrganizationId !== input.authorizedOrganizationId) {
+    throw new DenyByDefaultError("RoleDefinition is not owned by the authorized Organization");
   }
 }
 

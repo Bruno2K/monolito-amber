@@ -407,7 +407,7 @@ export class AuthService {
     return { ...session, lastSeenAt: new Date() };
   }
 
-  async sessionView(session: RequestSession | null): Promise<SessionView> {
+  async sessionView(session: RequestSession | null, projectId?: string | null): Promise<SessionView> {
     if (!session) {
       return {
         authenticated: false,
@@ -416,13 +416,15 @@ export class AuthService {
         displayName: null,
         activeOrganizationId: null,
         membership: null,
+        projectId: null,
+        projectMembership: null,
         permissions: [],
         mfa: { required: false, enrolled: false, satisfied: true, freshnessOk: false },
       };
     }
     const user = await this.prisma.user.findUnique({ where: { id: session.userId } });
     const context = session.activeOrganizationId
-      ? await this.authz.loadContext(session)
+      ? await this.authz.loadContext(session, projectId)
       : null;
     const templateKeys = context
       ? context.grants.map((g) => g.templateKey)
@@ -440,6 +442,13 @@ export class AuthService {
             id: context.membershipId,
             status: context.membershipStatus,
             type: context.membershipType,
+          }
+        : null,
+      projectId: context?.projectId ?? null,
+      projectMembership: context?.projectId
+        ? {
+            id: context.projectMembershipId,
+            status: context.projectMembershipStatus,
           }
         : null,
       permissions: context ? this.authz.permissionsOf(context) : [],

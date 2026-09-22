@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post, Req, Res, UseGuards } from "@nestjs/common";
-import { ApiCookieAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Post, Query, Req, Res, UseGuards } from "@nestjs/common";
+import { ApiCookieAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { IsEmail, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
 import type { Request, Response } from "express";
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, SessionExpiredError, SessionRevokedError } from "@amber/shared";
@@ -199,13 +199,19 @@ export class AuthController {
   }
 
   @Get("session")
-  @ApiOperation({ summary: "Return the session-bound active Organization (never trust client orgId)" })
+  @ApiOperation({
+    summary: "Return the session-bound active Organization (optional projectId is routing intent only)",
+  })
+  @ApiQuery({ name: "projectId", required: false, format: "uuid" })
   @ApiCookieAuth()
-  async getSession(@Req() req: Request & AuthenticatedRequest) {
+  async getSession(
+    @Req() req: Request & AuthenticatedRequest,
+    @Query("projectId") projectId?: string,
+  ) {
     const token = readSessionToken(req.cookies, req.header("x-session-token") ?? undefined);
     try {
       const session = await this.auth.loadSessionByToken(token);
-      return this.auth.sessionView(session);
+      return this.auth.sessionView(session, projectId);
     } catch (error) {
       if (error instanceof SessionRevokedError || error instanceof SessionExpiredError) {
         return this.auth.sessionView(null);

@@ -10,6 +10,7 @@ const REQUIRED = [
   "scan-status.security.test.ts",
   "audit.security.test.ts",
   "cas-idempotency.security.test.ts",
+  "contextual-rbac.security.test.ts",
 ];
 
 const SKIP_RE = /\.skip\s*\(|describe\.skip|it\.skip|xit\s*\(|xdescribe\s*\(/;

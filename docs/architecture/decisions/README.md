@@ -18,3 +18,4 @@ Candidates from 0.6–0.8 that are **not** yet product slices (Planning/Governan
 | [ADR-010](./ADR-010-outbox-idempotency.md) | Transactional outbox + Idempotency-Key + optimistic version |
 | [ADR-011](./ADR-011-authentication-identity.md) | Authentication Identity separate from User |
 | [ADR-012](./ADR-012-mfa-totp.md) | MFA TOTP foundation + freshness hooks |
+| [ADR-013](./ADR-013-org-owned-roles-project-membership.md) | Org-owned RoleDefinitions + ProjectMembership |

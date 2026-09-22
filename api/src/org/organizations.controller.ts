@@ -6,8 +6,10 @@ import {
   MEMBERSHIP_TYPES,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  PERMISSIONS,
   ROLE_TEMPLATE_KEYS,
   type MembershipType,
+  type PermissionCode,
   type RoleTemplateKey,
 } from "@amber/shared";
 import { AuthService } from "../auth/auth.service";
@@ -20,6 +22,7 @@ import { RequirePermission } from "../authz/require-permission.decorator";
 import { InvitationsService } from "./invitations.service";
 import { MembershipsService } from "./memberships.service";
 import { OrganizationsService } from "./organizations.service";
+import { RolesService } from "./roles.service";
 
 class CreateOrganizationDto {
   @ApiProperty()
@@ -74,14 +77,33 @@ class MembershipStatusDto {
 }
 
 class AssignRoleDto {
-  @ApiProperty({ enum: ROLE_TEMPLATE_KEYS })
+  @ApiPropertyOptional({ enum: ROLE_TEMPLATE_KEYS })
+  @IsOptional()
   @IsIn(ROLE_TEMPLATE_KEYS)
-  templateKey!: RoleTemplateKey;
+  templateKey?: RoleTemplateKey;
 
   @ApiPropertyOptional({ format: "uuid" })
   @IsOptional()
   @IsUUID()
-  projectId?: string;
+  roleId?: string;
+}
+
+class UpdateOrgRoleDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  name?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ isArray: true, enum: PERMISSIONS })
+  @IsOptional()
+  @IsIn(PERMISSIONS, { each: true })
+  permissions?: PermissionCode[];
 }
 
 @ApiTags("organizations")
@@ -91,6 +113,7 @@ export class OrganizationsController {
     private readonly organizations: OrganizationsService,
     private readonly invitations: InvitationsService,
     private readonly memberships: MembershipsService,
+    private readonly roles: RolesService,
     private readonly auth: AuthService,
   ) {}
 
@@ -201,7 +224,7 @@ export class OrganizationsController {
   @ApiCookieAuth()
   @ApiParam({ name: "organizationId", format: "uuid" })
   @ApiParam({ name: "membershipId", format: "uuid" })
-  @ApiOperation({ summary: "Assign a 0.2A Role template (high-risk; requires recent auth)" })
+  @ApiOperation({ summary: "Assign an Organization-owned RoleDefinition (high-risk; requires recent auth)" })
   assignRole(
     @CurrentSession() session: RequestSession,
     @Param("organizationId") organizationId: string,
@@ -209,6 +232,34 @@ export class OrganizationsController {
     @Body() body: AssignRoleDto,
   ) {
     return this.memberships.assignRole(this.auth.requireSession(session), organizationId, membershipId, body);
+  }
+
+  @Get("organizations/:organizationId/roles")
+  @UseGuards(SessionGuard, PermissionGuard)
+  @RequirePermission("organization.read")
+  @ApiCookieAuth()
+  @ApiParam({ name: "organizationId", format: "uuid" })
+  @ApiOperation({ summary: "List Organization-owned RoleDefinitions (not global Amber templates)" })
+  listRoles(@CurrentSession() session: RequestSession, @Param("organizationId") organizationId: string) {
+    return this.roles.list(this.auth.requireSession(session), organizationId);
+  }
+
+  @Patch("organizations/:organizationId/roles/:roleId")
+  @UseGuards(SessionGuard, PermissionGuard)
+  @RequirePermission("organization.manage_roles")
+  @ApiCookieAuth()
+  @ApiParam({ name: "organizationId", format: "uuid" })
+  @ApiParam({ name: "roleId", format: "uuid" })
+  @ApiOperation({
+    summary: "Rename/configure an org-owned RoleDefinition within the closed 0.2A catalog",
+  })
+  updateRole(
+    @CurrentSession() session: RequestSession,
+    @Param("organizationId") organizationId: string,
+    @Param("roleId") roleId: string,
+    @Body() body: UpdateOrgRoleDto,
+  ) {
+    return this.roles.update(this.auth.requireSession(session), organizationId, roleId, body);
   }
 
   @Post("invitations/accept")

@@ -178,11 +178,15 @@ export class InvitationsService {
 
     if (invitation.roleTemplateKey) {
       const role = await this.prisma.roleDefinition.findFirst({
-        where: { organizationId: null, templateKey: invitation.roleTemplateKey },
+        where: {
+          organizationId: invitation.organizationId,
+          templateKey: invitation.roleTemplateKey,
+          isSystemTemplate: false,
+        },
       });
       if (role) {
-        const existing = await this.prisma.roleBinding.findFirst({
-          where: { membershipId: updated.id, roleId: role.id, projectId: null },
+        const existing = await this.prisma.roleBinding.findUnique({
+          where: { membershipId_roleId: { membershipId: updated.id, roleId: role.id } },
         });
         if (!existing) {
           await this.prisma.roleBinding.create({

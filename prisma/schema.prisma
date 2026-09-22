@@ -1,5 +1,7 @@
 // Amber Modular Monolith — schema-per-module (0.6).
-// PF-1.1 implements Identity & Organizations. Product workflows remain out of scope.
+// PF-1.2: Amber Role Templates (organizationId=null) are NOT operational grants.
+// Organization create instantiates Organization-owned RoleDefinitions.
+// ProjectMembership is first-class. Product workflows remain out of scope.
 // Seed permissions ONLY from APPROVED 0.2A. There is no gate.override.
 
 generator client {
@@ -225,9 +227,10 @@ model OrganizationMembership {
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deactivatedAt  DateTime? @map("deactivated_at")
 
-  organization Organization  @relation(fields: [organizationId], references: [id])
-  user         User          @relation(fields: [userId], references: [id])
-  roleBindings RoleBinding[]
+  organization       Organization         @relation(fields: [organizationId], references: [id])
+  user               User                 @relation(fields: [userId], references: [id])
+  roleBindings       RoleBinding[]
+  projectMemberships ProjectMembership[]
 
   @@unique([organizationId, userId])
   @@map("organization_memberships")
@@ -248,19 +251,24 @@ model PermissionDefinition {
   @@schema("org")
 }
 
-/// Default Amber Role templates from 0.2A §2. Orgs may clone/rename later.
+/// Amber Role Template when organizationId is null / isSystemTemplate=true.
+/// Organization-owned RoleDefinition when organizationId is set — the only
+/// operational AuthZ grant target. Lineage: sourceTemplateKey / templateKey.
 model RoleDefinition {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId   String?  @map("organization_id") @db.Uuid
-  templateKey      String   @map("template_key")
-  name             String
-  description      String
-  isSystemTemplate Boolean  @default(true) @map("is_system_template")
-  createdAt        DateTime @default(now()) @map("created_at")
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId    String?  @map("organization_id") @db.Uuid
+  templateKey       String   @map("template_key")
+  sourceTemplateKey String   @map("source_template_key")
+  name              String
+  description       String
+  isSystemTemplate  Boolean  @default(true) @map("is_system_template")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
-  organization    Organization?    @relation(fields: [organizationId], references: [id])
-  rolePermissions RolePermission[]
-  bindings        RoleBinding[]
+  organization       Organization?           @relation(fields: [organizationId], references: [id])
+  rolePermissions    RolePermission[]
+  bindings           RoleBinding[]
+  projectAssignments ProjectRoleAssignment[]
 
   @@unique([organizationId, templateKey])
   @@map("role_definitions")
@@ -279,36 +287,78 @@ model RolePermission {
   @@schema("org")
 }
 
+/// Organization-level role binding. Never implies Project access.
+/// Must reference an Organization-owned RoleDefinition (not a global template).
 model RoleBinding {
-  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  membershipId String  @map("membership_id") @db.Uuid
-  roleId       String  @map("role_id") @db.Uuid
-  projectId    String? @map("project_id") @db.Uuid
+  id           String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  membershipId String @map("membership_id") @db.Uuid
+  roleId       String @map("role_id") @db.Uuid
 
   membership OrganizationMembership @relation(fields: [membershipId], references: [id])
   role       RoleDefinition         @relation(fields: [roleId], references: [id])
 
+  @@unique([membershipId, roleId])
   @@map("role_bindings")
   @@schema("org")
 }
 
 // ---------------------------------------------------------------------------
-// project — skeleton only (Projects & Membership is the next slice)
+// project — membership + contextual RBAC (no product Document/Gate UX)
 // ---------------------------------------------------------------------------
 
 model Project {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  organizationId String   @map("organization_id") @db.Uuid
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
   name           String
-  version        Int      @default(1)
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  version        Int       @default(1)
+  archivedAt     DateTime? @map("archived_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization Organization  @relation(fields: [organizationId], references: [id])
+  organization Organization        @relation(fields: [organizationId], references: [id])
+  memberships  ProjectMembership[]
   objects      StoredObject[]
 
   @@index([organizationId])
   @@map("projects")
+  @@schema("project")
+}
+
+/// First-class ProjectMembership. ACTIVE OrgMembership is required to become
+/// ACTIVE here; Org suspension/removal overrides all Project access.
+model ProjectMembership {
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId                String    @map("project_id") @db.Uuid
+  organizationMembershipId String    @map("organization_membership_id") @db.Uuid
+  status                   String
+  version                  Int       @default(1)
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+  deactivatedAt            DateTime? @map("deactivated_at")
+
+  project                Project                @relation(fields: [projectId], references: [id])
+  organizationMembership OrganizationMembership @relation(fields: [organizationMembershipId], references: [id])
+  roleAssignments        ProjectRoleAssignment[]
+
+  @@unique([projectId, organizationMembershipId])
+  @@index([organizationMembershipId])
+  @@map("project_memberships")
+  @@schema("project")
+}
+
+/// Per-project role assignment. References Organization-owned RoleDefinitions
+/// of the same Organization only. Effective permissions = union in that Project.
+model ProjectRoleAssignment {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectMembershipId String   @map("project_membership_id") @db.Uuid
+  roleId              String   @map("role_id") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  projectMembership ProjectMembership @relation(fields: [projectMembershipId], references: [id])
+  role              RoleDefinition    @relation(fields: [roleId], references: [id])
+
+  @@unique([projectMembershipId, roleId])
+  @@map("project_role_assignments")
   @@schema("project")
 }
 

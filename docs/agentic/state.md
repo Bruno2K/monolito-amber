@@ -4,24 +4,25 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 
 | Field | Value |
 | --- | --- |
-| Work Item | PF-1.1R — Identity & Authorization Reconciliation |
+| Work Item | PF-1.2 — Project Membership / Contextual RBAC |
 | Status | ACTIVE |
-| Issue | https://github.com/Bruno2K/monolito-amber/issues/5 |
-| Branch | `pf-1.1r-identity-authz-reconciliation` |
-| PR | https://github.com/Bruno2K/monolito-amber/pull/6 |
-| SHA | `2f94948` |
+| Issue | https://github.com/Bruno2K/monolito-amber/issues/7 |
+| Branch | `pf-1.2-project-membership-contextual-rbac` |
+| PR | (opened with this slice) |
+| SHA | (see latest commit on the branch) |
 | Repo | `Bruno2K/monolito-amber` |
-| Base | `main` @ `2e44d5622d635bc8b5bfb8fe595bb9f80982ba4a` (PF-1.1 merged) |
-| Prior WI | PF-1.1 Identity & Organizations — DONE (PR #4, merge `2e44d562`) |
-| Next WI | PF-1.2 Projects & Membership — **BLOCKED** until PF-1.1R is DONE |
+| Base | `main` @ `3ebb855a1adf955512609e02161d81a8e9bc3f4d` (PF-1.1R merged) |
+| Prior WI | PF-1.1R Identity & Authorization Reconciliation — DONE (PR #6, merge `3ebb855a`) |
+| Next WI | Documents & Revisions (CAS + scan fail-closed) — after PF-1.2 Exit Gate |
 | Exit Gate | Reviewer PASS + green CI; Governor merges |
 | Merge | Not authorized from this slice |
 
-## In-scope repairs
+## In-scope
 
-1. Mandatory MFA fail-closed for Org Admin + Governance Approver privileged ops
-2. Public registration disabled except first-instance bootstrap
-3. Suspended/removed membership → deterministic deny
-4. Agentic doc hygiene
-5. Durable CI job name
-6. Document process-local login rate limiter
+1. Amber Role Templates ≠ operational AuthZ grants; org-owned RoleDefinitions instantiated on Organization create
+2. First-class ProjectMembership (`ACTIVE|SUSPENDED|REMOVED`) gated by ACTIVE OrgMembership
+3. Per-project role assignment to same-org RoleDefinitions; permission union inside that Project
+4. Explicit org-scoped vs project-scoped AuthZ; never trust client `projectId`
+5. Project Coordinator limits and `project.assign_roles` SoD (no self-escalation)
+6. External collaborator isolation negatives
+7. Preserve PF-1.1R MFA / registration / revocation; no `gate.override`; no product pages

@@ -46,6 +46,7 @@ async function main() {
           data: {
             name: template.name,
             description: template.description,
+            sourceTemplateKey: template.key,
             isSystemTemplate: true,
           },
         })
@@ -53,6 +54,7 @@ async function main() {
           data: {
             organizationId: null,
             templateKey: template.key,
+            sourceTemplateKey: template.key,
             name: template.name,
             description: template.description,
             isSystemTemplate: true,
@@ -69,6 +71,35 @@ async function main() {
         return { roleId: role.id, permissionId: permission.id };
       }),
     });
+  }
+
+  const organizations = await prisma.organization.findMany({ select: { id: true } });
+  const templates = await prisma.roleDefinition.findMany({
+    where: { organizationId: null, isSystemTemplate: true },
+    include: { rolePermissions: true },
+  });
+  for (const organization of organizations) {
+    for (const template of templates) {
+      const existing = await prisma.roleDefinition.findFirst({
+        where: { organizationId: organization.id, templateKey: template.templateKey },
+      });
+      if (existing) {
+        continue;
+      }
+      await prisma.roleDefinition.create({
+        data: {
+          organizationId: organization.id,
+          templateKey: template.templateKey,
+          sourceTemplateKey: template.sourceTemplateKey || template.templateKey,
+          name: template.name,
+          description: template.description,
+          isSystemTemplate: false,
+          rolePermissions: {
+            create: template.rolePermissions.map((row) => ({ permissionId: row.permissionId })),
+          },
+        },
+      });
+    }
   }
 }
 

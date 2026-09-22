@@ -9,6 +9,7 @@ import { HealthModule } from "./health/health.module";
 import { CorrelationMiddleware } from "./observability/correlation";
 import { OrgModule } from "./org/org.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { ProjectModule } from "./project/project.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
 
 @Module({
@@ -18,6 +19,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
     AuthModule,
     AuthzModule,
     OrgModule,
+    ProjectModule,
     TenancyModule,
     CatalogModule,
     FilesModule,

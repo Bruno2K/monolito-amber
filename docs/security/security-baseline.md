@@ -1,4 +1,4 @@
-# Security baseline (PF-1.1)
+# Security baseline (PF-1.2)
 
 | Finding | Spec status | Foundation evidence |
 | --- | --- | --- |

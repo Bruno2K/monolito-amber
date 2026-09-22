@@ -8,7 +8,9 @@ describe("unauthorized member management (fail closed)", () => {
       organizationId: "org-a",
       membershipStatus: "ACTIVE",
       membershipType: "INTERNAL",
-      grants: [{ templateKey: "VIEWER", permissions: ["project.read", "document.read", "gate.read"] }],
+      grants: [
+        { templateKey: "VIEWER", scope: "organization", permissions: ["project.read", "document.read", "gate.read"] },
+      ],
     };
     expect(() => assertPermission(viewer, "organization.manage_members")).toThrow(DenyByDefaultError);
   });
@@ -19,7 +21,7 @@ describe("unauthorized member management (fail closed)", () => {
       organizationId: "org-a",
       membershipStatus: "ACTIVE",
       membershipType: "EXTERNAL",
-      grants: [{ templateKey: "EXTERNAL_CONTRIBUTOR", permissions: ["project.read"] }],
+      grants: [{ templateKey: "EXTERNAL_CONTRIBUTOR", scope: "organization", permissions: ["project.read"] }],
     };
     expect(() => assertPermission(external, "organization.read")).toThrow(DenyByDefaultError);
   });

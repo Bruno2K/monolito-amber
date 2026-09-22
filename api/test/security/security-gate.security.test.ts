@@ -11,6 +11,9 @@ const REQUIRED = [
   "cas-idempotency.security.test.ts",
   "member-management.security.test.ts",
   "mfa.security.test.ts",
+  "project-membership.security.test.ts",
+  "contextual-rbac.security.test.ts",
+  "external-isolation.security.test.ts",
 ];
 
 const SKIP_RE = /\.skip\s*\(|describe\.skip|it\.skip|xit\s*\(|xdescribe\s*\(/;

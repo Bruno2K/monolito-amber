@@ -28,6 +28,11 @@ export interface SessionView {
     status: MembershipStatus;
     type: MembershipType;
   } | null;
+  projectId: string | null;
+  projectMembership: {
+    id: string | null | undefined;
+    status: string | null | undefined;
+  } | null;
   permissions: PermissionCode[];
   mfa: {
     required: boolean;
