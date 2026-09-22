@@ -8,7 +8,9 @@
 | Task | Planning work item. Task ≠ Issue |
 | Gate | Governance checkpoint over mandatory requirements |
 | Formal Exception | Sole approved bypass of an unsatisfied GateRequirement |
-| Current revision | The operational base of a Document; change is explicit + audited |
+| Document | Stable logical artifact under a Project; identity ≠ filename or storage key |
+| Revision | One version of a Document; immutable after publish |
+| Current revision | The operational base of a Document (`Document.currentRevisionId`); not a status |
 | scan_status | PENDING / CLEAN / BLOCKED file-trust state |
 | Active Organization | Server-bound session context; never taken from the client as authority |
 | Amber Role Template | Product-owned baseline (`organizationId = null`); not an operational grant |

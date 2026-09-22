@@ -5,7 +5,7 @@
 - Errors: `application/problem+json` with `type`, `title`, `status`, `detail`, `instance`, `correlationId`, `code`
 - Correlation: accept `X-Correlation-Id` or generate a UUID
 - Pagination (later): cursor for large lists; allowlisted sort/filter
-- Idempotency-Key required later for publish, make-current, gate release, exception approve
+- Idempotency-Key required for publish, approve, reject, make-current (later: gate release, exception approve)
 - AuthZ uses the closed 0.2A catalog
 - Download/preview denied unless `scan_status=CLEAN`
 - Browser sessions: `amber_session` HttpOnly cookie (opaque token; server stores hash)
@@ -52,5 +52,20 @@ Identity & Organizations routes:
 | GET | `/api/v1/catalog/permissions` | Closed catalog |
 | GET | `/api/v1/catalog/role-templates` | Amber Role Templates (not grants) |
 | GET | `/api/v1/files/:objectId/access` | Fail-closed file-trust check |
+| PUT / GET | `/api/v1/files/objects/:token` | Redeem short-lived server-minted upload/download grant |
+| POST | `/api/v1/projects/:projectId/documents` | Create Document |
+| GET | `/api/v1/projects/:projectId/documents` | List Documents |
+| GET | `/api/v1/projects/:projectId/documents/:documentId` | Read Document |
+| POST | `/api/v1/projects/:projectId/documents/:documentId/archive` | Soft-archive Document |
+| GET / POST | `/api/v1/projects/:projectId/documents/:documentId/revisions` | List / create DRAFT Revision |
+| GET / PATCH | `/api/v1/projects/:projectId/documents/:documentId/revisions/:revisionId` | Read / update DRAFT |
+| POST | `.../revisions/:revisionId/upload-url` | Mint tenant-bound upload URL |
+| POST | `.../revisions/:revisionId/complete-upload` | Confirm bytes + checksum; scan PENDING |
+| POST | `.../revisions/:revisionId/publish` | Publish DRAFT (Idempotency-Key) |
+| POST | `.../revisions/:revisionId/review` | PUBLISHED → UNDER_REVIEW |
+| POST | `.../revisions/:revisionId/approve` | Approve (SoD; Idempotency-Key) |
+| POST | `.../revisions/:revisionId/reject` | Reject + reason (preserved; SoD) |
+| POST | `.../revisions/:revisionId/make-current` | CAS current pointer / rollback (SoD) |
+| GET | `.../revisions/:revisionId/download-url` | Short-lived GET after CLEAN |
 
 `GET /api/v1/auth/session?projectId=` treats `projectId` as routing intent and returns the union of org-scoped + that Project's assignments after server verification.

@@ -145,3 +145,38 @@ export class PublicRegistrationDisabledError extends AmberError {
     this.name = "PublicRegistrationDisabledError";
   }
 }
+
+export class RevisionStateError extends AmberError {
+  constructor(detail: string) {
+    super("REVISION_STATE", detail, 409);
+    this.name = "RevisionStateError";
+  }
+}
+
+export class ImmutableRevisionError extends AmberError {
+  constructor(detail = "Published revision content is immutable; correction requires a new Revision") {
+    super("REVISION_IMMUTABLE", detail, 409);
+    this.name = "ImmutableRevisionError";
+  }
+}
+
+export class NamingValidationError extends AmberError {
+  constructor(detail: string) {
+    super("NAMING_VALIDATION", detail, 400);
+    this.name = "NamingValidationError";
+  }
+}
+
+export class FileIntegrityError extends AmberError {
+  constructor(detail: string) {
+    super("FILE_INTEGRITY", detail, 400);
+    this.name = "FileIntegrityError";
+  }
+}
+
+export class IdempotencyRequiredError extends AmberError {
+  constructor(detail = "Idempotency-Key is required for this operation") {
+    super("IDEMPOTENCY_REQUIRED", detail, 400);
+    this.name = "IdempotencyRequiredError";
+  }
+}

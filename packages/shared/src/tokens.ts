@@ -27,6 +27,10 @@ export const SECRET_PAYLOAD_KEYS = [
   "totp",
   "otp",
   "cookie",
+  "signedUrl",
+  "uploadUrl",
+  "downloadUrl",
+  "presigned",
 ] as const;
 
 export function redactSecrets(payload: Record<string, unknown>): Record<string, unknown> {

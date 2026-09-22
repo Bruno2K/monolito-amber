@@ -16,7 +16,7 @@ TEST_DATABASE_URL=postgresql://amber:amber@127.0.0.1:5432/amber_test
 
 and migrate that database first.
 
-Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-management / ProjectMembership / contextual RBAC / external isolation tests. The security-gate test fails CI if they are skipped.
+Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-management / ProjectMembership / contextual RBAC / external isolation / Document-Revision tests. The security-gate test fails CI if they are skipped.
 
 ### F-04 tenant-isolation evidence
 
@@ -43,3 +43,12 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | Coordinator cannot self-escalate / invite / edit roles | `api/test/security/project-membership.security.test.ts` + integration |
 | EXTERNAL isolation (directory / list / other projects) | `api/test/security/external-isolation.security.test.ts` + integration |
 | HTTP ProjectMembership lifecycle + org override | `api/test/integration/project-membership.integration.test.ts` |
+
+### PF-1.3 Document / Revision evidence
+
+| Test | Where |
+| --- | --- |
+| Lifecycle + immutability + naming | `packages/shared/src/revision.test.ts` + integration |
+| Publisher SoD / file-trust / CAS | `packages/shared/src/document-revision.security.test.ts` |
+| Tenant-bound object keys | `packages/shared/src/storage-keys.test.ts` |
+| HTTP publish/approve/make-current/rollback/isolation | `api/test/integration/documents-revisions.integration.test.ts` |

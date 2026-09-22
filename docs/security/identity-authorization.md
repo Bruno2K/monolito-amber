@@ -39,7 +39,7 @@ Org-scoped permissions (organization.*, `project.create`, `project.archive`) com
 
 Authorization context: User + Session + active Org + ACTIVE OrgMembership + (when project-scoped) Project in that Org + ACTIVE ProjectMembership + assigned roles + permission + ownership + SoD. Deny by default.
 
-PF-1.1 / PF-1.1R shipped SoD primitives without creating fake Gate/Revision/Exception entities. PF-1.2 keeps that boundary.
+PF-1.1 / PF-1.1R shipped SoD primitives without creating fake Gate/Exception entities. PF-1.3 enforces Revision publisher SoD on approve/reject/make-current.
 
 ## Audit read
 

@@ -14,6 +14,7 @@ const REQUIRED = [
   "project-membership.security.test.ts",
   "contextual-rbac.security.test.ts",
   "external-isolation.security.test.ts",
+  "document-revision.security.test.ts",
 ];
 
 const SKIP_RE = /\.skip\s*\(|describe\.skip|it\.skip|xit\s*\(|xdescribe\s*\(/;
