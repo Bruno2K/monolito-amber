@@ -25,6 +25,12 @@ export const OUTBOX_EVENT_TYPES = {
   IssueReadyForReview: "IssueReadyForReview",
   IssueClosed: "IssueClosed",
   IssueReopened: "IssueReopened",
+  TaskCreated: "TaskCreated",
+  TaskAssigned: "TaskAssigned",
+  TaskBlocked: "TaskBlocked",
+  TaskCompleted: "TaskCompleted",
+  MilestoneCreated: "MilestoneCreated",
+  MilestoneAchieved: "MilestoneAchieved",
 } as const;
 
 /**

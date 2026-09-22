@@ -4,8 +4,9 @@ You are working in `Bruno2K/monolito-amber`, the canonical Amber Modular Monolit
 
 ## Current slice
 
-**PF-1.4 — Coordination / Impact Analysis Foundation** (Issue #11). Backend/domain Coordination consuming PF-1.3 outbox events. No Coordination UI.
+**PF-1.5 — Planning / Tasks / Milestones** (Issue #13). Backend/domain Planning. No Planning UI. No Gates.
 
+**PF-1.4 — Coordination / Impact Analysis Foundation** is merged/DONE (`404cfc5bdc9961f79392010bb012ba8f2b1a002a`).  
 **PF-1.3 — Documents & Revisions Foundation** is merged/DONE (`c4d9dffaad275f6419e5ff1fc8b732e690cfac3d`).  
 **PF-1.2 — Project Membership / Contextual RBAC** is merged/DONE (`dee5861b84224f7ea46b4e8bd978c1548a91a71a`).  
 **PF-1.1R — Identity & Authorization Reconciliation** is merged/DONE (`3ebb855a1adf955512609e02161d81a8e9bc3f4d`).  
@@ -18,7 +19,7 @@ You are working in `Bruno2K/monolito-amber`, the canonical Amber Modular Monolit
 - No `gate.override`; Formal Exception is the sole bypass
 - Session-bound org; deny-by-default
 - Organization membership ≠ project membership
-- Client `organizationId` / `projectId` / `documentId` / `revisionId` / `impactId` / `issueId` are routing hints
+- Client `organizationId` / `projectId` / `documentId` / `revisionId` / `impactId` / `issueId` / `taskId` / `milestoneId` are routing hints
 - MFA required for Organization Administrator and Governance Approver; privileged AuthZ **fail closed** until MFA is satisfied
 - Registration is invitation/bootstrap-controlled (not public self-signup)
 - Audit insert-only; `organization.read_audit` for reads
@@ -28,9 +29,11 @@ You are working in `Bruno2K/monolito-amber`, the canonical Amber Modular Monolit
 - `CurrentRevisionChanged` creates exactly one Impact Analysis case (`PENDING_ANALYSIS`); never auto-IMPACTED or auto-Issues
 - Assessment and Issue creation are explicit AuthZ + actor
 - RESOLVED ≠ CLOSED; Severity ≠ Priority; discipline ≠ assignee
+- Task ≠ Issue; Task done ≠ Issue resolve ≠ Milestone achieve
+- Task lateness and Milestone AT_RISK/MISSED are derived (ADR-016); ACHIEVED is explicit
 
 ## Forbidden
 
-Product workflows for Planning/Gates; BIM/IFC/BCF viewers; analytics; AI; K8s; microservices; CQRS; event sourcing; Kafka; invented permissions; second bypass; treating global templates as grants; implicit project access from org-level bindings; auto-IMPACTED / auto-Issues; mutating Document current revision from Coordination; Impact dashboard / Issue board / coordination timeline / product nav.
+Product workflows for Gates/Formal Exceptions; BIM/IFC/BCF viewers; analytics; AI; K8s; microservices; CQRS; event sourcing; Kafka; invented permissions; second bypass; treating global templates as grants; implicit project access from org-level bindings; auto-IMPACTED / auto-Issues; auto-resolving Issues from Tasks; auto-achieving Milestones; mutating Document current revision from Coordination or Planning; Impact dashboard / Issue board / Planning Gantt / product nav.
 
 Escalate HUMAN_REQUIRED on approved-spec conflict, HIGH architecture/security beyond contract, destructive ops, or a new product decision.

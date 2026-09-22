@@ -39,7 +39,7 @@ Org-scoped permissions (organization.*, `project.create`, `project.archive`) com
 
 Authorization context: User + Session + active Org + ACTIVE OrgMembership + (when project-scoped) Project in that Org + ACTIVE ProjectMembership + assigned roles + permission + ownership + SoD. Deny by default.
 
-PF-1.1 / PF-1.1R shipped SoD primitives without creating fake Gate/Exception entities. PF-1.3 enforces Revision publisher SoD on approve/reject/make-current. PF-1.4 maps Impact assess → `issue.update` and Impact resolve → `issue.resolve` (closed 0.2A catalog has no `impact.*`).
+PF-1.1 / PF-1.1R shipped SoD primitives without creating fake Gate/Exception entities. PF-1.3 enforces Revision publisher SoD on approve/reject/make-current. PF-1.4 maps Impact assess → `issue.update` and Impact resolve → `issue.resolve` (closed 0.2A catalog has no `impact.*`). PF-1.5 uses existing `task.*` / `milestone.*`; Task assignment requires ACTIVE ProjectMembership.
 
 ## Audit read
 

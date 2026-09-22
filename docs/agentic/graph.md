@@ -7,9 +7,9 @@ Platform Foundation progression (0.8 + current repo state):
 3. **PF-1.1R** Identity & Authorization Reconciliation — **DONE**
 4. **PF-1.2** Project Membership / Contextual RBAC — **DONE**
 5. **PF-1.3** Documents & Revisions Foundation — **DONE**
-6. **PF-1.4** Coordination / Impact Analysis Foundation — **ACTIVE** (one PENDING_ANALYSIS case; no auto Issues)
-7. Notifications worker (Redis + BullMQ required)
-8. Planning (0.5)
+6. **PF-1.4** Coordination / Impact Analysis Foundation — **DONE**
+7. **PF-1.5** Planning / Tasks / Milestones — **ACTIVE**
+8. Notifications worker (Redis + BullMQ required)
 9. Governance (0.5; Formal Exception only)
 10. Audit read UX (`organization.read_audit`)
 11. Hardening (vendor choice, drills, LGPD process — retention OPEN)

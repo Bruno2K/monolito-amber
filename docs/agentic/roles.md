@@ -9,4 +9,4 @@
 | UX specialist | Generic auth/shell only when already in scope | Product pages before approved UX/Figma specs |
 | Bruno | Product / FACT authority | — |
 
-Security stubs exist so a later slice cannot skip F-04 / SoD / session / audit / malware / CAS / ProjectMembership / contextual RBAC / Document-Revision / Coordination evidence without failing CI.
+Security stubs exist so a later slice cannot skip F-04 / SoD / session / audit / malware / CAS / ProjectMembership / contextual RBAC / Document-Revision / Coordination / Planning evidence without failing CI.

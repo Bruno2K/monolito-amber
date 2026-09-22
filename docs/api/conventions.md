@@ -5,7 +5,7 @@
 - Errors: `application/problem+json` with `type`, `title`, `status`, `detail`, `instance`, `correlationId`, `code`
 - Correlation: accept `X-Correlation-Id` or generate a UUID
 - Pagination (later): cursor for large lists; allowlisted sort/filter
-- Idempotency-Key required for publish, approve, reject, make-current (later: gate release, exception approve)
+- Idempotency-Key required for publish, approve, reject, make-current, task create/status/complete/dependency, milestone create/achieve (later: gate release, exception approve)
 - AuthZ uses the closed 0.2A catalog
 - Download/preview denied unless `scan_status=CLEAN`
 - Browser sessions: `amber_session` HttpOnly cookie (opaque token; server stores hash)
@@ -80,5 +80,15 @@ Identity & Organizations routes:
 | GET / POST | `/api/v1/projects/:projectId/issues/:issueId/comments` | Minimal comments |
 | GET / POST | `/api/v1/projects/:projectId/issues/:issueId/evidence` | Minimal evidence |
 | GET | `/api/v1/projects/:projectId/issues/:issueId/history` | Status history |
+| GET / POST | `/api/v1/projects/:projectId/tasks` | List / create Task (standalone or optional same-Project Issue) |
+| GET / PATCH | `/api/v1/projects/:projectId/tasks/:taskId` | Read / update fields (`late` is derived) |
+| POST | `/api/v1/projects/:projectId/tasks/:taskId/assign` | Assign ACTIVE ProjectMembership only |
+| POST | `/api/v1/projects/:projectId/tasks/:taskId/status` | Lifecycle; BLOCKED requires reason; DONE needs `task.complete` |
+| POST | `/api/v1/projects/:projectId/tasks/:taskId/complete` | Mark DONE — does not resolve Issue or achieve Milestone |
+| GET / POST | `/api/v1/projects/:projectId/tasks/:taskId/dependencies` | Finish-to-start predecessors (cycle/self/dup/cross-project rejected) |
+| GET / POST | `/api/v1/projects/:projectId/milestones` | List / create Milestone |
+| GET / PATCH | `/api/v1/projects/:projectId/milestones/:milestoneId` | Read / update fields (`status` derived; `recordedStatus` stored) |
+| POST | `/api/v1/projects/:projectId/milestones/:milestoneId/achieve` | Explicit achieve |
+| POST | `/api/v1/projects/:projectId/milestones/:milestoneId/cancel` | Cancel a planned Milestone |
 
 `GET /api/v1/auth/session?projectId=` treats `projectId` as routing intent and returns the union of org-scoped + that Project's assignments after server verification.

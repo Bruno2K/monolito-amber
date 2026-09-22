@@ -1,6 +1,6 @@
 # State machines
 
-Encoded for implementers. Planning/Gate machines are **not** wired as APIs in PF-1.4.
+Encoded for implementers. Gate machines are **not** wired as APIs in PF-1.5.
 
 ## Organization membership
 `INVITED → ACTIVE → SUSPENDED | REMOVED`  
@@ -32,11 +32,11 @@ Auto-created as PENDING_ANALYSIS on `CurrentRevisionChanged` / `NewBaseEstablish
 Sides: REJECTED, CANCELLED, REOPENED.  
 `RESOLVED` ≠ `CLOSED`. Origin is IMPACT | MANUAL (server-derived).
 
-## Task (0.5)
-`TODO → IN_PROGRESS → BLOCKED | DONE` (CANCELLED side). BLOCKED requires `blocked_reason`.
+## Task (0.5 / PF-1.5)
+`TODO → IN_PROGRESS → BLOCKED | DONE` (CANCELLED side). BLOCKED requires `blockedReason`. Lateness is derived — there is no OVERDUE status. IN_PROGRESS is denied while a finish-to-start prerequisite is not DONE.
 
-## Milestone (0.5)
-`PLANNED | AT_RISK | ACHIEVED | MISSED | CANCELLED` — AT_RISK preferably derived.
+## Milestone (0.5 / PF-1.5)
+Stored: `PLANNED | ACHIEVED | CANCELLED`. Derived on read: `AT_RISK` (late linked Task) or `MISSED` (past `targetDate` while still PLANNED). ACHIEVED is explicit. See ADR-016.
 
 ## Gate (0.5)
 `NOT_READY | BLOCKED | READY | RELEASED | RELEASED_WITH_EXCEPTION`  
