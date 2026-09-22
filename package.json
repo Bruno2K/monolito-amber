@@ -1,0 +1,52 @@
+{
+  "name": "monolito-amber",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Amber Modular Monolith — BIM coordination and governance platform foundation",
+  "packageManager": "pnpm@10.33.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "pnpm --filter @amber/shared build && pnpm -r --if-present typecheck",
+    "test": "pnpm test:unit && pnpm test:security && pnpm test:integration",
+    "test:unit": "pnpm --filter @amber/shared build && pnpm -r --if-present test:unit",
+    "test:security": "pnpm --filter @amber/shared build && pnpm --filter @amber/shared test:security && pnpm --filter @amber/api test:security",
+    "test:integration": "pnpm --filter @amber/api test:integration",
+    "build": "pnpm --filter @amber/shared build && pnpm --filter @amber/api build && pnpm --filter @amber/worker build && pnpm --filter @amber/web build",
+    "openapi:generate": "pnpm --filter @amber/api openapi:generate",
+    "openapi:validate": "pnpm --filter @amber/api openapi:validate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:validate": "prisma validate && tsx scripts/validate-migrations.ts",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "assert:no-gate-override": "tsx scripts/assert-no-gate-override.ts",
+    "harness": "tsx scripts/harness.ts"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "@types/node": "^22.18.0",
+    "eslint": "^9.35.0",
+    "prettier": "^3.6.2",
+    "prisma": "^6.16.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.43.0",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.16.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "prisma",
+      "esbuild",
+      "@nestjs/core"
+    ]
+  }
+}

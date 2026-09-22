@@ -1,0 +1,162 @@
+{
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "operationId": "HealthController_getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "API is up"
+          }
+        },
+        "summary": "Liveness/readiness for the foundation API",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/auth/session": {
+      "get": {
+        "operationId": "AuthController_getSession",
+        "parameters": [
+          {
+            "name": "x-session-token-hash",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Return the session-bound active Organization (never trust client orgId)",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/active-organization": {
+      "post": {
+        "operationId": "AuthController_switchOrg",
+        "parameters": [
+          {
+            "name": "x-session-token-hash",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Org-switch stub: re-validates ACTIVE membership then binds session org server-side",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/catalog/permissions": {
+      "get": {
+        "operationId": "CatalogController_listPermissions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Closed 0.2A permission catalog (Formal Exception is the sole Gate bypass)",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/catalog/role-templates": {
+      "get": {
+        "operationId": "CatalogController_listTemplates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Default Role templates from 0.2A §2",
+        "tags": [
+          "catalog"
+        ]
+      }
+    },
+    "/api/v1/files/{objectId}/access": {
+      "get": {
+        "operationId": "FilesController_access",
+        "parameters": [
+          {
+            "name": "intent",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "download",
+                "preview"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "objectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Evaluate fail-closed file access (F-08). Does not stream binaries. Vendor OPEN.",
+        "tags": [
+          "files"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Amber API",
+    "description": "Amber Modular Monolith foundation API. Formal Exception is the sole Gate bypass. Closed 0.2A catalog only.",
+    "version": "1.0.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": ""
+    },
+    {
+      "name": "auth",
+      "description": ""
+    },
+    {
+      "name": "catalog",
+      "description": ""
+    },
+    {
+      "name": "files",
+      "description": ""
+    }
+  ],
+  "servers": [],
+  "components": {
+    "schemas": {}
+  }
+}

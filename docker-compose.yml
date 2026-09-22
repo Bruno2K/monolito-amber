@@ -1,0 +1,43 @@
+# Local foundation stack. Redis is optional until the first justified job ships.
+# Malware scan vendor remains OPEN (implementation choice); fail-closed policy is closed (F-08).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: amber
+      POSTGRES_PASSWORD: amber
+      POSTGRES_DB: amber
+    ports:
+      - "5432:5432"
+    volumes:
+      - amber_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U amber -d amber"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: amberminio
+      MINIO_ROOT_PASSWORD: amberminio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - amber_minio:/data
+
+  # Enable when notifications/email/scan jobs ship (0.6). Not required for PF-1.0 runtime.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    profiles:
+      - jobs
+
+volumes:
+  amber_pg:
+  amber_minio:

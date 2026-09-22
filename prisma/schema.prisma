@@ -1,0 +1,346 @@
+// Amber foundation schema — Modular Monolith, schema-per-module (0.6).
+// Product workflows (Documents/Coordination/Planning/Gates) are out of scope for PF-1.0.
+// Seed permissions ONLY from APPROVED 0.2A. There is no gate.override.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["identity", "org", "project", "document", "audit", "jobs"]
+}
+
+// ---------------------------------------------------------------------------
+// identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String    @unique
+  displayName   String    @map("display_name")
+  deactivatedAt DateTime? @map("deactivated_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  passwordCredential PasswordCredential?
+  sessions           Session[]
+  memberships        OrganizationMembership[]
+  invitationsSent    Invitation[]             @relation("InvitationInviter")
+
+  @@map("users")
+  @@schema("identity")
+}
+
+/// Argon2id required (0.2A). bcrypt only as documented fallback.
+model PasswordCredential {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String    @unique @map("user_id") @db.Uuid
+  algorithm         String
+  hash              String
+  parameters        Json
+  failedAttempts    Int       @default(0) @map("failed_attempts")
+  lockedUntil       DateTime? @map("locked_until")
+  passwordChangedAt DateTime  @default(now()) @map("password_changed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("password_credentials")
+  @@schema("identity")
+}
+
+/// Opaque session. Cookie holds random token; server stores hash only (0.2A).
+/// Active organization is session-bound — never trust client orgId (F-04).
+model Session {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String    @map("user_id") @db.Uuid
+  tokenHash            String    @unique @map("token_hash")
+  activeOrganizationId String?   @map("active_organization_id") @db.Uuid
+  createdAt            DateTime  @default(now()) @map("created_at")
+  lastSeenAt           DateTime  @default(now()) @map("last_seen_at")
+  expiresAt            DateTime  @map("expires_at")
+  revokedAt            DateTime? @map("revoked_at")
+  revokeReason         String?   @map("revoke_reason")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("sessions")
+  @@schema("identity")
+}
+
+/// Invitation tokens stored hashed only; default expiry 7 days (0.2A).
+model Invitation {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  email          String
+  tokenHash      String    @unique @map("token_hash")
+  invitedById    String    @map("invited_by_id") @db.Uuid
+  expiresAt      DateTime  @map("expires_at")
+  acceptedAt     DateTime? @map("accepted_at")
+  revokedAt      DateTime? @map("revoked_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  invitedBy User @relation("InvitationInviter", fields: [invitedById], references: [id])
+
+  @@map("invitations")
+  @@schema("identity")
+}
+
+/// Reset tokens hashed; default expiry 30 minutes; success revokes all sessions (0.2A).
+model PasswordResetToken {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+  @@schema("identity")
+}
+
+/// TOTP MFA required for Org Admin + Governance Approver (0.2A). Skeleton only.
+model MfaTotpCredential {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  secretHash  String    @map("secret_hash")
+  verifiedAt  DateTime? @map("verified_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([userId])
+  @@map("mfa_totp_credentials")
+  @@schema("identity")
+}
+
+// ---------------------------------------------------------------------------
+// org
+// ---------------------------------------------------------------------------
+
+model Organization {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  slug      String   @unique
+  version   Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  memberships OrganizationMembership[]
+  roles       RoleDefinition[]
+  projects    Project[]
+
+  @@map("organizations")
+  @@schema("org")
+}
+
+model OrganizationMembership {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  type           String
+  status         String
+  version        Int       @default(1)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deactivatedAt  DateTime? @map("deactivated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+  roleBindings RoleBinding[]
+
+  @@unique([organizationId, userId])
+  @@map("organization_memberships")
+  @@schema("org")
+}
+
+/// Closed 0.2A permission catalog. No invented codes. No gate.override.
+model PermissionDefinition {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique
+  module      String
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permission_definitions")
+  @@schema("org")
+}
+
+/// Default Amber Role templates from 0.2A §2. Orgs may clone/rename later.
+model RoleDefinition {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String?  @map("organization_id") @db.Uuid
+  templateKey    String   @map("template_key")
+  name           String
+  description    String
+  isSystemTemplate Boolean @default(true) @map("is_system_template")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  organization    Organization?    @relation(fields: [organizationId], references: [id])
+  rolePermissions RolePermission[]
+  bindings        RoleBinding[]
+
+  @@unique([organizationId, templateKey])
+  @@map("role_definitions")
+  @@schema("org")
+}
+
+model RolePermission {
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       RoleDefinition       @relation(fields: [roleId], references: [id])
+  permission PermissionDefinition @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+  @@schema("org")
+}
+
+model RoleBinding {
+  id           String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  membershipId String @map("membership_id") @db.Uuid
+  roleId       String @map("role_id") @db.Uuid
+  projectId    String? @map("project_id") @db.Uuid
+
+  membership OrganizationMembership @relation(fields: [membershipId], references: [id])
+  role       RoleDefinition         @relation(fields: [roleId], references: [id])
+
+  @@map("role_bindings")
+  @@schema("org")
+}
+
+// ---------------------------------------------------------------------------
+// project — skeleton only (Projects & Membership is the next slice)
+// ---------------------------------------------------------------------------
+
+model Project {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  name           String
+  version        Int      @default(1)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  objects      StoredObject[]
+
+  @@index([organizationId])
+  @@map("projects")
+  @@schema("project")
+}
+
+// ---------------------------------------------------------------------------
+// document — file-trust primitive only (no revision/document workflow)
+// ---------------------------------------------------------------------------
+
+enum ScanStatus {
+  PENDING
+  CLEAN
+  BLOCKED
+
+  @@schema("document")
+}
+
+/// Object metadata + scan_status. Download/preview fail-closed unless CLEAN (F-08).
+/// Vendor for scanning remains OPEN (implementation choice).
+model StoredObject {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String     @map("organization_id") @db.Uuid
+  projectId      String     @map("project_id") @db.Uuid
+  storageKey     String     @map("storage_key")
+  checksumSha256 String     @map("checksum_sha256")
+  mimeType       String     @map("mime_type")
+  byteSize       Int        @map("byte_size")
+  /// Fail-closed: PENDING / scan failure = deny; CLEAN = authorized access; BLOCKED = deny + security event.
+  scanStatus     ScanStatus @default(PENDING) @map("scan_status")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId, projectId])
+  @@map("stored_objects")
+  @@schema("document")
+}
+
+// ---------------------------------------------------------------------------
+// audit — INSERT (+SELECT) for app role; NO UPDATE/DELETE (F-09)
+// ---------------------------------------------------------------------------
+
+model AuditEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  projectId      String?  @map("project_id") @db.Uuid
+  actorUserId    String?  @map("actor_user_id") @db.Uuid
+  eventType      String   @map("event_type")
+  resourceType   String   @map("resource_type")
+  resourceId     String?  @map("resource_id")
+  correlationId  String   @map("correlation_id")
+  payload        Json
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([organizationId, createdAt])
+  @@map("audit_events")
+  @@schema("audit")
+}
+
+// ---------------------------------------------------------------------------
+// jobs — outbox, idempotency, dead letter (foundation primitives)
+// ---------------------------------------------------------------------------
+
+model OutboxMessage {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventType     String    @map("event_type")
+  payload       Json
+  correlationId String    @map("correlation_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  processedAt   DateTime? @map("processed_at")
+
+  @@index([processedAt, createdAt])
+  @@map("outbox_messages")
+  @@schema("jobs")
+}
+
+model IdempotencyRecord {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  key            String
+  requestHash    String   @map("request_hash")
+  responseStatus Int      @map("response_status")
+  responseBody   Json     @map("response_body")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([organizationId, key])
+  @@map("idempotency_records")
+  @@schema("jobs")
+}
+
+model DeadLetter {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobName       String   @map("job_name")
+  idempotencyKey String  @map("idempotency_key")
+  payload       Json
+  error         String
+  attempts      Int
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("dead_letters")
+  @@schema("jobs")
+}
+
+model JobIdempotency {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  jobKey    String   @unique @map("job_key")
+  result    Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("job_idempotency")
+  @@schema("jobs")
+}
