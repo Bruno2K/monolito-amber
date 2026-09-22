@@ -4,6 +4,7 @@
 | --- | --- |
 | Organization | Tenant |
 | Project | Empreendimento — operational workspace under an Organization |
+| Impact Analysis | Case auto-created on current-base change (`PENDING_ANALYSIS` only). Not an automatic IMPACTED row |
 | Issue | Only coordination problem entity. *Pendência* is a synonym, not a second entity |
 | Task | Planning work item. Task ≠ Issue |
 | Gate | Governance checkpoint over mandatory requirements |

@@ -8,6 +8,7 @@
 - PF-1.1 adds `authentication_identities`, MFA recovery/challenge tables, invitation→organization FK, and session security metadata.
 - PF-1.2 adds `source_template_key`, org-owned RoleDefinition instantiation, `project_memberships`, `project_role_assignments`, and drops `role_bindings.project_id`. Prefer expand-then-contract; do not silently redesign unrelated modules.
 - PF-1.3 adds `document.documents` / `document.revisions`, binds `stored_objects` to documents, and adds tenant + immutability triggers. Additive only.
+- PF-1.4 adds `coordination` schema (`impact_analyses`, `issues`, comments/evidence/history) with tenant-binding triggers. Additive only. No Task/Gate tables.
 
 ```bash
 pnpm prisma:generate

@@ -12,7 +12,7 @@ Make-current, gate release, and Formal Exception decide are contended writes. Du
 - `jobs.outbox_messages` written in the same transaction as the domain write.
 - Job handlers take an idempotency key; exhaustion goes to `jobs.dead_letters`.
 
-`CurrentRevisionChanged` will auto-create an Impact Analysis case (`PENDING_ANALYSIS`) only — not IMPACTED rows, not Issues. Handler belongs to the Coordination slice.
+`CurrentRevisionChanged` auto-creates an Impact Analysis case (`PENDING_ANALYSIS`) only — not IMPACTED rows, not Issues. Handler is implemented in PF-1.4 (ADR-015) as an in-process outbox drain.
 
 ## Alternatives
 - Last-write-wins — rejected.

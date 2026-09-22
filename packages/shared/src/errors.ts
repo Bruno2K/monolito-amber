@@ -180,3 +180,10 @@ export class IdempotencyRequiredError extends AmberError {
     this.name = "IdempotencyRequiredError";
   }
 }
+
+export class CoordinationStateError extends AmberError {
+  constructor(detail: string) {
+    super("COORDINATION_STATE", detail, 409);
+    this.name = "CoordinationStateError";
+  }
+}

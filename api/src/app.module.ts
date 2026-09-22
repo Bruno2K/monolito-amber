@@ -3,6 +3,7 @@ import { AuthModule } from "./auth/auth.module";
 import { AuditModule } from "./audit/audit.module";
 import { AuthzModule } from "./authz/authz.module";
 import { CatalogModule } from "./catalog/catalog.module";
+import { CoordinationModule } from "./coordination/coordination.module";
 import { DocumentModule } from "./document/document.module";
 import { FilesModule } from "./files/files.module";
 import { FoundationModule } from "./foundation/foundation.module";
@@ -24,6 +25,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
     TenancyModule,
     CatalogModule,
     DocumentModule,
+    CoordinationModule,
     FilesModule,
     AuditModule,
     FoundationModule,

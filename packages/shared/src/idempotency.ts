@@ -36,6 +36,10 @@ export const IDEMPOTENCY_REQUIRED_OPERATIONS = [
   "revision.approve",
   "revision.reject",
   "revision.make_current",
+  "impact.assess",
+  "impact.resolve",
+  "issue.create",
+  "issue.status",
   "gate.release",
   "exception.approve",
 ] as const;

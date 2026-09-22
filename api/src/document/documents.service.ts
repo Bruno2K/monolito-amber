@@ -33,6 +33,7 @@ import { FilesService } from "../files/files.service";
 import { UPLOAD_TTL_MS, signObjectGrant } from "../files/object-storage";
 import { FoundationService } from "../foundation/foundation.service";
 import { IdempotencyService } from "../foundation/idempotency.service";
+import { OutboxProcessor } from "../foundation/outbox.processor";
 import { currentCorrelationId } from "../observability/request-context";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -47,6 +48,7 @@ export class DocumentsService {
     private readonly files: FilesService,
     private readonly foundation: FoundationService,
     private readonly idempotency: IdempotencyService,
+    private readonly outbox: OutboxProcessor,
   ) {}
 
   async create(
@@ -602,8 +604,19 @@ export class DocumentsService {
         reason: input.reason?.trim() || undefined,
         isRollback,
       };
-      await this.foundation.appendOutbox(OUTBOX_EVENT_TYPES.CurrentRevisionChanged, payload, currentCorrelationId(), tx);
-      await this.foundation.appendOutbox(OUTBOX_EVENT_TYPES.NewBaseEstablished, payload, currentCorrelationId(), tx);
+      const currentChanged = await this.foundation.appendOutbox(
+        OUTBOX_EVENT_TYPES.CurrentRevisionChanged,
+        payload,
+        currentCorrelationId(),
+        tx,
+      );
+      const newBase = await this.foundation.appendOutbox(
+        OUTBOX_EVENT_TYPES.NewBaseEstablished,
+        payload,
+        currentCorrelationId(),
+        tx,
+      );
+      await this.outbox.processIds([currentChanged.id, newBase.id], tx);
       await this.audit.insert(
         {
           organizationId: bound.document.organizationId,

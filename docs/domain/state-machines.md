@@ -1,6 +1,6 @@
 # State machines
 
-Encoded for implementers. Coordination/Planning/Gate machines are **not** wired as APIs in PF-1.3.
+Encoded for implementers. Planning/Gate machines are **not** wired as APIs in PF-1.4.
 
 ## Organization membership
 `INVITED → ACTIVE → SUSPENDED | REMOVED`  
@@ -25,11 +25,12 @@ Encoded for implementers. Coordination/Planning/Gate machines are **not** wired 
 
 ## Impact (0.4 + Final Reconciliation)
 `PENDING_ANALYSIS → IMPACTED | NOT_IMPACTED → RESOLVED`  
-Auto-created as PENDING_ANALYSIS on `CurrentRevisionChanged`. **Not implemented in PF-1.3** — outbox event only.
+Auto-created as PENDING_ANALYSIS on `CurrentRevisionChanged` / `NewBaseEstablished` (exactly one case per change event). Assessment is explicit. Resolve is denied while linked Issues are open/active (including RESOLVED).
 
 ## Issue
 `OPEN → IN_ANALYSIS → IN_PROGRESS → READY_FOR_REVIEW → RESOLVED → CLOSED`  
-Sides: REJECTED, CANCELLED, REOPENED.
+Sides: REJECTED, CANCELLED, REOPENED.  
+`RESOLVED` ≠ `CLOSED`. Origin is IMPACT | MANUAL (server-derived).
 
 ## Task (0.5)
 `TODO → IN_PROGRESS → BLOCKED | DONE` (CANCELLED side). BLOCKED requires `blocked_reason`.

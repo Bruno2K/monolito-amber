@@ -253,7 +253,7 @@ describe("PF-1.3 Documents & Revisions Foundation", () => {
     expect(publisherCurrent.body.code).toBe("SOD_VIOLATION");
   });
 
-  it("makes current with CAS, rolls back an older APPROVED, and emits events without Impact/Issue", async () => {
+  it("makes current with CAS, rolls back an older APPROVED, and emits events without auto-Issues", async () => {
     const current = await reviewer
       .post(`/api/v1/projects/${projectA}/documents/${documentId}/revisions/${revisionR1}/make-current`)
       .set("Idempotency-Key", `cur-r1-${suffix}`)
@@ -334,12 +334,18 @@ describe("PF-1.3 Documents & Revisions Foundation", () => {
       expect(payload.newRevisionId).toBeTruthy();
     }
 
-    const tables = await prisma.$queryRaw<{ table_schema: string; table_name: string }[]>`
-      SELECT table_schema, table_name
-      FROM information_schema.tables
-      WHERE table_name IN ('impacts', 'issues', 'impact_analyses')
-    `;
-    expect(tables).toEqual([]);
+    const cases = await prisma.impactAnalysis.findMany({
+      where: { documentId },
+      orderBy: { createdAt: "asc" },
+    });
+    expect(cases.length).toBe(3);
+    expect(cases.every((row) => row.status === "PENDING_ANALYSIS")).toBe(true);
+    expect(cases.every((row) => row.assessmentResult == null)).toBe(true);
+    const uniqueKeys = new Set(cases.map((row) => row.changeKey));
+    expect(uniqueKeys.size).toBe(3);
+    const autoIssues = await prisma.issue.findMany({ where: { documentId: undefined, projectId: projectA } });
+    expect(autoIssues.filter((row) => row.impactAnalysisId != null)).toHaveLength(0);
+    expect(autoIssues).toHaveLength(0);
 
     const download = await reviewer.get(
       `/api/v1/projects/${projectA}/documents/${documentId}/revisions/${revisionR1}/download-url`,

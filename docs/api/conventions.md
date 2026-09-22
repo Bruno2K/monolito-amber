@@ -65,7 +65,20 @@ Identity & Organizations routes:
 | POST | `.../revisions/:revisionId/review` | PUBLISHED → UNDER_REVIEW |
 | POST | `.../revisions/:revisionId/approve` | Approve (SoD; Idempotency-Key) |
 | POST | `.../revisions/:revisionId/reject` | Reject + reason (preserved; SoD) |
-| POST | `.../revisions/:revisionId/make-current` | CAS current pointer / rollback (SoD) |
+| POST | `.../revisions/:revisionId/make-current` | CAS current pointer / rollback (SoD); Coordination consumes outbox |
 | GET | `.../revisions/:revisionId/download-url` | Short-lived GET after CLEAN |
+| GET | `/api/v1/projects/:projectId/impacts` | List Impact Analysis cases |
+| GET | `/api/v1/projects/:projectId/impacts/:impactId` | Read Impact Analysis case |
+| POST | `/api/v1/projects/:projectId/impacts/:impactId/assess` | Explicit IMPACTED \| NOT_IMPACTED (Idempotency-Key) |
+| POST | `/api/v1/projects/:projectId/impacts/:impactId/resolve` | Resolve after assessment; blocked while Issues open/active |
+| POST | `/api/v1/projects/:projectId/impacts/:impactId/issues` | Explicit Issue-from-Impact |
+| GET / POST | `/api/v1/projects/:projectId/issues` | List / create manual Issue |
+| GET / PATCH | `/api/v1/projects/:projectId/issues/:issueId` | Read / update fields |
+| POST | `/api/v1/projects/:projectId/issues/:issueId/assign` | Assign user (discipline unchanged) |
+| POST | `/api/v1/projects/:projectId/issues/:issueId/status` | Lifecycle transition (RESOLVED ≠ CLOSED) |
+| POST | `/api/v1/projects/:projectId/issues/:issueId/reopen` | CLOSED → REOPENED (history preserved) |
+| GET / POST | `/api/v1/projects/:projectId/issues/:issueId/comments` | Minimal comments |
+| GET / POST | `/api/v1/projects/:projectId/issues/:issueId/evidence` | Minimal evidence |
+| GET | `/api/v1/projects/:projectId/issues/:issueId/history` | Status history |
 
 `GET /api/v1/auth/session?projectId=` treats `projectId` as routing intent and returns the union of org-scoped + that Project's assignments after server verification.
