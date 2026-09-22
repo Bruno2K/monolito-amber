@@ -395,7 +395,7 @@ describe("PF-1.4 Coordination / Impact Analysis Foundation", () => {
     expect(patched.body.assigneeUserId).toBeTruthy();
   });
 
-  it("isolates tenants and forbids Task/Gate tables plus product Coordination UI tokens", async () => {
+  it("isolates tenants and keeps Gates out of Coordination while Planning tables live in planning", async () => {
     const crossIssue = await ownerB.get(`/api/v1/projects/${projectA}/issues/${impactIssueId}`);
     expect(crossIssue.status).toBe(403);
     const spoofCreate = await ownerB
@@ -414,7 +414,20 @@ describe("PF-1.4 Coordination / Impact Analysis Foundation", () => {
       WHERE table_schema IN ('coordination', 'planning', 'governance')
         AND table_name IN ('tasks', 'milestones', 'gates', 'formal_exceptions', 'task_dependencies')
     `;
-    expect(tables).toEqual([]);
+    expect(
+      tables.filter(
+        (row) =>
+          row.table_name === "gates" ||
+          row.table_name === "formal_exceptions" ||
+          row.table_schema === "coordination" ||
+          row.table_schema === "governance",
+      ),
+    ).toEqual([]);
+    expect(tables.filter((row) => row.table_schema === "planning").map((row) => row.table_name).sort()).toEqual([
+      "milestones",
+      "task_dependencies",
+      "tasks",
+    ]);
 
     const document = await reviewer.get(`/api/v1/projects/${projectA}/documents/${documentId}`);
     expect(document.body.currentRevisionId).toBe(revisionR1);

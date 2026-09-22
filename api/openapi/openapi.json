@@ -2293,12 +2293,572 @@
           "coordination"
         ]
       }
+    },
+    "/api/v1/projects/{projectId}/tasks": {
+      "get": {
+        "operationId": "TasksController_list",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List Tasks for an authorized Project (Task ≠ Issue)",
+        "tags": [
+          "planning"
+        ]
+      },
+      "post": {
+        "operationId": "TasksController_create",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a standalone Task or an optional same-Project Issue-linked Task",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}": {
+      "get": {
+        "operationId": "TasksController_get",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Read one Task. late is derived; there is no OVERDUE status.",
+        "tags": [
+          "planning"
+        ]
+      },
+      "patch": {
+        "operationId": "TasksController_update",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update Task fields. Status and assignee use dedicated endpoints.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/assign": {
+      "post": {
+        "operationId": "TasksController_assign",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Assign a Task to an ACTIVE ProjectMembership only",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/status": {
+      "post": {
+        "operationId": "TasksController_transition",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Transition Task status. DONE requires task.complete. BLOCKED requires blockedReason.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/complete": {
+      "post": {
+        "operationId": "TasksController_complete",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Mark a Task DONE. Does not resolve a source Issue or achieve a Milestone.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/dependencies": {
+      "get": {
+        "operationId": "TasksController_listDependencies",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List finish-to-start dependencies for a Task",
+        "tags": [
+          "planning"
+        ]
+      },
+      "post": {
+        "operationId": "TasksController_addDependency",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Add a finish-to-start predecessor. Rejects self, duplicate, cycle, and cross-project.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/milestones": {
+      "get": {
+        "operationId": "MilestonesController_list",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List Milestones. status is derived; recordedStatus is the stored explicit state.",
+        "tags": [
+          "planning"
+        ]
+      },
+      "post": {
+        "operationId": "MilestonesController_create",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a Milestone in PLANNED. AT_RISK / MISSED are derived, not client-set.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/milestones/{milestoneId}": {
+      "get": {
+        "operationId": "MilestonesController_get",
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "planning"
+        ]
+      },
+      "patch": {
+        "operationId": "MilestonesController_update",
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update Milestone fields. Status is not patchable.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/milestones/{milestoneId}/achieve": {
+      "post": {
+        "operationId": "MilestonesController_achieve",
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicitly achieve a Milestone. Completing linked Tasks does not achieve it.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/milestones/{milestoneId}/cancel": {
+      "post": {
+        "operationId": "MilestonesController_cancel",
+        "parameters": [
+          {
+            "name": "milestoneId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Cancel a planned Milestone",
+        "tags": [
+          "planning"
+        ]
+      }
     }
   },
   "info": {
     "title": "Amber API",
     "description": "Amber Modular Monolith foundation API. Formal Exception is the sole Gate bypass. Closed 0.2A catalog only.",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "contact": {}
   },
   "tags": [
@@ -2324,6 +2884,10 @@
     },
     {
       "name": "coordination",
+      "description": ""
+    },
+    {
+      "name": "planning",
       "description": ""
     },
     {

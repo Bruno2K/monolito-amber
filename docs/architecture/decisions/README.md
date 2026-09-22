@@ -2,7 +2,7 @@
 
 Material decisions encoded for PF-1.0 and PF-1.1. Format: Status / Context / Decision / Alternatives / Consequences / Implementation Implications / Supersedes.
 
-Candidates from 0.6–0.8 that are **not** yet product slices (Planning/Governance tables) stay documented here as accepted architecture, not as implemented workflows.
+Governance tables (Gate / Formal Exception) stay documented here as accepted architecture, not as implemented workflows. Planning tables are implemented in PF-1.5 (ADR-016).
 
 | ID | Title |
 | --- | --- |
@@ -21,3 +21,4 @@ Candidates from 0.6–0.8 that are **not** yet product slices (Planning/Governan
 | [ADR-013](./ADR-013-org-owned-roles-project-membership.md) | Org-owned RoleDefinitions + ProjectMembership |
 | [ADR-014](./ADR-014-revision-immutability-explicit-current.md) | Revision immutability & explicit current revision |
 | [ADR-015](./ADR-015-impact-analysis-outbox-consumer.md) | Impact Analysis outbox consumer (at-most-one PENDING_ANALYSIS) |
+| [ADR-016](./ADR-016-planning-tasks-milestones.md) | Planning Tasks, finish-to-start deps, derived Milestone risk |

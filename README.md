@@ -6,9 +6,9 @@ This repository is the real product. **`Bruno2K/amber` is the Product Vision lan
 
 Official commercial name remains OPEN; **Amber** is the technical name.
 
-## PF-1.4 — Coordination / Impact Analysis Foundation
+## PF-1.5 — Planning / Tasks / Milestones
 
-Consumes PF-1.3 `CurrentRevisionChanged` to create exactly one Impact Analysis case (`PENDING_ANALYSIS`). Explicit assessment and Issue foundation. **No Coordination UI. No auto-IMPACTED / auto-Issues. No Task/Gate workflows.**
+Task lifecycle, finish-to-start dependencies, and Milestones with derived AT_RISK/MISSED (ADR-016). **Task ≠ Issue.** Completing a Task does not resolve an Issue or achieve a Milestone. **No Planning UI. No Gates / Formal Exceptions.**
 
 PF-1.0 planted the Modular Monolith layout, Prisma, catalog seed, and security stubs.
 

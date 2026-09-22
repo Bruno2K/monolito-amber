@@ -6,7 +6,9 @@
 | Project | Empreendimento — operational workspace under an Organization |
 | Impact Analysis | Case auto-created on current-base change (`PENDING_ANALYSIS` only). Not an automatic IMPACTED row |
 | Issue | Only coordination problem entity. *Pendência* is a synonym, not a second entity |
-| Task | Planning work item. Task ≠ Issue |
+| Task | Planning work item. Task ≠ Issue. Completing a Task does not resolve an Issue |
+| Milestone | Planning checkpoint. ACHIEVED is explicit; AT_RISK / MISSED are derived (ADR-016) |
+| TaskDependency | Finish-to-start predecessor. Acyclic. Same Project only |
 | Gate | Governance checkpoint over mandatory requirements |
 | Formal Exception | Sole approved bypass of an unsatisfied GateRequirement |
 | Document | Stable logical artifact under a Project; identity ≠ filename or storage key |

@@ -16,7 +16,7 @@ TEST_DATABASE_URL=postgresql://amber:amber@127.0.0.1:5432/amber_test
 
 and migrate that database first.
 
-Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-management / ProjectMembership / contextual RBAC / external isolation / Document-Revision tests. The security-gate test fails CI if they are skipped.
+Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-management / ProjectMembership / contextual RBAC / external isolation / Document-Revision / Coordination / Planning tests. The security-gate test fails CI if they are skipped.
 
 ### F-04 tenant-isolation evidence
 
@@ -60,3 +60,11 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | Impact / Issue state machines | `packages/shared/src/impact.test.ts`, `issue.test.ts` |
 | At-most-one change key + no auto-IMPACTED | `packages/shared/src/coordination.security.test.ts` |
 | HTTP auto-create / assess / resolve / Issue lifecycle / isolation | `api/test/integration/coordination-impact.integration.test.ts` |
+
+### PF-1.5 Planning / Tasks / Milestones evidence
+
+| Test | Where |
+| --- | --- |
+| Task / Milestone state machines + lateness + cycle | `packages/shared/src/planning.test.ts` |
+| Catalog / no OVERDUE / derived AT_RISK | `packages/shared/src/planning.security.test.ts` |
+| HTTP lifecycle / deps / isolation / no auto-resolve | `api/test/integration/planning-tasks-milestones.integration.test.ts` |

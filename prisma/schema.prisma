@@ -1,5 +1,5 @@
 // Amber Modular Monolith — schema-per-module (0.6).
-// PF-1.4: Coordination consumes CurrentRevisionChanged (Impact Analysis + Issue).
+// PF-1.5: Planning owns Task / TaskDependency / Milestone. Gates remain out.
 // Seed permissions ONLY from APPROVED 0.2A. There is no gate.override.
 
 generator client {
@@ -10,7 +10,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["identity", "org", "project", "document", "coordination", "audit", "jobs"]
+  schemas  = ["identity", "org", "project", "document", "coordination", "planning", "audit", "jobs"]
 }
 
 // ---------------------------------------------------------------------------
@@ -319,6 +319,8 @@ model Project {
   documents    Document[]
   impactAnalyses ImpactAnalysis[]
   issues         Issue[]
+  tasks          Task[]
+  milestones     Milestone[]
 
   @@index([organizationId])
   @@map("projects")
@@ -469,7 +471,7 @@ model StoredObject {
 
 // ---------------------------------------------------------------------------
 // coordination — Impact Analysis + Issue foundation (PF-1.4 / 0.4)
-// No Task / Milestone / Gate / Formal Exception tables.
+// Tasks live in planning. Completing a Task does not mutate Issue status.
 // ---------------------------------------------------------------------------
 
 /// One case per CurrentRevisionChanged / NewBaseEstablished change event.
@@ -537,6 +539,7 @@ model Issue {
   statusEvents   IssueStatusEvent[]
   comments       IssueComment[]
   evidence       IssueEvidence[]
+  tasks          Task[]
 
   @@index([organizationId, projectId])
   @@index([impactAnalysisId])
@@ -597,6 +600,94 @@ model IssueEvidence {
   @@index([issueId, createdAt])
   @@map("issue_evidence")
   @@schema("coordination")
+}
+
+// ---------------------------------------------------------------------------
+// planning — Task / TaskDependency / Milestone (PF-1.5 / 0.5)
+// Issue ≠ Task. Completing a Task does not resolve an Issue or achieve a Milestone.
+// No Gate / Formal Exception tables.
+// ---------------------------------------------------------------------------
+
+/// Executable work. Optional source Issue and optional Milestone, same Project.
+model Task {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId          String    @map("organization_id") @db.Uuid
+  projectId               String    @map("project_id") @db.Uuid
+  issueId                 String?   @map("issue_id") @db.Uuid
+  milestoneId             String?   @map("milestone_id") @db.Uuid
+  title                   String
+  description             String    @default("")
+  status                  String    @default("TODO")
+  priority                String?
+  responsibleDisciplineId String?   @map("responsible_discipline_id")
+  assigneeUserId          String?   @map("assignee_user_id") @db.Uuid
+  dueDate                 DateTime? @map("due_date")
+  startedAt               DateTime? @map("started_at")
+  completedAt             DateTime? @map("completed_at")
+  blockedReason           String?   @map("blocked_reason")
+  createdByUserId         String    @map("created_by_user_id") @db.Uuid
+  version                 Int       @default(1)
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  project            Project           @relation(fields: [projectId], references: [id])
+  issue              Issue?            @relation(fields: [issueId], references: [id])
+  milestone          Milestone?        @relation(fields: [milestoneId], references: [id])
+  predecessorOf      TaskDependency[]  @relation("TaskAsPredecessor")
+  successorOf        TaskDependency[]  @relation("TaskAsSuccessor")
+
+  @@index([organizationId, projectId])
+  @@index([issueId])
+  @@index([milestoneId])
+  @@map("tasks")
+  @@schema("planning")
+}
+
+/// Finish-to-start only. Unique pair. Same Project. Cycle rejection is application-level.
+model TaskDependency {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId    String   @map("organization_id") @db.Uuid
+  projectId         String   @map("project_id") @db.Uuid
+  predecessorTaskId String   @map("predecessor_task_id") @db.Uuid
+  successorTaskId   String   @map("successor_task_id") @db.Uuid
+  type              String   @default("FINISH_TO_START")
+  createdByUserId   String   @map("created_by_user_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  predecessor Task @relation("TaskAsPredecessor", fields: [predecessorTaskId], references: [id])
+  successor   Task @relation("TaskAsSuccessor", fields: [successorTaskId], references: [id])
+
+  @@unique([predecessorTaskId, successorTaskId])
+  @@index([organizationId, projectId])
+  @@index([successorTaskId])
+  @@map("task_dependencies")
+  @@schema("planning")
+}
+
+/// Project checkpoint. ACHIEVED is explicit. AT_RISK / MISSED are derived on read.
+model Milestone {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId   String    @map("organization_id") @db.Uuid
+  projectId        String    @map("project_id") @db.Uuid
+  title            String
+  description      String    @default("")
+  /// Stored explicit state only: PLANNED | ACHIEVED | CANCELLED.
+  status           String    @default("PLANNED")
+  targetDate       DateTime? @map("target_date")
+  achievedByUserId String?   @map("achieved_by_user_id") @db.Uuid
+  achievedAt       DateTime? @map("achieved_at")
+  cancelledByUserId String?  @map("cancelled_by_user_id") @db.Uuid
+  cancelledAt      DateTime? @map("cancelled_at")
+  version          Int       @default(1)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+  tasks   Task[]
+
+  @@index([organizationId, projectId])
+  @@map("milestones")
+  @@schema("planning")
 }
 
 // ---------------------------------------------------------------------------

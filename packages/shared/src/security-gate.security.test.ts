@@ -13,6 +13,7 @@ const REQUIRED = [
   "contextual-rbac.security.test.ts",
   "document-revision.security.test.ts",
   "coordination.security.test.ts",
+  "planning.security.test.ts",
 ];
 
 const SKIP_RE = /\.skip\s*\(|describe\.skip|it\.skip|xit\s*\(|xdescribe\s*\(/;

@@ -4,26 +4,26 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 
 | Field | Value |
 | --- | --- |
-| Work Item | PF-1.4 — Coordination / Impact Analysis Foundation |
+| Work Item | PF-1.5 — Planning / Tasks / Milestones |
 | Status | ACTIVE |
-| Issue | https://github.com/Bruno2K/monolito-amber/issues/11 |
-| Branch | `pf-1.4-coordination-impact-foundation` |
+| Issue | https://github.com/Bruno2K/monolito-amber/issues/13 |
+| Branch | `pf-1.5-planning-tasks-milestones` |
 | PR | (see open PR on this branch) |
 | SHA | (see latest commit on the branch) |
 | Repo | `Bruno2K/monolito-amber` |
-| Base | `main` @ `c4d9dffaad275f6419e5ff1fc8b732e690cfac3d` (PF-1.3 merged) |
-| Prior WI | PF-1.3 Documents & Revisions Foundation — DONE (PR #10, merge `c4d9dffaad275f6419e5ff1fc8b732e690cfac3d`) |
-| Next WI | Planning / Notifications — after PF-1.4 Exit Gate |
+| Base | `main` @ `404cfc5bdc9961f79392010bb012ba8f2b1a002a` (PF-1.4 merged) |
+| Prior WI | PF-1.4 Coordination / Impact Analysis Foundation — DONE (PR #12, merge `404cfc5bdc9961f79392010bb012ba8f2b1a002a`) |
+| Next WI | Governance / Gates / Formal Exceptions — after PF-1.5 Exit Gate |
 | Exit Gate | Reviewer PASS + green CI; Governor merges |
 | Merge | Not authorized from this slice |
 
 ## In-scope
 
-1. Idempotent outbox consumer for `CurrentRevisionChanged` / `NewBaseEstablished`
-2. Exactly one Impact Analysis case (`PENDING_ANALYSIS`) per change event
-3. Explicit assessment + Impact resolve blocked while linked Issues are open/active
-4. Issue foundation (RESOLVED ≠ CLOSED; Severity ≠ Priority; discipline ≠ assignee; origin IMPACT \| MANUAL)
-5. Explicit Issue-from-Impact + manual Issue; project-scoped `issue.*`
-6. Minimal comments/evidence (no collaboration UI)
-7. Audit + OpenAPI + ADR-015; no Task/Planning/Gate/Exception tables
-8. Preserve PF-1.1R / PF-1.2 / PF-1.3; no `gate.override`; no Coordination UI
+1. Task lifecycle TODO→IN_PROGRESS→BLOCKED→DONE (+ CANCELLED); BLOCKED requires reason; lateness derived
+2. Optional source Issue same Org/Project; standalone Tasks OK; Issue → 0..N Tasks
+3. Assignment only to ACTIVE ProjectMembership
+4. Finish-to-start TaskDependency; reject self/dup/cycle/cross-project; cannot IN_PROGRESS while prerequisite not DONE
+5. Milestone PLANNED/AT_RISK/ACHIEVED/MISSED/CANCELLED; explicit achieve; derived AT_RISK/MISSED (ADR-016 baseline)
+6. PF-1.2 AuthZ (`task.*` / `milestone.*`); never trust client projectId
+7. Audit + idempotency on create/DONE/achieve/dependency
+8. OpenAPI + ADR-016 + docs; isolation + PF-1.1R…1.4 regression; no `gate.override`; no Planning UI

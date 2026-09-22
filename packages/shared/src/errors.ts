@@ -187,3 +187,10 @@ export class CoordinationStateError extends AmberError {
     this.name = "CoordinationStateError";
   }
 }
+
+export class PlanningStateError extends AmberError {
+  constructor(detail: string) {
+    super("PLANNING_STATE", detail, 409);
+    this.name = "PlanningStateError";
+  }
+}
