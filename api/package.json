@@ -38,6 +38,7 @@
     "@nestjs/cli": "^11.0.10",
     "@nestjs/testing": "^11.1.6",
     "@readme/openapi-parser": "^2.7.0",
+    "@swc/core": "^1.16.2",
     "@testcontainers/postgresql": "^11.5.1",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.3",
@@ -48,6 +49,7 @@
     "testcontainers": "^11.5.1",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
+    "unplugin-swc": "^2.0.0",
     "vitest": "^3.2.4"
   }
 }

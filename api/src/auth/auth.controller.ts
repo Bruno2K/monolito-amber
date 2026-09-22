@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Req, Res, UseGuards } from "@nestjs/common
 import { ApiCookieAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from "@nestjs/swagger";
 import { IsEmail, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
 import type { Request, Response } from "express";
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@amber/shared";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, SessionExpiredError, SessionRevokedError } from "@amber/shared";
 import { AuthService } from "./auth.service";
 import { CurrentSession } from "./current-session.decorator";
 import { clearSessionCookie, readSessionToken, setSessionCookie } from "./session.cookie";
@@ -200,8 +200,15 @@ export class AuthController {
   @ApiCookieAuth()
   async getSession(@Req() req: Request & AuthenticatedRequest) {
     const token = readSessionToken(req.cookies, req.header("x-session-token") ?? undefined);
-    const session = await this.auth.loadSessionByToken(token);
-    return this.auth.sessionView(session);
+    try {
+      const session = await this.auth.loadSessionByToken(token);
+      return this.auth.sessionView(session);
+    } catch (error) {
+      if (error instanceof SessionRevokedError || error instanceof SessionExpiredError) {
+        return this.auth.sessionView(null);
+      }
+      throw error;
+    }
   }
 
   @Post("active-organization")

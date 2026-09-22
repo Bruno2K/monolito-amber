@@ -83,8 +83,9 @@ describe("PF-1.1 identity integration", () => {
     const owner = request.agent(app.getHttpServer());
     await owner.post("/api/v1/auth/login").send({ email: `owner-${suffix}@example.com`, password: PASSWORD });
     const orgs = await owner.get("/api/v1/organizations");
-    const orgId = (orgs.body as Array<{ active: boolean; id: string }>).find((row) => row.active)?.id;
+    const orgId = (orgs.body as Array<{ active: boolean; id: string }>)[0]?.id;
     expect(orgId).toBeTruthy();
+    await owner.post("/api/v1/auth/active-organization").send({ organizationId: orgId });
     const invited = await owner.post(`/api/v1/organizations/${orgId}/invitations`).send({
       email: `member-${suffix}@example.com`,
       roleTemplateKey: "VIEWER",

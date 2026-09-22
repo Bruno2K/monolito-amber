@@ -47,7 +47,8 @@
       "prisma",
       "esbuild",
       "@nestjs/core",
-      "argon2"
+      "argon2",
+      "@swc/core"
     ]
   }
 }

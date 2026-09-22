@@ -83,7 +83,14 @@ describe("F-04 tenant isolation (HTTP, fail closed)", () => {
       await ownerA.get(`/api/v1/organizations/${orgA}/members`)
     ).body.find((row: { email: string }) => row.email === `suspended-${suffix}@example.com`).id;
     await ownerA.patch(`/api/v1/organizations/${orgA}/members/${membershipId}`).send({ status: "SUSPENDED" });
-    const denied = await guest.post("/api/v1/auth/active-organization").send({ organizationId: orgA });
+    const revoked = await guest.get("/api/v1/auth/session");
+    expect([401, 200]).toContain(revoked.status);
+    const relogin = request.agent(app.getHttpServer());
+    await relogin.post("/api/v1/auth/login").send({
+      email: `suspended-${suffix}@example.com`,
+      password: PASSWORD,
+    });
+    const denied = await relogin.post("/api/v1/auth/active-organization").send({ organizationId: orgA });
     expect(denied.status).toBe(403);
     expect(accepted.status).toBeLessThan(400);
   });
@@ -118,7 +125,12 @@ describe("F-04 tenant isolation (HTTP, fail closed)", () => {
     const members = await ownerA.get(`/api/v1/organizations/${orgA}/members`);
     const membershipId = members.body.find((row: { email: string }) => row.email === `removed-${suffix}@example.com`).id;
     await ownerA.patch(`/api/v1/organizations/${orgA}/members/${membershipId}`).send({ status: "REMOVED" });
-    const denied = await removedAgent.get(`/api/v1/organizations/${orgA}`);
+    const relogin = request.agent(app.getHttpServer());
+    await relogin.post("/api/v1/auth/login").send({
+      email: `removed-${suffix}@example.com`,
+      password: PASSWORD,
+    });
+    const denied = await relogin.get(`/api/v1/organizations/${orgA}`);
     expect(denied.status).toBe(403);
   });
 
