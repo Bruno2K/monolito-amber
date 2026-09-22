@@ -1,4 +1,4 @@
-import { DenyByDefaultError } from "./errors.js";
+import { DenyByDefaultError, MfaRequiredError } from "./errors.js";
 import {
   MFA_REQUIRED_ROLE_KEYS,
   type RoleTemplateKey,
@@ -20,6 +20,11 @@ export interface AuthzContext {
   membershipType: MembershipType;
   grants: readonly RoleGrant[];
   projectId?: string | null;
+  /**
+   * True when MFA is not required for the current grants, or when the required
+   * TOTP factor is enrolled. Privileged grants fail closed unless this is true.
+   */
+  mfaSatisfied?: boolean;
 }
 
 export const ORG_WIDE_PERMISSIONS: readonly PermissionCode[] = [
@@ -31,7 +36,14 @@ export const ORG_WIDE_PERMISSIONS: readonly PermissionCode[] = [
   "organization.read_audit",
 ];
 
-export function resolvePermissions(context: AuthzContext): PermissionCode[] {
+export function isMfaRequiredRole(templateKey: string): boolean {
+  return (MFA_REQUIRED_ROLE_KEYS as readonly string[]).includes(templateKey);
+}
+
+export function resolvePermissions(
+  context: AuthzContext,
+  options?: { ignoreMfaGate?: boolean },
+): PermissionCode[] {
   if (!isUsableMembership(context.membershipStatus)) {
     return [];
   }
@@ -39,10 +51,18 @@ export function resolvePermissions(context: AuthzContext): PermissionCode[] {
   for (const grant of context.grants) {
     const orgWide = grant.projectId == null;
     const projectMatch = context.projectId != null && grant.projectId === context.projectId;
-    if (orgWide || projectMatch) {
-      for (const permission of grant.permissions) {
-        granted.add(permission);
-      }
+    if (!(orgWide || projectMatch)) {
+      continue;
+    }
+    if (
+      !options?.ignoreMfaGate &&
+      isMfaRequiredRole(grant.templateKey) &&
+      context.mfaSatisfied !== true
+    ) {
+      continue;
+    }
+    for (const permission of grant.permissions) {
+      granted.add(permission);
     }
   }
   return [...granted];
@@ -59,13 +79,24 @@ export function assertPermission(context: AuthzContext, required: PermissionCode
       required === "organization.read_audit" ? "audit" : "org_directory",
     );
   }
+  const unrestricted = resolvePermissions(context, { ignoreMfaGate: true });
+  if (unrestricted.includes(required) && !hasPermission(context, required)) {
+    throw new MfaRequiredError("Privileged authorization requires MFA");
+  }
   if (!hasPermission(context, required)) {
     throw new DenyByDefaultError(`Missing permission ${required}`);
   }
 }
 
 export function requiresMfaEnrollment(templateKeys: readonly string[]): boolean {
-  return templateKeys.some((key) => (MFA_REQUIRED_ROLE_KEYS as readonly string[]).includes(key));
+  return templateKeys.some((key) => isMfaRequiredRole(key));
+}
+
+export function mfaRequirementSatisfied(input: {
+  templateKeys: readonly string[];
+  enrolled: boolean;
+}): boolean {
+  return !requiresMfaEnrollment(input.templateKeys) || input.enrolled;
 }
 
 export function assignedTemplateKeys(grants: readonly RoleGrant[]): RoleTemplateKey[] {

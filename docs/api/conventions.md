@@ -15,7 +15,7 @@ Identity & Organizations routes:
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/v1/health` | Liveness |
-| POST | `/api/v1/auth/register` | User + EMAIL_PASSWORD identity |
+| POST | `/api/v1/auth/register` | First-instance bootstrap only (zero users). Not public self-signup. |
 | POST | `/api/v1/auth/login` | Login / MFA challenge |
 | POST | `/api/v1/auth/logout` | Revoke current session |
 | POST | `/api/v1/auth/logout-all` | Revoke all sessions |

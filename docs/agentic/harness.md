@@ -49,3 +49,5 @@ kill $API_PID
 ```
 
 `pnpm --filter @amber/web build` is included in `pnpm build`.
+
+CI job name: **Foundation & Security Gates** (formerly the slice-specific `PF-1.1 identity gates`). Checks are unchanged: lint, typecheck, unit, security, no-gate-override, integration, build, OpenAPI generate/validate, Prisma validate.

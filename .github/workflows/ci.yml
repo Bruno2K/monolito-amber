@@ -7,7 +7,7 @@ on:
 
 jobs:
   foundation:
-    name: PF-1.1 identity gates
+    name: Foundation & Security Gates
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

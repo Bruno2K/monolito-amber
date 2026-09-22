@@ -11,6 +11,7 @@ import {
   RESET_TTL_MINUTES,
   SessionExpiredError,
   SessionRevokedError,
+  assertBootstrapRegistrationAllowed,
   assertPasswordPolicy,
   assertSessionUsable,
   evaluateLockout,
@@ -56,6 +57,8 @@ export class AuthService {
     token: string;
   }> {
     assertPasswordPolicy(input.password);
+    const existingUserCount = await this.prisma.user.count();
+    assertBootstrapRegistrationAllowed(existingUserCount);
     const email = normalizeEmail(input.email);
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -414,7 +417,7 @@ export class AuthService {
         activeOrganizationId: null,
         membership: null,
         permissions: [],
-        mfa: { required: false, enrolled: false, freshnessOk: false },
+        mfa: { required: false, enrolled: false, satisfied: true, freshnessOk: false },
       };
     }
     const user = await this.prisma.user.findUnique({ where: { id: session.userId } });
@@ -424,6 +427,8 @@ export class AuthService {
     const templateKeys = context
       ? context.grants.map((g) => g.templateKey)
       : await this.authz.templateKeysForUser(session.userId);
+    const enrolled = await this.isMfaEnrolled(session.userId);
+    const required = requiresMfaEnrollment(templateKeys);
     return {
       authenticated: true,
       userId: session.userId,
@@ -439,8 +444,9 @@ export class AuthService {
         : null,
       permissions: context ? this.authz.permissionsOf(context) : [],
       mfa: {
-        required: requiresMfaEnrollment(templateKeys),
-        enrolled: await this.isMfaEnrolled(session.userId),
+        required,
+        enrolled,
+        satisfied: !required || enrolled,
         freshnessOk: isRecentAuthentication(session),
       },
     };

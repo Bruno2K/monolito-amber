@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | F-01 catalog / templates / SoD | CLOSED_AT_SPECIFICATION_LEVEL | Seed + SoD primitives (no fake entities) |
 | F-02 dual bypass | RESOLVED_BY_0.5 | CI forbids `gate.override` / `forceRelease` |
-| F-03 AuthN floors | CLOSED_AT_SPECIFICATION_LEVEL | Argon2id, lockout, hashed tokens, cookie sessions, MFA |
+| F-03 AuthN floors | CLOSED_AT_SPECIFICATION_LEVEL | Argon2id, lockout, hashed tokens, cookie sessions, MFA fail-closed for privileged roles |
 | F-04 isolation | Implemented | HTTP + unit negatives; fail closed if skipped |
 | F-08 malware | Policy CLOSED; vendor OPEN | `scan_status` + fail-closed tests |
 | F-09 audit | CLOSED | Insert-only role + denial tests; security events redact secrets |
