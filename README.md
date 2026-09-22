@@ -6,9 +6,9 @@ This repository is the real product. **`Bruno2K/amber` is the Product Vision lan
 
 Official commercial name remains OPEN; **Amber** is the technical name.
 
-## PF-1.1 — Identity & Organizations
+## PF-1.3 — Documents & Revisions Foundation
 
-AuthN floors, session-bound Organizations, invitations, closed 0.2A catalog, MFA/TOTP, and F-04 isolation evidence. **No product Project/Documents/Coordination/Planning/Gate pages.**
+Document + Revision lifecycle on PF-1.2 contextual RBAC: publish / review / approve / reject / make-current + rollback, StoredObject file-trust, CAS current pointer. **No final Documents UI. No Impact/Issue/Gate workflows.**
 
 PF-1.0 planted the Modular Monolith layout, Prisma, catalog seed, and security stubs.
 
@@ -42,7 +42,7 @@ Milestone 0 Exit Gate: **PASS AT SPECIFICATION LEVEL**. See `docs/` and ADR inde
 - Closed 0.2A permission catalog only — **no `gate.override`**
 - Formal Exception is the **sole** Gate bypass
 - Audit: INSERT (+SELECT); **no UPDATE/DELETE** for the app role
-- Session-bound active Organization; never trust client `orgId` / `projectId`
+- Session-bound active Organization; never trust client `orgId` / `projectId` / `documentId` / `revisionId`
 - File `scan_status` PENDING/CLEAN/BLOCKED — **fail closed** (vendor OPEN)
 - No Kubernetes, microservices, CQRS, event sourcing, or Kafka for MVP
 

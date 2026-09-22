@@ -50,4 +50,4 @@ kill $API_PID
 
 `pnpm --filter @amber/web build` is included in `pnpm build`.
 
-CI job name: **Foundation & Security Gates**. Checks are unchanged: lint, typecheck, unit, security, no-gate-override, integration, build, OpenAPI generate/validate, Prisma validate. PF-1.2 adds ProjectMembership / contextual RBAC / forged `projectId` / coordinator / external isolation evidence. The security-gate test fails closed if those files are missing or skipped.
+CI job name: **Foundation & Security Gates**. Checks are unchanged: lint, typecheck, unit, security, no-gate-override, integration, build, OpenAPI generate/validate, Prisma validate. PF-1.3 adds Document/Revision lifecycle, SoD, CAS/rollback, file-trust, and forged document/revision isolation evidence. The security-gate test fails closed if those files are missing or skipped.

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { IdempotencyConflictError } from "./errors.js";
+import { IdempotencyConflictError, IdempotencyRequiredError } from "./errors.js";
 
 export interface IdempotencyRecordView {
   key: string;
@@ -33,7 +33,20 @@ export function replayOrConflict(
 /** Operations that require Idempotency-Key at the API boundary (0.7 / F-11). */
 export const IDEMPOTENCY_REQUIRED_OPERATIONS = [
   "revision.publish",
+  "revision.approve",
+  "revision.reject",
   "revision.make_current",
   "gate.release",
   "exception.approve",
 ] as const;
+
+export function requireIdempotencyKey(value: string | undefined | null): string {
+  const key = value?.trim();
+  if (!key) {
+    throw new IdempotencyRequiredError();
+  }
+  if (key.length > 200) {
+    throw new IdempotencyRequiredError("Idempotency-Key exceeds maximum length");
+  }
+  return key;
+}

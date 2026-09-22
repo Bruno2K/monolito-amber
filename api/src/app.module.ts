@@ -3,6 +3,7 @@ import { AuthModule } from "./auth/auth.module";
 import { AuditModule } from "./audit/audit.module";
 import { AuthzModule } from "./authz/authz.module";
 import { CatalogModule } from "./catalog/catalog.module";
+import { DocumentModule } from "./document/document.module";
 import { FilesModule } from "./files/files.module";
 import { FoundationModule } from "./foundation/foundation.module";
 import { HealthModule } from "./health/health.module";
@@ -22,6 +23,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
     ProjectModule,
     TenancyModule,
     CatalogModule,
+    DocumentModule,
     FilesModule,
     AuditModule,
     FoundationModule,

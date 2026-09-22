@@ -7,9 +7,10 @@ import { PrismaService } from "../prisma/prisma.service";
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async insert(event: AuditWrite): Promise<void> {
+  async insert(event: AuditWrite, tx?: Prisma.TransactionClient): Promise<void> {
     assertAuditMutationAllowed("INSERT");
-    await this.prisma.auditEvent.create({
+    const db = tx ?? this.prisma;
+    await db.auditEvent.create({
       data: {
         organizationId: event.organizationId ?? null,
         projectId: event.projectId ?? null,

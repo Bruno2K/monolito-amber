@@ -4,7 +4,7 @@
 - Org membership ≠ project membership.
 - Active Organization is **session-bound**.
 - `POST /api/v1/auth/active-organization` re-validates ACTIVE membership, updates the session, audits the switch.
-- Path `:organizationId` / `:projectId` and body/query ids are routing hints. Mismatch → 403.
+- Path `:organizationId` / `:projectId` / `:documentId` / `:revisionId` and body/query ids are routing hints. Mismatch → 403.
 - Deny-by-default when binding is missing.
 - Organization membership states: `INVITED`, `ACTIVE`, `SUSPENDED`, `REMOVED` (soft history).
 - Project membership states: `ACTIVE`, `SUSPENDED`, `REMOVED` (soft history). ACTIVE OrgMembership is required before ACTIVE ProjectMembership.

@@ -7,6 +7,7 @@
 - Seed (`pnpm prisma:seed`) writes the 0.2A catalog and Amber Role Templates (`organizationId = null`). It also backfills missing Organization-owned copies.
 - PF-1.1 adds `authentication_identities`, MFA recovery/challenge tables, invitation→organization FK, and session security metadata.
 - PF-1.2 adds `source_template_key`, org-owned RoleDefinition instantiation, `project_memberships`, `project_role_assignments`, and drops `role_bindings.project_id`. Prefer expand-then-contract; do not silently redesign unrelated modules.
+- PF-1.3 adds `document.documents` / `document.revisions`, binds `stored_objects` to documents, and adds tenant + immutability triggers. Additive only.
 
 ```bash
 pnpm prisma:generate

@@ -1,7 +1,6 @@
 // Amber Modular Monolith — schema-per-module (0.6).
-// PF-1.2: Amber Role Templates (organizationId=null) are NOT operational grants.
-// Organization create instantiates Organization-owned RoleDefinitions.
-// ProjectMembership is first-class. Product workflows remain out of scope.
+// PF-1.3: Document + Revision lifecycle on PF-1.2 contextual RBAC.
+// Currentness is Document.currentRevisionId — not a SUPERSEDED status.
 // Seed permissions ONLY from APPROVED 0.2A. There is no gate.override.
 
 generator client {
@@ -318,6 +317,7 @@ model Project {
   organization Organization        @relation(fields: [organizationId], references: [id])
   memberships  ProjectMembership[]
   objects      StoredObject[]
+  documents    Document[]
 
   @@index([organizationId])
   @@map("projects")
@@ -363,7 +363,7 @@ model ProjectRoleAssignment {
 }
 
 // ---------------------------------------------------------------------------
-// document — file-trust primitive only (no revision/document workflow)
+// document — Document + Revision lifecycle + file-trust (PF-1.3)
 // ---------------------------------------------------------------------------
 
 enum ScanStatus {
@@ -374,24 +374,94 @@ enum ScanStatus {
   @@schema("document")
 }
 
+/// Stable logical artifact. Identity is not a filename or storage key.
+/// Archive is soft. Currentness is currentRevisionId (at most one).
+model Document {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId    String    @map("organization_id") @db.Uuid
+  projectId         String    @map("project_id") @db.Uuid
+  /// Catalog-pending identifier from 0.3; not a Discipline FK in this slice.
+  disciplineId      String?   @map("discipline_id")
+  documentType      String?   @map("document_type")
+  code              String
+  title             String
+  status            String    @default("ACTIVE")
+  currentRevisionId String?   @unique @map("current_revision_id") @db.Uuid
+  version           Int       @default(1)
+  archivedAt        DateTime? @map("archived_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  project         Project    @relation(fields: [projectId], references: [id])
+  currentRevision Revision?  @relation("DocumentCurrentRevision", fields: [currentRevisionId], references: [id])
+  revisions       Revision[] @relation("DocumentRevisions")
+  objects         StoredObject[]
+
+  @@unique([projectId, code])
+  @@index([organizationId, projectId])
+  @@map("documents")
+  @@schema("document")
+}
+
+/// One version of a Document. DRAFT is mutable; immutability starts at PUBLISHED.
+/// REJECTED is preserved. APPROVED stays APPROVED when no longer current.
+model Revision {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId          String    @map("organization_id") @db.Uuid
+  projectId               String    @map("project_id") @db.Uuid
+  documentId              String    @map("document_id") @db.Uuid
+  revisionCode            String    @map("revision_code")
+  storedObjectId          String?   @unique @map("stored_object_id") @db.Uuid
+  fileName                String?   @map("file_name")
+  publishedChecksumSha256 String?   @map("published_checksum_sha256")
+  status                  String    @default("DRAFT")
+  createdByUserId         String    @map("created_by_user_id") @db.Uuid
+  publishedByUserId       String?   @map("published_by_user_id") @db.Uuid
+  publishedAt             DateTime? @map("published_at")
+  reviewedByUserId        String?   @map("reviewed_by_user_id") @db.Uuid
+  reviewedAt              DateTime? @map("reviewed_at")
+  approvedByUserId        String?   @map("approved_by_user_id") @db.Uuid
+  approvedAt              DateTime? @map("approved_at")
+  rejectedByUserId        String?   @map("rejected_by_user_id") @db.Uuid
+  rejectedAt              DateTime? @map("rejected_at")
+  rejectionReason         String?   @map("rejection_reason")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  document       Document      @relation("DocumentRevisions", fields: [documentId], references: [id])
+  storedObject   StoredObject? @relation("RevisionStoredObject", fields: [storedObjectId], references: [id])
+  currentFor     Document?     @relation("DocumentCurrentRevision")
+
+  @@unique([documentId, revisionCode])
+  @@index([organizationId, projectId])
+  @@index([documentId, status])
+  @@map("revisions")
+  @@schema("document")
+}
+
 /// Object metadata + scan_status. Download/preview fail-closed unless CLEAN (F-08).
 /// Vendor for scanning remains OPEN (implementation choice).
 model StoredObject {
   id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId String     @map("organization_id") @db.Uuid
   projectId      String     @map("project_id") @db.Uuid
-  storageKey     String     @map("storage_key")
+  documentId     String?    @map("document_id") @db.Uuid
+  storageKey     String     @unique @map("storage_key")
   checksumSha256 String     @map("checksum_sha256")
   mimeType       String     @map("mime_type")
   byteSize       Int        @map("byte_size")
+  originalFileName String?  @map("original_file_name")
   /// Fail-closed: PENDING / scan failure = deny; CLEAN = authorized access; BLOCKED = deny + security event.
   scanStatus     ScanStatus @default(PENDING) @map("scan_status")
   createdAt      DateTime   @default(now()) @map("created_at")
   updatedAt      DateTime   @updatedAt @map("updated_at")
 
-  project Project @relation(fields: [projectId], references: [id])
+  project  Project   @relation(fields: [projectId], references: [id])
+  document Document? @relation(fields: [documentId], references: [id])
+  revision Revision? @relation("RevisionStoredObject")
 
   @@index([organizationId, projectId])
+  @@index([checksumSha256])
   @@map("stored_objects")
   @@schema("document")
 }

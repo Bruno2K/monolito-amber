@@ -25,9 +25,15 @@ export class FoundationService {
     return replayOrConflict(existing, key, hash);
   }
 
-  async appendOutbox(eventType: string, payload: unknown, correlationId: string) {
+  async appendOutbox(
+    eventType: string,
+    payload: unknown,
+    correlationId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
     const envelope = createOutboxEnvelope(eventType, payload, correlationId);
-    await this.prisma.outboxMessage.create({
+    const db = tx ?? this.prisma;
+    await db.outboxMessage.create({
       data: {
         eventType: envelope.eventType,
         payload: envelope.payload as Prisma.InputJsonValue,
