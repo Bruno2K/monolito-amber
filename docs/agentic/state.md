@@ -7,9 +7,9 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 | Work Item | PF-1.6 — Governance / Gates / Formal Exceptions |
 | Status | ACTIVE |
 | Issue | https://github.com/Bruno2K/monolito-amber/issues/15 |
-| Branch | `pf-1-6-governance-gates-exceptions` |
+| Branch | `pf-1.6-governance-gates-exceptions` |
 | PR | https://github.com/Bruno2K/monolito-amber/pull/16 |
-| SHA | `7e42ba59cbbd159e79ce2207bbfda6443c5d2b67` |
+| SHA | `4d0947c4944716d4fbf2745dbff90ed0e1d7bdb6` |
 | Repo | `Bruno2K/monolito-amber` |
 | Base | `main` @ `d6c64703325a71c7cc240a7b60d5516d93ac2b8f` (PF-1.5 merged) |
 | Prior WI | PF-1.5 Planning / Tasks / Milestones — DONE (`d6c64703325a71c7cc240a7b60d5516d93ac2b8f`) |
