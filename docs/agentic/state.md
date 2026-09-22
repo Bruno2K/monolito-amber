@@ -8,7 +8,7 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 | Status | ACTIVE |
 | Issue | https://github.com/Bruno2K/monolito-amber/issues/7 |
 | Branch | `pf-1.2-project-membership-contextual-rbac` |
-| PR | (opened with this slice) |
+| PR | https://github.com/Bruno2K/monolito-amber/pull/8 |
 | SHA | (see latest commit on the branch) |
 | Repo | `Bruno2K/monolito-amber` |
 | Base | `main` @ `3ebb855a1adf955512609e02161d81a8e9bc3f4d` (PF-1.1R merged) |

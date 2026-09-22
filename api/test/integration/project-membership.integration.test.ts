@@ -304,6 +304,7 @@ describe("PF-1.2 Project Membership / contextual RBAC", () => {
       email: `member-${suffix}@example.com`,
       password: PASSWORD,
     });
+    await member.post("/api/v1/auth/active-organization").send({ organizationId: orgA });
     const members = await ownerA.get(`/api/v1/projects/${project1}/members`);
     const projectMembership = members.body.find(
       (row: { email: string }) => row.email === `member-${suffix}@example.com`,
@@ -314,9 +315,10 @@ describe("PF-1.2 Project Membership / contextual RBAC", () => {
     expect(suspended.status).toBeLessThan(400);
     expect((await member.get(`/api/v1/projects/${project1}`)).status).toBe(403);
 
-    await ownerA
+    const reactivated = await ownerA
       .patch(`/api/v1/projects/${project1}/members/${projectMembership.id}`)
       .send({ status: "ACTIVE" });
+    expect(reactivated.status).toBeLessThan(400);
     expect((await member.get(`/api/v1/projects/${project1}`)).status).toBe(200);
 
     const orgMembers = await ownerA.get(`/api/v1/organizations/${orgA}/members`);
@@ -332,6 +334,8 @@ describe("PF-1.2 Project Membership / contextual RBAC", () => {
       email: `member-${suffix}@example.com`,
       password: PASSWORD,
     });
+    const switchDenied = await relogin.post("/api/v1/auth/active-organization").send({ organizationId: orgA });
+    expect(switchDenied.status).toBe(403);
     expect((await relogin.get(`/api/v1/projects/${project1}`)).status).toBe(403);
   });
 
@@ -341,6 +345,7 @@ describe("PF-1.2 Project Membership / contextual RBAC", () => {
       password: PASSWORD,
       secret: ownerSecret,
     });
+    await ownerA.post("/api/v1/auth/active-organization").send({ organizationId: orgA });
     await loginWithOptionalMfa(ownerB, {
       email: `owner-b-${suffix}@example.com`,
       password: PASSWORD,
