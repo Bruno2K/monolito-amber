@@ -250,6 +250,17 @@ describe("PF-1.4 Coordination / Impact Analysis Foundation", () => {
   });
 
   it("opens an explicit Issue from Impact and a separate manual Issue", async () => {
+    const spoofFromImpact = await coordinator
+      .post(`/api/v1/projects/${projectA}/impacts/${impactId}/issues`)
+      .set("Idempotency-Key", `iss-spoof-${suffix}`)
+      .send({
+        title: "spoof",
+        organizationId: orgB,
+        projectId: projectB,
+        origin: "MANUAL",
+      });
+    expect(spoofFromImpact.status).toBe(403);
+
     const fromImpact = await coordinator
       .post(`/api/v1/projects/${projectA}/impacts/${impactId}/issues`)
       .set("Idempotency-Key", `iss-impact-${suffix}`)
@@ -259,9 +270,6 @@ describe("PF-1.4 Coordination / Impact Analysis Foundation", () => {
         severity: "HIGH",
         priority: "NORMAL",
         responsibleDisciplineId: "structure",
-        organizationId: orgB,
-        projectId: projectB,
-        origin: "MANUAL",
       });
     expect(fromImpact.status).toBeLessThan(400);
     expect(fromImpact.body.origin).toBe("IMPACT");
@@ -282,8 +290,6 @@ describe("PF-1.4 Coordination / Impact Analysis Foundation", () => {
         title: "Site access decision",
         severity: "MEDIUM",
         priority: "URGENT",
-        impactAnalysisId: impactId,
-        origin: "IMPACT",
       });
     expect(manual.status).toBeLessThan(400);
     expect(manual.body.origin).toBe("MANUAL");
