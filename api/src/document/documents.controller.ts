@@ -358,7 +358,8 @@ export class DocumentsController {
   @ApiParam({ name: "documentId", format: "uuid" })
   @ApiParam({ name: "revisionId", format: "uuid" })
   @ApiOperation({
-    summary: "Make an APPROVED Revision current (CAS). Rollback = older APPROVED. No Impact/Issue.",
+    summary:
+      "Make an APPROVED Revision current (CAS). Rollback = older APPROVED. Emits CurrentRevisionChanged for Coordination.",
   })
   makeCurrent(
     @CurrentSession() session: RequestSession,

@@ -1,6 +1,5 @@
 // Amber Modular Monolith — schema-per-module (0.6).
-// PF-1.3: Document + Revision lifecycle on PF-1.2 contextual RBAC.
-// Currentness is Document.currentRevisionId — not a SUPERSEDED status.
+// PF-1.4: Coordination consumes CurrentRevisionChanged (Impact Analysis + Issue).
 // Seed permissions ONLY from APPROVED 0.2A. There is no gate.override.
 
 generator client {
@@ -11,7 +10,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["identity", "org", "project", "document", "audit", "jobs"]
+  schemas  = ["identity", "org", "project", "document", "coordination", "audit", "jobs"]
 }
 
 // ---------------------------------------------------------------------------
@@ -318,6 +317,8 @@ model Project {
   memberships  ProjectMembership[]
   objects      StoredObject[]
   documents    Document[]
+  impactAnalyses ImpactAnalysis[]
+  issues         Issue[]
 
   @@index([organizationId])
   @@map("projects")
@@ -464,6 +465,138 @@ model StoredObject {
   @@index([checksumSha256])
   @@map("stored_objects")
   @@schema("document")
+}
+
+// ---------------------------------------------------------------------------
+// coordination — Impact Analysis + Issue foundation (PF-1.4 / 0.4)
+// No Task / Milestone / Gate / Formal Exception tables.
+// ---------------------------------------------------------------------------
+
+/// One case per CurrentRevisionChanged / NewBaseEstablished change event.
+/// Auto-created as PENDING_ANALYSIS only. Assessment is always explicit.
+model ImpactAnalysis {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId        String    @map("organization_id") @db.Uuid
+  projectId             String    @map("project_id") @db.Uuid
+  documentId            String    @map("document_id") @db.Uuid
+  sourceRevisionId      String    @map("source_revision_id") @db.Uuid
+  previousRevisionId    String?   @map("previous_revision_id") @db.Uuid
+  /// Stable at-most-one key for the companion outbox pair.
+  changeKey             String    @unique @map("change_key")
+  sourceOutboxMessageId String?   @map("source_outbox_message_id") @db.Uuid
+  correlationId         String    @map("correlation_id")
+  status                String    @default("PENDING_ANALYSIS")
+  affectedContext       String?   @map("affected_context")
+  assessedByUserId      String?   @map("assessed_by_user_id") @db.Uuid
+  assessedAt            DateTime? @map("assessed_at")
+  assessmentResult      String?   @map("assessment_result")
+  assessmentRationale   String?   @map("assessment_rationale")
+  resolvedByUserId      String?   @map("resolved_by_user_id") @db.Uuid
+  resolvedAt            DateTime? @map("resolved_at")
+  version               Int       @default(1)
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+  issues  Issue[]
+
+  @@index([organizationId, projectId])
+  @@index([documentId, sourceRevisionId])
+  @@map("impact_analyses")
+  @@schema("coordination")
+}
+
+/// Coordination problem / pendência. Origin is server-derived (IMPACT | MANUAL).
+model Issue {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId          String    @map("organization_id") @db.Uuid
+  projectId               String    @map("project_id") @db.Uuid
+  impactAnalysisId        String?   @map("impact_analysis_id") @db.Uuid
+  origin                  String
+  title                   String
+  description             String    @default("")
+  status                  String    @default("OPEN")
+  /// Severity ≠ Priority. Neither is inferred from the other.
+  severity                String?
+  priority                String?
+  /// Discipline ≠ assignee.
+  responsibleDisciplineId String?   @map("responsible_discipline_id")
+  assigneeUserId          String?   @map("assignee_user_id") @db.Uuid
+  dueDate                 DateTime? @map("due_date")
+  createdByUserId         String    @map("created_by_user_id") @db.Uuid
+  resolvedByUserId        String?   @map("resolved_by_user_id") @db.Uuid
+  resolvedAt              DateTime? @map("resolved_at")
+  closedByUserId          String?   @map("closed_by_user_id") @db.Uuid
+  closedAt                DateTime? @map("closed_at")
+  version                 Int       @default(1)
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  project        Project             @relation(fields: [projectId], references: [id])
+  impactAnalysis ImpactAnalysis?     @relation(fields: [impactAnalysisId], references: [id])
+  statusEvents   IssueStatusEvent[]
+  comments       IssueComment[]
+  evidence       IssueEvidence[]
+
+  @@index([organizationId, projectId])
+  @@index([impactAnalysisId])
+  @@map("issues")
+  @@schema("coordination")
+}
+
+/// Append-only Issue status history so reopen never loses prior transitions.
+model IssueStatusEvent {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  projectId      String   @map("project_id") @db.Uuid
+  issueId        String   @map("issue_id") @db.Uuid
+  fromStatus     String   @map("from_status")
+  toStatus       String   @map("to_status")
+  actorUserId    String   @map("actor_user_id") @db.Uuid
+  rationale      String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@index([issueId, createdAt])
+  @@map("issue_status_events")
+  @@schema("coordination")
+}
+
+model IssueComment {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  projectId      String   @map("project_id") @db.Uuid
+  issueId        String   @map("issue_id") @db.Uuid
+  authorUserId   String   @map("author_user_id") @db.Uuid
+  body           String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@index([issueId, createdAt])
+  @@map("issue_comments")
+  @@schema("coordination")
+}
+
+/// Minimal evidence reference. No collaboration UI. May point at a same-tenant StoredObject.
+model IssueEvidence {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  projectId      String   @map("project_id") @db.Uuid
+  issueId        String   @map("issue_id") @db.Uuid
+  addedByUserId  String   @map("added_by_user_id") @db.Uuid
+  kind           String
+  storedObjectId String?  @map("stored_object_id") @db.Uuid
+  reference      String?
+  note           String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@index([issueId, createdAt])
+  @@map("issue_evidence")
+  @@schema("coordination")
 }
 
 // ---------------------------------------------------------------------------

@@ -7,7 +7,8 @@ export interface OutboxEnvelope<T = unknown> {
 /**
  * CurrentRevisionChanged MUST auto-create an Impact Analysis case (PENDING_ANALYSIS).
  * It must NOT auto-mark IMPACTED or auto-create Issues (Final Reconciliation).
- * Handler implementation belongs to the Coordination slice — foundation only stores the event.
+ * PF-1.4 Coordination consumes the event via the existing transactional outbox
+ * (in-process sync drain — no Redis/BullMQ for this slice).
  */
 export const OUTBOX_EVENT_TYPES = {
   RevisionPublished: "RevisionPublished",
@@ -17,12 +18,19 @@ export const OUTBOX_EVENT_TYPES = {
   NewBaseEstablished: "NewBaseEstablished",
   DocumentArchived: "DocumentArchived",
   NotificationRequested: "NotificationRequested",
+  ImpactIdentified: "ImpactIdentified",
+  ImpactResolved: "ImpactResolved",
+  IssueCreated: "IssueCreated",
+  IssueAssigned: "IssueAssigned",
+  IssueReadyForReview: "IssueReadyForReview",
+  IssueClosed: "IssueClosed",
+  IssueReopened: "IssueReopened",
 } as const;
 
 /**
  * PF-1.3 emits CurrentRevisionChanged / NewBaseEstablished with identifiers only.
- * Coordination (0.4) owns Impact Analysis auto-create. This slice must not
- * create Impact or Issue rows.
+ * PF-1.4 Coordination consumes those events to create exactly one PENDING_ANALYSIS
+ * case per change event. The payload contract is unchanged.
  */
 export interface CurrentRevisionChangedPayload {
   organizationId: string;

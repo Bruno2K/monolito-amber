@@ -33,14 +33,14 @@ export class FoundationService {
   ) {
     const envelope = createOutboxEnvelope(eventType, payload, correlationId);
     const db = tx ?? this.prisma;
-    await db.outboxMessage.create({
+    const created = await db.outboxMessage.create({
       data: {
         eventType: envelope.eventType,
         payload: envelope.payload as Prisma.InputJsonValue,
         correlationId: envelope.correlationId,
       },
     });
-    return envelope;
+    return { ...envelope, id: created.id };
   }
 
   jobKey(jobName: string, naturalKey: string): string {

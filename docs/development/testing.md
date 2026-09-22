@@ -52,3 +52,11 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | Publisher SoD / file-trust / CAS | `packages/shared/src/document-revision.security.test.ts` |
 | Tenant-bound object keys | `packages/shared/src/storage-keys.test.ts` |
 | HTTP publish/approve/make-current/rollback/isolation | `api/test/integration/documents-revisions.integration.test.ts` |
+
+### PF-1.4 Coordination / Impact evidence
+
+| Test | Where |
+| --- | --- |
+| Impact / Issue state machines | `packages/shared/src/impact.test.ts`, `issue.test.ts` |
+| At-most-one change key + no auto-IMPACTED | `packages/shared/src/coordination.security.test.ts` |
+| HTTP auto-create / assess / resolve / Issue lifecycle / isolation | `api/test/integration/coordination-impact.integration.test.ts` |

@@ -1525,7 +1525,7 @@
             "cookie": []
           }
         ],
-        "summary": "Make an APPROVED Revision current (CAS). Rollback = older APPROVED. No Impact/Issue.",
+        "summary": "Make an APPROVED Revision current (CAS). Rollback = older APPROVED. Emits CurrentRevisionChanged for Coordination.",
         "tags": [
           "documents"
         ]
@@ -1653,12 +1653,652 @@
           "files"
         ]
       }
+    },
+    "/api/v1/projects/{projectId}/impacts": {
+      "get": {
+        "operationId": "ImpactsController_list",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List Impact Analysis cases for an authorized Project",
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/impacts/{impactId}": {
+      "get": {
+        "operationId": "ImpactsController_get",
+        "parameters": [
+          {
+            "name": "impactId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Read one Impact Analysis case",
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/impacts/{impactId}/assess": {
+      "post": {
+        "operationId": "ImpactsController_assess",
+        "parameters": [
+          {
+            "name": "impactId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicitly assess an Impact Analysis case (never auto-IMPACTED)",
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/impacts/{impactId}/resolve": {
+      "post": {
+        "operationId": "ImpactsController_resolve",
+        "parameters": [
+          {
+            "name": "impactId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Resolve an assessed Impact Analysis case when linked Issues are not open/active",
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/impacts/{impactId}/issues": {
+      "post": {
+        "operationId": "ImpactsController_createIssue",
+        "parameters": [
+          {
+            "name": "impactId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicitly open an Issue from an IMPACTED analysis case",
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/issues": {
+      "get": {
+        "operationId": "IssuesController_list",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List Issues for an authorized Project",
+        "tags": [
+          "coordination"
+        ]
+      },
+      "post": {
+        "operationId": "IssuesController_create",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a manual Issue (origin=MANUAL; client origin/ids are ignored)",
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/issues/{issueId}": {
+      "get": {
+        "operationId": "IssuesController_get",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Read one Issue",
+        "tags": [
+          "coordination"
+        ]
+      },
+      "patch": {
+        "operationId": "IssuesController_update",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update Issue fields (severity ≠ priority; discipline ≠ assignee)",
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/issues/{issueId}/assign": {
+      "post": {
+        "operationId": "IssuesController_assign",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Assign an Issue without changing responsible discipline",
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/issues/{issueId}/status": {
+      "post": {
+        "operationId": "IssuesController_transition",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Transition Issue status. RESOLVED ≠ CLOSED; service re-checks AuthZ per target.",
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/issues/{issueId}/reopen": {
+      "post": {
+        "operationId": "IssuesController_reopen",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Reopen a CLOSED Issue without losing history",
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/issues/{issueId}/comments": {
+      "get": {
+        "operationId": "IssuesController_listComments",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "coordination"
+        ]
+      },
+      "post": {
+        "operationId": "IssuesController_addComment",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/issues/{issueId}/evidence": {
+      "get": {
+        "operationId": "IssuesController_listEvidence",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "coordination"
+        ]
+      },
+      "post": {
+        "operationId": "IssuesController_addEvidence",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "coordination"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/issues/{issueId}/history": {
+      "get": {
+        "operationId": "IssuesController_history",
+        "parameters": [
+          {
+            "name": "issueId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "coordination"
+        ]
+      }
     }
   },
   "info": {
     "title": "Amber API",
     "description": "Amber Modular Monolith foundation API. Formal Exception is the sole Gate bypass. Closed 0.2A catalog only.",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "contact": {}
   },
   "tags": [
@@ -1680,6 +2320,10 @@
     },
     {
       "name": "documents",
+      "description": ""
+    },
+    {
+      "name": "coordination",
       "description": ""
     },
     {

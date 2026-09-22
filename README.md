@@ -6,9 +6,9 @@ This repository is the real product. **`Bruno2K/amber` is the Product Vision lan
 
 Official commercial name remains OPEN; **Amber** is the technical name.
 
-## PF-1.3 — Documents & Revisions Foundation
+## PF-1.4 — Coordination / Impact Analysis Foundation
 
-Document + Revision lifecycle on PF-1.2 contextual RBAC: publish / review / approve / reject / make-current + rollback, StoredObject file-trust, CAS current pointer. **No final Documents UI. No Impact/Issue/Gate workflows.**
+Consumes PF-1.3 `CurrentRevisionChanged` to create exactly one Impact Analysis case (`PENDING_ANALYSIS`). Explicit assessment and Issue foundation. **No Coordination UI. No auto-IMPACTED / auto-Issues. No Task/Gate workflows.**
 
 PF-1.0 planted the Modular Monolith layout, Prisma, catalog seed, and security stubs.
 

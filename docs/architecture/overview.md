@@ -24,11 +24,11 @@ OpenTelemetry hooks and structured JSON logs run on `api` and `worker` from day 
 
 ## Persistence
 
-One PostgreSQL instance. Module namespaces: `identity`, `org`, `project`, `document`, `audit`, `jobs` (later `coordination`, `planning`, `governance`, `notification`). Versioned Prisma migrations only.
+One PostgreSQL instance. Module namespaces: `identity`, `org`, `project`, `document`, `coordination`, `audit`, `jobs` (later `planning`, `governance`, `notification`). Versioned Prisma migrations only.
 
 ## Async
 
-Transactional outbox in the same PostgreSQL transaction as the domain write. Redis + BullMQ when the first justified job ships (notifications, email, malware scan). No Kafka / SQS / Rabbit / event sourcing / CQRS.
+Transactional outbox in the same PostgreSQL transaction as the domain write. PF-1.4 drains `CurrentRevisionChanged` / `NewBaseEstablished` in-process in that transaction (ADR-015). Redis + BullMQ when the first justified job ships (notifications, email, malware scan). No Kafka / SQS / Rabbit / event sourcing / CQRS.
 
 ## Hosting
 

@@ -30,6 +30,6 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [development](./development/local-setup.md) — local, tests, migrations
 - [agentic](./agentic/context.md) — agent operating context, harness, loop, roles
 
-## Out of scope for PF-1.3
+## Out of scope for PF-1.4
 
-Coordination/Planning/Gates/Exception workflows and UI; BIM/IFC/BCF viewers; analytics; AI; Kubernetes; microservices; CQRS; event sourcing; Kafka; invented permissions; a second Gate bypass; final Documents UX.
+Planning/Gates/Exception workflows and UI; Impact dashboard / Issue board / coordination timeline; BIM/IFC/BCF viewers; analytics; AI; Kubernetes; microservices; CQRS; event sourcing; Kafka; invented permissions; a second Gate bypass; final Documents or Coordination UX.
