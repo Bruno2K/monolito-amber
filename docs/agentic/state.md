@@ -8,6 +8,8 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 | Status | ACTIVE |
 | Issue | https://github.com/Bruno2K/monolito-amber/issues/5 |
 | Branch | `pf-1.1r-identity-authz-reconciliation` |
+| PR | https://github.com/Bruno2K/monolito-amber/pull/6 |
+| SHA | `2f94948` |
 | Repo | `Bruno2K/monolito-amber` |
 | Base | `main` @ `2e44d5622d635bc8b5bfb8fe595bb9f80982ba4a` (PF-1.1 merged) |
 | Prior WI | PF-1.1 Identity & Organizations — DONE (PR #4, merge `2e44d562`) |
