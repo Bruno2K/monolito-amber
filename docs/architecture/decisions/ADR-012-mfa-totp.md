@@ -15,7 +15,7 @@ TOTP is the MVP method. The authenticator secret is stored encrypted (it must be
 - Permanent lockout for MFA failure — rejected (DoS).
 
 ## Consequences
-Privileged roles can sign in only after enrollment (or a one-session enrollment-required login). Recovery codes can be regenerated only after password or TOTP re-auth.
+Privileged roles receive a restricted/enrollment session until TOTP is enrolled. Privileged permissions fail closed (AuthZ-gated) until MFA is satisfied. Enrollment, challenge, and logout remain available. Recovery codes can be regenerated only after password or TOTP re-auth.
 
 ## Implementation Implications
 No Formal Exception entity is created; SoD and freshness helpers exist for later Governance.

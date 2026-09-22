@@ -27,7 +27,7 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | Org A cannot read Org B by path | `api/test/integration/f04-tenant-isolation.integration.test.ts` |
 | Forged org-switch denied | same |
 | Unauthenticated deny-by-default | same |
-| Suspended member cannot switch back | same |
+| Suspended member old session is `401 SESSION_REVOKED` on protected ops | same |
 | EXTERNAL cannot read org directory | same |
-| Removed member cannot read org | same |
+| Removed member old session is `401 SESSION_REVOKED`; relogin cannot read org | same |
 | Org B cannot manage Org A members | same |

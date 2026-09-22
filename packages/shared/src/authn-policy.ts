@@ -1,4 +1,4 @@
-import { PasswordPolicyError } from "./errors.js";
+import { PasswordPolicyError, PublicRegistrationDisabledError } from "./errors.js";
 import {
   AUTH_LOCK_FAILED_ATTEMPTS,
   AUTH_LOCK_MINUTES,
@@ -30,4 +30,15 @@ export function requiredPasswordAlgorithm(): typeof PASSWORD_ALGORITHM {
 
 export function isAccountLocked(lockedUntil: Date | null, now = new Date()): boolean {
   return lockedUntil !== null && lockedUntil.getTime() > now.getTime();
+}
+
+/**
+ * MVP registration is invitation/bootstrap-controlled (PF-1.1R).
+ * `POST /api/v1/auth/register` may create the first User only when the instance
+ * has zero users. After that, new Users are created by accepting an invitation.
+ */
+export function assertBootstrapRegistrationAllowed(existingUserCount: number): void {
+  if (existingUserCount > 0) {
+    throw new PublicRegistrationDisabledError();
+  }
 }

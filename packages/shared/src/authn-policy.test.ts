@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { PasswordPolicyError } from "./errors.js";
-import { assertPasswordPolicy, evaluateLockout, isAccountLocked, requiredPasswordAlgorithm } from "./authn-policy.js";
+import { PasswordPolicyError, PublicRegistrationDisabledError } from "./errors.js";
+import {
+  assertBootstrapRegistrationAllowed,
+  assertPasswordPolicy,
+  evaluateLockout,
+  isAccountLocked,
+  requiredPasswordAlgorithm,
+} from "./authn-policy.js";
 import { progressiveBackoffMs } from "./session.js";
 
 describe("password policy", () => {
@@ -25,5 +31,10 @@ describe("password policy", () => {
     expect(progressiveBackoffMs(0)).toBe(0);
     expect(progressiveBackoffMs(1)).toBe(200);
     expect(progressiveBackoffMs(8)).toBe(2000);
+  });
+
+  it("allows first-instance bootstrap registration only when no users exist", () => {
+    expect(() => assertBootstrapRegistrationAllowed(0)).not.toThrow();
+    expect(() => assertBootstrapRegistrationAllowed(1)).toThrow(PublicRegistrationDisabledError);
   });
 });

@@ -136,3 +136,12 @@ export class InvitationError extends AmberError {
     this.name = "InvitationError";
   }
 }
+
+export class PublicRegistrationDisabledError extends AmberError {
+  constructor(
+    detail = "Public self-registration is disabled. New users join by organization invitation, or via first-instance bootstrap when no users exist.",
+  ) {
+    super("REGISTRATION_DISABLED", detail, 403);
+    this.name = "PublicRegistrationDisabledError";
+  }
+}

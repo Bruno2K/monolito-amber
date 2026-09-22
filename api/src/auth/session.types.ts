@@ -32,6 +32,7 @@ export interface SessionView {
   mfa: {
     required: boolean;
     enrolled: boolean;
+    satisfied: boolean;
     freshnessOk: boolean;
   };
 }

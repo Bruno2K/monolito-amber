@@ -104,7 +104,10 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Post("register")
-  @ApiOperation({ summary: "Create a global User + EMAIL_PASSWORD AuthenticationIdentity" })
+  @ApiOperation({
+    summary:
+      "First-instance bootstrap only: create the first User when the instance has zero users. Not public self-signup; later users join by invitation.",
+  })
   async register(@Body() body: RegisterDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const issued = await this.auth.register(body);
     setSessionCookie(res, issued.token);

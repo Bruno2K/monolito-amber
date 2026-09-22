@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { DenyByDefaultError } from "./errors.js";
-import { assertPermission, hasPermission, requiresMfaEnrollment, resolvePermissions } from "./authz.js";
+import { DenyByDefaultError, MfaRequiredError } from "./errors.js";
+import {
+  assertPermission,
+  hasPermission,
+  mfaRequirementSatisfied,
+  requiresMfaEnrollment,
+  resolvePermissions,
+} from "./authz.js";
 import type { AuthzContext } from "./authz.js";
 
 const admin: AuthzContext = {
@@ -8,6 +14,7 @@ const admin: AuthzContext = {
   organizationId: "org-a",
   membershipStatus: "ACTIVE",
   membershipType: "ADMINISTRATIVE",
+  mfaSatisfied: true,
   grants: [
     {
       templateKey: "ORGANIZATION_ADMINISTRATOR",
@@ -58,5 +65,39 @@ describe("permission resolution", () => {
     expect(requiresMfaEnrollment(["ORGANIZATION_ADMINISTRATOR"])).toBe(true);
     expect(requiresMfaEnrollment(["GOVERNANCE_APPROVER"])).toBe(true);
     expect(requiresMfaEnrollment(["VIEWER"])).toBe(false);
+    expect(mfaRequirementSatisfied({ templateKeys: ["ORGANIZATION_ADMINISTRATOR"], enrolled: false })).toBe(
+      false,
+    );
+    expect(mfaRequirementSatisfied({ templateKeys: ["VIEWER"], enrolled: false })).toBe(true);
+  });
+
+  it("fails closed on privileged grants until MFA is satisfied", () => {
+    const unenrolledAdmin: AuthzContext = { ...admin, mfaSatisfied: false };
+    expect(resolvePermissions(unenrolledAdmin)).toEqual([]);
+    expect(() => assertPermission(unenrolledAdmin, "organization.manage_members")).toThrow(MfaRequiredError);
+
+    const unenrolledApprover: AuthzContext = {
+      ...admin,
+      mfaSatisfied: false,
+      grants: [
+        {
+          templateKey: "GOVERNANCE_APPROVER",
+          permissions: ["exception.approve", "exception.reject", "gate.read"],
+        },
+      ],
+    };
+    expect(() => assertPermission(unenrolledApprover, "exception.approve")).toThrow(MfaRequiredError);
+
+    const mixed: AuthzContext = {
+      ...admin,
+      mfaSatisfied: false,
+      grants: [
+        ...admin.grants,
+        { templateKey: "VIEWER", permissions: ["project.read", "document.read"] },
+      ],
+    };
+    expect(resolvePermissions(mixed)).toEqual(["project.read", "document.read"]);
+    expect(() => assertPermission(mixed, "organization.manage_members")).toThrow(MfaRequiredError);
+    expect(() => assertPermission(mixed, "project.read")).not.toThrow();
   });
 });

@@ -20,7 +20,7 @@ export interface SessionView {
   email: string | null;
   displayName: string | null;
   activeOrganizationId: string | null;
-  mfa?: { required: boolean; enrolled: boolean; freshnessOk: boolean };
+  mfa?: { required: boolean; enrolled: boolean; satisfied?: boolean; freshnessOk: boolean };
   status?: string;
   mfaToken?: string;
 }

@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PERMISSIONS, ROLE_TEMPLATES } from "@amber/shared";
 import { EmailAdapter } from "../../src/auth/email.adapter";
 import { createTestApp } from "./app";
+import { enrollTotp, loginWithOptionalMfa } from "./mfa";
 import { migrate, seed, startTestDatabase, type TestDb } from "./postgres";
 
 const PASSWORD = "correct-horse-12";
@@ -14,6 +15,7 @@ let db: TestDb;
 let app: INestApplication;
 let prisma: PrismaClient;
 let emails: EmailAdapter;
+let ownerSecret: string;
 
 beforeAll(async () => {
   db = await startTestDatabase();
@@ -60,6 +62,16 @@ describe("PF-1.1 identity integration", () => {
     expect(user?.authenticationIdentities[0]?.passwordCredential?.hash).toMatch(/^\$argon2id\$/);
   });
 
+  it("rejects unrestricted public registration after the first user exists", async () => {
+    const denied = await request(app.getHttpServer()).post("/api/v1/auth/register").send({
+      email: `public-${suffix}@example.com`,
+      password: PASSWORD,
+      displayName: "Public",
+    });
+    expect(denied.status).toBe(403);
+    expect(denied.body.code).toBe("REGISTRATION_DISABLED");
+  });
+
   it("logs in, creates an org, and audits without secrets", async () => {
     const agent = request.agent(app.getHttpServer());
     const login = await agent.post("/api/v1/auth/login").send({
@@ -70,9 +82,17 @@ describe("PF-1.1 identity integration", () => {
     expect(login.body.status).toBe("authenticated");
     const created = await agent.post("/api/v1/organizations").send({ name: `Atlas ${suffix}` });
     expect([200, 201]).toContain(created.status);
+    const restricted = await agent.get("/api/v1/auth/session");
+    expect(restricted.body.activeOrganizationId).toBe(created.body.id);
+    expect(restricted.body.mfa.required).toBe(true);
+    expect(restricted.body.mfa.enrolled).toBe(false);
+    expect(restricted.body.mfa.satisfied).toBe(false);
+    expect(restricted.body.permissions).not.toContain("organization.manage_members");
+    const enrolled = await enrollTotp(agent);
+    ownerSecret = enrolled.secret;
     const session = await agent.get("/api/v1/auth/session");
-    expect(session.body.activeOrganizationId).toBe(created.body.id);
     expect(session.body.permissions).toContain("organization.manage_members");
+    expect(session.body.mfa.satisfied).toBe(true);
     const events = await prisma.auditEvent.findMany({ where: { actorUserId: session.body.userId } });
     expect(events.some((event) => event.eventType === "ORG_CREATED")).toBe(true);
     expect(JSON.stringify(events)).not.toContain(PASSWORD);
@@ -81,7 +101,11 @@ describe("PF-1.1 identity integration", () => {
 
   it("invites a member, accepts, and persists membership ACTIVE", async () => {
     const owner = request.agent(app.getHttpServer());
-    await owner.post("/api/v1/auth/login").send({ email: `owner-${suffix}@example.com`, password: PASSWORD });
+    await loginWithOptionalMfa(owner, {
+      email: `owner-${suffix}@example.com`,
+      password: PASSWORD,
+      secret: ownerSecret,
+    });
     const orgs = await owner.get("/api/v1/organizations");
     const orgId = (orgs.body as Array<{ active: boolean; id: string }>)[0]?.id;
     expect(orgId).toBeTruthy();

@@ -5,6 +5,7 @@ import {
   assertPermission,
   assertRecentAuthentication,
   isHighRiskPermission,
+  mfaRequirementSatisfied,
   resolvePermissions,
   type AuthzContext,
   type MembershipStatus,
@@ -54,6 +55,7 @@ export class AuthzService {
       projectId: binding.projectId,
       permissions: binding.role.rolePermissions.map((rp) => rp.permission.code as PermissionCode),
     }));
+    const enrolled = await this.isMfaEnrolled(session.userId);
     return {
       membershipId: membership.id,
       userId: session.userId,
@@ -62,6 +64,10 @@ export class AuthzService {
       membershipType: membership.type as MembershipType,
       grants,
       projectId: projectId ?? null,
+      mfaSatisfied: mfaRequirementSatisfied({
+        templateKeys: grants.map((grant) => grant.templateKey),
+        enrolled,
+      }),
     };
   }
 
@@ -93,5 +99,10 @@ export class AuthzService {
       },
     });
     return memberships.flatMap((membership) => membership.roleBindings.map((binding) => binding.role.templateKey));
+  }
+
+  async isMfaEnrolled(userId: string): Promise<boolean> {
+    const row = await this.prisma.mfaTotpCredential.findUnique({ where: { userId } });
+    return Boolean(row?.verifiedAt);
   }
 }

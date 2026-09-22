@@ -25,7 +25,7 @@
             "description": ""
           }
         },
-        "summary": "Create a global User + EMAIL_PASSWORD AuthenticationIdentity",
+        "summary": "First-instance bootstrap only: create the first User when the instance has zero users. Not public self-signup; later users join by invitation.",
         "tags": [
           "auth"
         ]

@@ -3,6 +3,7 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EmailAdapter } from "../../src/auth/email.adapter";
 import { createTestApp } from "./app";
+import { enrollTotp } from "./mfa";
 import { migrate, seed, startTestDatabase, type TestDb } from "./postgres";
 
 const PASSWORD = "correct-horse-12";
@@ -31,15 +32,22 @@ beforeAll(async () => {
   });
   const createdA = await ownerA.post("/api/v1/organizations").send({ name: `Org A ${suffix}` });
   orgA = createdA.body.id;
+  await enrollTotp(ownerA);
 
-  ownerB = request.agent(app.getHttpServer());
-  await ownerB.post("/api/v1/auth/register").send({
+  await ownerA.post(`/api/v1/organizations/${orgA}/invitations`).send({
     email: `b-${suffix}@example.com`,
+    roleTemplateKey: "VIEWER",
+  });
+  const ownerBInvite = emails.sent.filter((message) => message.to === `b-${suffix}@example.com`).at(-1);
+  ownerB = request.agent(app.getHttpServer());
+  await ownerB.post("/api/v1/invitations/accept").send({
+    token: ownerBInvite?.token,
     password: PASSWORD,
     displayName: "Owner B",
   });
   const createdB = await ownerB.post("/api/v1/organizations").send({ name: `Org B ${suffix}` });
   orgB = createdB.body.id;
+  await enrollTotp(ownerB);
 }, 180_000);
 
 afterAll(async () => {
@@ -83,8 +91,9 @@ describe("F-04 tenant isolation (HTTP, fail closed)", () => {
       await ownerA.get(`/api/v1/organizations/${orgA}/members`)
     ).body.find((row: { email: string }) => row.email === `suspended-${suffix}@example.com`).id;
     await ownerA.patch(`/api/v1/organizations/${orgA}/members/${membershipId}`).send({ status: "SUSPENDED" });
-    const revoked = await guest.get("/api/v1/auth/session");
-    expect([401, 200]).toContain(revoked.status);
+    const revoked = await guest.get(`/api/v1/organizations/${orgA}`);
+    expect(revoked.status).toBe(401);
+    expect(revoked.body.code).toBe("SESSION_REVOKED");
     const relogin = request.agent(app.getHttpServer());
     await relogin.post("/api/v1/auth/login").send({
       email: `suspended-${suffix}@example.com`,
@@ -125,6 +134,9 @@ describe("F-04 tenant isolation (HTTP, fail closed)", () => {
     const members = await ownerA.get(`/api/v1/organizations/${orgA}/members`);
     const membershipId = members.body.find((row: { email: string }) => row.email === `removed-${suffix}@example.com`).id;
     await ownerA.patch(`/api/v1/organizations/${orgA}/members/${membershipId}`).send({ status: "REMOVED" });
+    const immediatelyDenied = await removedAgent.get(`/api/v1/organizations/${orgA}`);
+    expect(immediatelyDenied.status).toBe(401);
+    expect(immediatelyDenied.body.code).toBe("SESSION_REVOKED");
     const relogin = request.agent(app.getHttpServer());
     await relogin.post("/api/v1/auth/login").send({
       email: `removed-${suffix}@example.com`,
