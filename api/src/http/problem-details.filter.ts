@@ -7,7 +7,21 @@ import {
 } from "@nestjs/common";
 import { AmberError } from "@amber/shared";
 import type { Request, Response } from "express";
+import { logger } from "../observability/logger";
 import { readCorrelationId } from "../observability/correlation";
+
+function isAmberError(exception: unknown): exception is AmberError {
+  return (
+    exception instanceof AmberError ||
+    (typeof exception === "object" &&
+      exception !== null &&
+      "status" in exception &&
+      "code" in exception &&
+      "message" in exception &&
+      typeof (exception as AmberError).status === "number" &&
+      typeof (exception as AmberError).code === "string")
+  );
+}
 
 @Catch()
 export class ProblemDetailsFilter implements ExceptionFilter {
@@ -22,7 +36,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     let detail = "Unexpected error";
     let code = "INTERNAL";
 
-    if (exception instanceof AmberError) {
+    if (isAmberError(exception)) {
       status = exception.status;
       title = exception.name;
       detail = exception.message;
@@ -33,6 +47,8 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       title = exception.name;
       detail = typeof payload === "string" ? payload : JSON.stringify(payload);
       code = "HTTP_EXCEPTION";
+    } else {
+      logger.error({ err: exception, correlationId, path: req.originalUrl }, "unhandled exception");
     }
 
     res.status(status).type("application/problem+json").json({

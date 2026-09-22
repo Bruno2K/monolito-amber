@@ -7,7 +7,7 @@ export const AUDIT_DENIED_PRIVILEGES = ["UPDATE", "DELETE"] as const;
 export const AUDIT_READ_PERMISSION = "organization.read_audit" as const;
 
 export interface AuditWrite {
-  organizationId: string;
+  organizationId?: string | null;
   projectId?: string | null;
   actorUserId?: string | null;
   eventType: string;

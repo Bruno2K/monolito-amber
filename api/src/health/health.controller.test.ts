@@ -7,7 +7,7 @@ describe("HealthController", () => {
     expect(controller.getHealth()).toEqual({
       status: "ok",
       service: "amber-api",
-      slice: "PF-1.0",
+      slice: "PF-1.1",
     });
   });
 });

@@ -46,13 +46,13 @@ describe("foundation integration (Testcontainers / TEST_DATABASE_URL)", () => {
     const record = await prisma.idempotencyRecord.create({
       data: {
         organizationId: "00000000-0000-4000-8000-000000000099",
-        key: "make-current-1",
+        key: `make-current-${Date.now()}`,
         requestHash: "abc",
         responseStatus: 200,
         responseBody: { ok: true },
       },
     });
-    expect(record.key).toBe("make-current-1");
+    expect(record.key.startsWith("make-current-")).toBe(true);
   });
 
   it("denies UPDATE/DELETE on audit for the application role", async () => {

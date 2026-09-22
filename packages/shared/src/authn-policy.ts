@@ -1,3 +1,4 @@
+import { PasswordPolicyError } from "./errors.js";
 import {
   AUTH_LOCK_FAILED_ATTEMPTS,
   AUTH_LOCK_MINUTES,
@@ -9,10 +10,10 @@ import {
 /** 0.2A §4–§5 AuthN floors. Argon2id required; bcrypt fallback only if unavailable. */
 export function assertPasswordPolicy(password: string): void {
   if (password.length < PASSWORD_MIN_LENGTH) {
-    throw new Error(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
+    throw new PasswordPolicyError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
   }
   if (password.length > PASSWORD_MAX_LENGTH) {
-    throw new Error(`Password must be at most ${PASSWORD_MAX_LENGTH} characters`);
+    throw new PasswordPolicyError(`Password must be at most ${PASSWORD_MAX_LENGTH} characters`);
   }
 }
 

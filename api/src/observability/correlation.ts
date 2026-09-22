@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware } from "@nestjs/common";
 import { CORRELATION_HEADER, resolveCorrelationId } from "@amber/shared";
 import type { NextFunction, Request, Response } from "express";
+import { runWithCorrelation } from "./request-context";
 
 export const CORRELATION_REQUEST_KEY = "correlationId";
 
@@ -11,7 +12,7 @@ export class CorrelationMiddleware implements NestMiddleware {
     const correlationId = resolveCorrelationId(header);
     (req as Request & { correlationId: string }).correlationId = correlationId;
     res.setHeader(CORRELATION_HEADER, correlationId);
-    next();
+    runWithCorrelation(correlationId, () => next());
   }
 }
 

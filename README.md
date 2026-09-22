@@ -6,9 +6,11 @@ This repository is the real product. **`Bruno2K/amber` is the Product Vision lan
 
 Official commercial name remains OPEN; **Amber** is the technical name.
 
-## PF-1.0 — Platform Foundation
+## PF-1.1 — Identity & Organizations
 
-This bootstrap establishes layout, CI, Prisma, 0.2A security seed, tenancy/audit/file-trust scaffolding, and docs. **No product feature workflows.**
+AuthN floors, session-bound Organizations, invitations, closed 0.2A catalog, MFA/TOTP, and F-04 isolation evidence. **No product Project/Documents/Coordination/Planning/Gate pages.**
+
+PF-1.0 planted the Modular Monolith layout, Prisma, catalog seed, and security stubs.
 
 ```
 web/                 Next.js

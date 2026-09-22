@@ -1,4 +1,4 @@
-import { SessionExpiredError, SessionRevokedError } from "./errors.js";
+import { ReauthenticationRequiredError, SessionExpiredError, SessionRevokedError } from "./errors.js";
 
 /** 0.2A §8 session floors — do not weaken. */
 export const SESSION_INACTIVE_HOURS = 12;
@@ -51,3 +51,31 @@ export const INVITE_TTL_DAYS = 7;
 export const RESET_TTL_MINUTES = 30;
 export const PASSWORD_ALGORITHM = "argon2id";
 export const PASSWORD_FALLBACK_ALGORITHM = "bcrypt";
+export const HIGH_RISK_FRESHNESS_MINUTES = 15;
+export const HIGH_RISK_FRESHNESS_MS = HIGH_RISK_FRESHNESS_MINUTES * 60 * 1000;
+export const MFA_CHALLENGE_TTL_MINUTES = 5;
+export const LOGIN_RATE_LIMIT_MAX = 20;
+export const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+export const SESSION_COOKIE_NAME = "amber_session";
+export const SESSION_COOKIE_SAMESITE = "lax" as const;
+
+export interface SessionFreshness {
+  lastReauthAt: Date | null;
+}
+
+export function isRecentAuthentication(session: SessionFreshness, now = new Date()): boolean {
+  return session.lastReauthAt !== null && now.getTime() - session.lastReauthAt.getTime() <= HIGH_RISK_FRESHNESS_MS;
+}
+
+export function assertRecentAuthentication(session: SessionFreshness, now = new Date()): void {
+  if (!isRecentAuthentication(session, now)) {
+    throw new ReauthenticationRequiredError();
+  }
+}
+
+export function progressiveBackoffMs(failedAttempts: number): number {
+  if (failedAttempts <= 0) {
+    return 0;
+  }
+  return Math.min(100 * 2 ** Math.min(failedAttempts, 5), 2000);
+}

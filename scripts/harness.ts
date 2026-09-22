@@ -1,5 +1,5 @@
 /**
- * Prints the exact PF-1.0 harness sequence. Commands live in docs/agentic/harness.md.
+ * Prints the exact PF-1.1 harness sequence. Commands live in docs/agentic/harness.md.
  * This file exists so `pnpm harness` documents the contract; run those commands from the repo root.
  */
 const commands = [
@@ -20,7 +20,7 @@ const commands = [
   "pnpm prisma:validate",
 ];
 
-console.log("PF-1.0 harness (see docs/agentic/harness.md):\n");
+console.log("PF-1.1 harness (see docs/agentic/harness.md):\n");
 for (const command of commands) {
   console.log(`  ${command}`);
 }

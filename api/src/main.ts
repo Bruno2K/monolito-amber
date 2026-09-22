@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { ValidationPipe } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import cookieParser from "cookie-parser";
 import { AppModule } from "./app.module";
 import { ProblemDetailsFilter } from "./http/problem-details.filter";
 import { logger } from "./observability/logger";
@@ -12,6 +13,11 @@ async function bootstrap() {
   await startOpenTelemetry();
   const app = await NestFactory.create(AppModule, { logger: false });
   app.setGlobalPrefix("api/v1");
+  app.use(cookieParser());
+  app.enableCors({
+    origin: process.env.WEB_ORIGIN ?? true,
+    credentials: true,
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

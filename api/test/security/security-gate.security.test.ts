@@ -9,6 +9,8 @@ const REQUIRED = [
   "audit-immutability.security.test.ts",
   "malware-fail-closed.security.test.ts",
   "cas-idempotency.security.test.ts",
+  "member-management.security.test.ts",
+  "mfa.security.test.ts",
 ];
 
 const SKIP_RE = /\.skip\s*\(|describe\.skip|it\.skip|xit\s*\(|xdescribe\s*\(/;

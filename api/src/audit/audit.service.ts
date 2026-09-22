@@ -11,7 +11,7 @@ export class AuditService {
     assertAuditMutationAllowed("INSERT");
     await this.prisma.auditEvent.create({
       data: {
-        organizationId: event.organizationId,
+        organizationId: event.organizationId ?? null,
         projectId: event.projectId ?? null,
         actorUserId: event.actorUserId ?? null,
         eventType: event.eventType,

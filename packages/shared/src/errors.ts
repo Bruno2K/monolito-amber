@@ -80,3 +80,59 @@ export class AuditMutationDeniedError extends AmberError {
     this.name = "AuditMutationDeniedError";
   }
 }
+
+export class InvalidCredentialsError extends AmberError {
+  constructor(detail = "Invalid email or password") {
+    super("INVALID_CREDENTIALS", detail, 401);
+    this.name = "InvalidCredentialsError";
+  }
+}
+
+export class PasswordPolicyError extends AmberError {
+  constructor(detail: string) {
+    super("PASSWORD_POLICY", detail, 400);
+    this.name = "PasswordPolicyError";
+  }
+}
+
+export class RateLimitedError extends AmberError {
+  constructor(detail = "Too many attempts. Try again later.") {
+    super("RATE_LIMITED", detail, 429);
+    this.name = "RateLimitedError";
+  }
+}
+
+export class MembershipStateError extends AmberError {
+  constructor(detail: string) {
+    super("MEMBERSHIP_STATE", detail, 409);
+    this.name = "MembershipStateError";
+  }
+}
+
+export class MfaRequiredError extends AmberError {
+  constructor(detail = "Multi-factor authentication is required") {
+    super("MFA_REQUIRED", detail, 401);
+    this.name = "MfaRequiredError";
+  }
+}
+
+export class MfaChallengeError extends AmberError {
+  constructor(detail = "Invalid or expired MFA challenge") {
+    super("MFA_CHALLENGE", detail, 401);
+    this.name = "MfaChallengeError";
+  }
+}
+
+export class ReauthenticationRequiredError extends AmberError {
+  constructor(detail = "Recent authentication is required for this action") {
+    super("REAUTH_REQUIRED", detail, 401);
+    this.name = "ReauthenticationRequiredError";
+  }
+}
+
+export class InvitationError extends AmberError {
+  constructor(detail: string, status = 400) {
+    super("INVITATION", detail, status);
+    this.name = "InvitationError";
+  }
+}
