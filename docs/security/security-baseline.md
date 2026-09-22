@@ -3,7 +3,7 @@
 | Finding | Spec status | Foundation evidence |
 | --- | --- | --- |
 | F-01 catalog / templates / SoD | CLOSED_AT_SPECIFICATION_LEVEL | Seed + SoD primitives (no fake entities) |
-| F-02 dual bypass | RESOLVED_BY_0.5 | PF-1.6 Formal Exception is the sole bypass; CI forbids `gate.override` / `forceRelease` |
+| F-02 dual bypass | CLOSED_IN_CODE | Formal Exception is the sole bypass; CI forbids `gate.override` / `forceRelease` |
 | F-03 AuthN floors | CLOSED_AT_SPECIFICATION_LEVEL | Argon2id, lockout, hashed tokens, cookie sessions, MFA fail-closed for privileged roles |
 | F-04 isolation | Implemented | HTTP + unit negatives; fail closed if skipped |
 | F-08 malware | Policy CLOSED; vendor OPEN | `scan_status` + fail-closed tests |
