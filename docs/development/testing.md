@@ -16,7 +16,7 @@ TEST_DATABASE_URL=postgresql://amber:amber@127.0.0.1:5432/amber_test
 
 and migrate that database first.
 
-Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-management / ProjectMembership / contextual RBAC / external isolation / Document-Revision / Coordination / Planning tests. The security-gate test fails CI if they are skipped.
+Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-management / ProjectMembership / contextual RBAC / external isolation / Document-Revision / Coordination / Planning / Governance tests. The security-gate test fails CI if they are skipped.
 
 ### F-04 tenant-isolation evidence
 
@@ -68,3 +68,17 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | Task / Milestone state machines + lateness + cycle | `packages/shared/src/planning.test.ts` |
 | Catalog / no OVERDUE / derived AT_RISK | `packages/shared/src/planning.security.test.ts` |
 | HTTP lifecycle / deps / isolation / no auto-resolve | `api/test/integration/planning-tasks-milestones.integration.test.ts` |
+
+### PF-1.6 Governance / Gates / Formal Exceptions evidence (Tests A–I)
+
+| Test | Where |
+| --- | --- |
+| A Evaluation of seven types | `packages/shared/src/governance.test.ts`, `api/test/integration/governance-gates-exceptions.integration.test.ts` |
+| B READY ≠ RELEASED | same |
+| C SoD (requester ≠ approve / release) | same + `packages/shared/src/sod.security.test.ts` |
+| D RELEASED_WITH_EXCEPTION + UNSATISFIED visible | same |
+| E revoke → BLOCKED; historical release immutable | same |
+| F Isolation negatives | same |
+| G MFA + recent-auth | same |
+| H No upstream mutation | same |
+| I No `gate.override` | `scripts/assert-no-gate-override.ts`, `packages/shared/src/governance.security.test.ts` |

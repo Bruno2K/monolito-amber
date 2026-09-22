@@ -2,13 +2,13 @@
 
 Core chain (APPROVED 0.1): **Revision → Impact → Issue → Task → Milestone → Gate**.
 
-PF-1.5 implements Document + Revision + Impact Analysis + Issue + Task + Milestone on that chain. It does **not** implement Gate.
+PF-1.6 implements Document + Revision + Impact Analysis + Issue + Task + Milestone + Gate on that chain.
 
 ## Aggregates (working hypothesis from 0.1)
 
 Organization, Project, Document, Issue, Task, Milestone, Gate.
 
-PF-1.5 persists Document, Revision, Impact Analysis, Issue, Task, TaskDependency, and Milestone. Document is the stable logical artifact (Project + Organization). Revision is one version of that Document. Impact Analysis is the at-most-one case created by a current-base change. Issue is the coordination problem / pendência. Task is executable Planning work (Task ≠ Issue). Milestone is an explicit project checkpoint.
+PF-1.6 persists Document, Revision, Impact Analysis, Issue, Task, TaskDependency, Milestone, Gate, GateRequirement, FormalException, and GateReleaseDecision. Document is the stable logical artifact (Project + Organization). Revision is one version of that Document. Impact Analysis is the at-most-one case created by a current-base change. Issue is the coordination problem / pendência. Task is executable Planning work (Task ≠ Issue). Milestone is an explicit project checkpoint. Gate is the governance checkpoint over typed requirements. Formal Exception is the sole requirement-specific bypass.
 
 ## Invariants already enforced in code
 
@@ -32,7 +32,8 @@ PF-1.5 persists Document, Revision, Impact Analysis, Issue, Task, TaskDependency
 - Task dependencies are finish-to-start only; self / duplicate / cycle / cross-project edges are rejected. Cycle checks walk same-Project edges only.
 - A Task cannot move to IN_PROGRESS while a finish-to-start prerequisite is not DONE.
 - Task lateness is derived. Milestone AT_RISK / MISSED are derived (ADR-016). ACHIEVED is explicit.
-
-## Invariants reserved for later slices
-
-- Approving Formal Exception does not satisfy the requirement (Planning / Governance).
+- READY ≠ RELEASED. Evaluation never auto-releases a Gate.
+- Formal Exception is the sole bypass. It does not mark a requirement SATISFIED. RELEASED ≠ RELEASED_WITH_EXCEPTION.
+- Governance reads Documents / Coordination / Planning via adapters and does not mutate upstream.
+- Exception is requirement-specific. Requester cannot approve/reject own Exception or release using it.
+- After RELEASED_WITH_EXCEPTION, revoke/expiry of a covering Exception + still UNSATISFIED → BLOCKED. Historical release evidence is immutable.

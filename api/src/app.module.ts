@@ -11,6 +11,7 @@ import { HealthModule } from "./health/health.module";
 import { CorrelationMiddleware } from "./observability/correlation";
 import { OrgModule } from "./org/org.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { GovernanceModule } from "./governance/governance.module";
 import { PlanningModule } from "./planning/planning.module";
 import { ProjectModule } from "./project/project.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
@@ -28,6 +29,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
     DocumentModule,
     CoordinationModule,
     PlanningModule,
+    GovernanceModule,
     FilesModule,
     AuditModule,
     FoundationModule,

@@ -1,5 +1,5 @@
 // Amber Modular Monolith — schema-per-module (0.6).
-// PF-1.5: Planning owns Task / TaskDependency / Milestone. Gates remain out.
+// PF-1.6: Governance owns Gate / GateRequirement / FormalException / release evidence.
 // Seed permissions ONLY from APPROVED 0.2A. There is no gate.override.
 
 generator client {
@@ -10,7 +10,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["identity", "org", "project", "document", "coordination", "planning", "audit", "jobs"]
+  schemas  = ["identity", "org", "project", "document", "coordination", "planning", "governance", "audit", "jobs"]
 }
 
 // ---------------------------------------------------------------------------
@@ -321,6 +321,11 @@ model Project {
   issues         Issue[]
   tasks          Task[]
   milestones     Milestone[]
+  gates          Gate[]
+  gateRequirements GateRequirement[]
+  formalExceptions FormalException[]
+  gateReleaseDecisions GateReleaseDecision[]
+  gateReleaseUsedExceptions GateReleaseUsedException[]
 
   @@index([organizationId])
   @@map("projects")
@@ -605,7 +610,7 @@ model IssueEvidence {
 // ---------------------------------------------------------------------------
 // planning — Task / TaskDependency / Milestone (PF-1.5 / 0.5)
 // Issue ≠ Task. Completing a Task does not resolve an Issue or achieve a Milestone.
-// No Gate / Formal Exception tables.
+// Governance reads Planning via adapters; it does not mutate these tables.
 // ---------------------------------------------------------------------------
 
 /// Executable work. Optional source Issue and optional Milestone, same Project.
@@ -688,6 +693,147 @@ model Milestone {
   @@index([organizationId, projectId])
   @@map("milestones")
   @@schema("planning")
+}
+
+// ---------------------------------------------------------------------------
+// governance — Gate / Requirement / Formal Exception / durable release (PF-1.6 / 0.5)
+// Formal Exception is the sole bypass. Exception never marks a requirement SATISFIED.
+// READY ≠ RELEASED. RELEASED ≠ RELEASED_WITH_EXCEPTION. No gate.override.
+// ---------------------------------------------------------------------------
+
+/// Governance checkpoint. Created NOT_READY. Evaluation never auto-releases.
+model Gate {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId       String    @map("organization_id") @db.Uuid
+  projectId            String    @map("project_id") @db.Uuid
+  name                 String
+  description          String    @default("")
+  /// NOT_READY | BLOCKED | READY | RELEASED | RELEASED_WITH_EXCEPTION
+  status               String    @default("NOT_READY")
+  lastEvaluatedAt      DateTime? @map("last_evaluated_at")
+  lastEvaluatedByUserId String?  @map("last_evaluated_by_user_id") @db.Uuid
+  releasedAt           DateTime? @map("released_at")
+  releasedByUserId     String?   @map("released_by_user_id") @db.Uuid
+  releaseKind          String?   @map("release_kind")
+  createdByUserId      String    @map("created_by_user_id") @db.Uuid
+  version              Int       @default(1)
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+  project      Project              @relation(fields: [projectId], references: [id])
+  requirements GateRequirement[]
+  exceptions   FormalException[]
+  releases     GateReleaseDecision[]
+
+  @@index([organizationId, projectId])
+  @@map("gates")
+  @@schema("governance")
+}
+
+/// Typed mandatory/optional predicate. Satisfaction is independent of Exception coverage.
+model GateRequirement {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId          String    @map("organization_id") @db.Uuid
+  projectId               String    @map("project_id") @db.Uuid
+  gateId                  String    @map("gate_id") @db.Uuid
+  type                    String
+  title                   String
+  mandatory               Boolean   @default(true)
+  config                  Json
+  /// Requirement-scoped checklist (CHECKLIST_COMPLETE). Not a Coordination Checklist module.
+  checklist               Json
+  lastSatisfaction        String?   @map("last_satisfaction")
+  lastCoveredByException  Boolean   @default(false) @map("last_covered_by_exception")
+  lastCoveringExceptionId String?   @map("last_covering_exception_id") @db.Uuid
+  lastEvaluatedAt         DateTime? @map("last_evaluated_at")
+  version                 Int       @default(1)
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  project    Project           @relation(fields: [projectId], references: [id])
+  gate       Gate              @relation(fields: [gateId], references: [id])
+  exceptions FormalException[]
+  usedInReleases GateReleaseUsedException[]
+
+  @@index([organizationId, projectId])
+  @@index([gateId])
+  @@map("gate_requirements")
+  @@schema("governance")
+}
+
+/// Requirement-specific Formal Exception. History is append-forward only.
+model FormalException {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String    @map("organization_id") @db.Uuid
+  projectId          String    @map("project_id") @db.Uuid
+  gateId             String    @map("gate_id") @db.Uuid
+  gateRequirementId  String    @map("gate_requirement_id") @db.Uuid
+  /// REQUESTED | APPROVED | REJECTED | REVOKED
+  status             String    @default("REQUESTED")
+  reason             String
+  requestedByUserId  String    @map("requested_by_user_id") @db.Uuid
+  requestedAt        DateTime  @default(now()) @map("requested_at")
+  decidedByUserId    String?   @map("decided_by_user_id") @db.Uuid
+  decidedAt          DateTime? @map("decided_at")
+  revokedByUserId    String?   @map("revoked_by_user_id") @db.Uuid
+  revokedAt          DateTime? @map("revoked_at")
+  expiresAt          DateTime? @map("expires_at")
+  version            Int       @default(1)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  project            Project                    @relation(fields: [projectId], references: [id])
+  gate               Gate                       @relation(fields: [gateId], references: [id])
+  requirement        GateRequirement            @relation(fields: [gateRequirementId], references: [id])
+  usedInReleases     GateReleaseUsedException[]
+
+  @@index([organizationId, projectId])
+  @@index([gateRequirementId])
+  @@map("formal_exceptions")
+  @@schema("governance")
+}
+
+/// Immutable release evidence. A later revoke never rewrites this row.
+model GateReleaseDecision {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId      String   @map("organization_id") @db.Uuid
+  projectId           String   @map("project_id") @db.Uuid
+  gateId              String   @map("gate_id") @db.Uuid
+  /// NORMAL | WITH_EXCEPTION
+  kind                String
+  releasedByUserId    String   @map("released_by_user_id") @db.Uuid
+  releasedAt          DateTime @default(now()) @map("released_at")
+  gateVersion         Int      @map("gate_version")
+  evaluationSnapshot  Json     @map("evaluation_snapshot")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  project       Project                    @relation(fields: [projectId], references: [id])
+  gate          Gate                       @relation(fields: [gateId], references: [id])
+  usedExceptions GateReleaseUsedException[]
+
+  @@index([organizationId, projectId])
+  @@index([gateId, releasedAt])
+  @@map("gate_release_decisions")
+  @@schema("governance")
+}
+
+model GateReleaseUsedException {
+  id                 String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId     String @map("organization_id") @db.Uuid
+  projectId          String @map("project_id") @db.Uuid
+  releaseDecisionId  String @map("release_decision_id") @db.Uuid
+  formalExceptionId  String @map("formal_exception_id") @db.Uuid
+  gateRequirementId  String @map("gate_requirement_id") @db.Uuid
+
+  project           Project            @relation(fields: [projectId], references: [id])
+  releaseDecision   GateReleaseDecision @relation(fields: [releaseDecisionId], references: [id])
+  formalException   FormalException    @relation(fields: [formalExceptionId], references: [id])
+  requirement       GateRequirement    @relation(fields: [gateRequirementId], references: [id])
+
+  @@unique([releaseDecisionId, formalExceptionId])
+  @@index([formalExceptionId])
+  @@map("gate_release_used_exceptions")
+  @@schema("governance")
 }
 
 // ---------------------------------------------------------------------------

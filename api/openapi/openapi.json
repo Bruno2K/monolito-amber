@@ -2853,12 +2853,537 @@
           "planning"
         ]
       }
+    },
+    "/api/v1/projects/{projectId}/gates": {
+      "get": {
+        "operationId": "GatesController_list",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List Gates. READY ≠ RELEASED. Exception coverage is not satisfaction.",
+        "tags": [
+          "gates"
+        ]
+      },
+      "post": {
+        "operationId": "GatesController_create",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a Gate in NOT_READY. Create/configure uses gate.evaluate.",
+        "tags": [
+          "gates"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/gates/{gateId}": {
+      "get": {
+        "operationId": "GatesController_get",
+        "parameters": [
+          {
+            "name": "gateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "gates"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/gates/{gateId}/requirements": {
+      "post": {
+        "operationId": "GatesController_addRequirement",
+        "parameters": [
+          {
+            "name": "gateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Configure a typed GateRequirement. Seven catalog types only.",
+        "tags": [
+          "gates"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/gates/{gateId}/requirements/{requirementId}": {
+      "patch": {
+        "operationId": "GatesController_configureRequirement",
+        "parameters": [
+          {
+            "name": "requirementId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "gateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "gates"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/gates/{gateId}/evaluate": {
+      "post": {
+        "operationId": "GatesController_evaluate",
+        "parameters": [
+          {
+            "name": "gateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Deterministic evaluation. READY = all mandatory SATISFIED. Exceptions cover only; they never auto-release.",
+        "tags": [
+          "gates"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/gates/{gateId}/release": {
+      "post": {
+        "operationId": "GatesController_release",
+        "parameters": [
+          {
+            "name": "gateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit CAS release. NORMAL→RELEASED. WITH_EXCEPTION→RELEASED_WITH_EXCEPTION. Formal Exception is the sole bypass.",
+        "tags": [
+          "gates"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/gates/{gateId}/releases": {
+      "get": {
+        "operationId": "GatesController_listReleases",
+        "parameters": [
+          {
+            "name": "gateId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Immutable release evidence. Later revoke does not rewrite these rows.",
+        "tags": [
+          "gates"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/exceptions": {
+      "get": {
+        "operationId": "ExceptionsController_list",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "exceptions"
+        ]
+      },
+      "post": {
+        "operationId": "ExceptionsController_request",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Request a requirement-specific Formal Exception. Approval does not mark the requirement SATISFIED.",
+        "tags": [
+          "exceptions"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/exceptions/{exceptionId}": {
+      "get": {
+        "operationId": "ExceptionsController_get",
+        "parameters": [
+          {
+            "name": "exceptionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "exceptions"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/exceptions/{exceptionId}/approve": {
+      "post": {
+        "operationId": "ExceptionsController_approve",
+        "parameters": [
+          {
+            "name": "exceptionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Approve a Formal Exception (SoD + MFA + recent-auth). Does not satisfy the requirement.",
+        "tags": [
+          "exceptions"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/exceptions/{exceptionId}/reject": {
+      "post": {
+        "operationId": "ExceptionsController_reject",
+        "parameters": [
+          {
+            "name": "exceptionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "tags": [
+          "exceptions"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/exceptions/{exceptionId}/revoke": {
+      "post": {
+        "operationId": "ExceptionsController_revoke",
+        "parameters": [
+          {
+            "name": "exceptionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Revoke an approved Formal Exception. After RELEASED_WITH_EXCEPTION, re-eval becomes BLOCKED when still uncovered.",
+        "tags": [
+          "exceptions"
+        ]
+      }
     }
   },
   "info": {
     "title": "Amber API",
     "description": "Amber Modular Monolith foundation API. Formal Exception is the sole Gate bypass. Closed 0.2A catalog only.",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "contact": {}
   },
   "tags": [
@@ -2888,6 +3413,14 @@
     },
     {
       "name": "planning",
+      "description": ""
+    },
+    {
+      "name": "gates",
+      "description": ""
+    },
+    {
+      "name": "exceptions",
       "description": ""
     },
     {

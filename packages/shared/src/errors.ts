@@ -194,3 +194,10 @@ export class PlanningStateError extends AmberError {
     this.name = "PlanningStateError";
   }
 }
+
+export class GovernanceStateError extends AmberError {
+  constructor(detail: string) {
+    super("GOVERNANCE_STATE", detail, 409);
+    this.name = "GovernanceStateError";
+  }
+}

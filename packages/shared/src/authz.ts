@@ -161,6 +161,7 @@ export const HIGH_RISK_PERMISSIONS: readonly PermissionCode[] = [
   "exception.approve",
   "exception.reject",
   "exception.revoke",
+  "gate.release",
 ];
 
 export function isHighRiskPermission(code: PermissionCode): boolean {

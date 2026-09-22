@@ -4,8 +4,9 @@ You are working in `Bruno2K/monolito-amber`, the canonical Amber Modular Monolit
 
 ## Current slice
 
-**PF-1.5 — Planning / Tasks / Milestones** (Issue #13). Backend/domain Planning. No Planning UI. No Gates.
+**PF-1.6 — Governance / Gates / Formal Exceptions** (Issue #15). Backend/domain Governance. No Governance UI. No Gate Templates.
 
+**PF-1.5 — Planning / Tasks / Milestones** is merged/DONE (`d6c64703325a71c7cc240a7b60d5516d93ac2b8f`).  
 **PF-1.4 — Coordination / Impact Analysis Foundation** is merged/DONE (`404cfc5bdc9961f79392010bb012ba8f2b1a002a`).  
 **PF-1.3 — Documents & Revisions Foundation** is merged/DONE (`c4d9dffaad275f6419e5ff1fc8b732e690cfac3d`).  
 **PF-1.2 — Project Membership / Contextual RBAC** is merged/DONE (`dee5861b84224f7ea46b4e8bd978c1548a91a71a`).  
@@ -31,9 +32,12 @@ You are working in `Bruno2K/monolito-amber`, the canonical Amber Modular Monolit
 - RESOLVED ≠ CLOSED; Severity ≠ Priority; discipline ≠ assignee
 - Task ≠ Issue; Task done ≠ Issue resolve ≠ Milestone achieve
 - Task lateness and Milestone AT_RISK/MISSED are derived (ADR-016); ACHIEVED is explicit
+- READY ≠ RELEASED; Formal Exception is the sole bypass and does not satisfy a requirement
+- RELEASED ≠ RELEASED_WITH_EXCEPTION; Exception is requirement-specific
+- Governance reads Documents/Coordination/Planning via adapters and does not mutate upstream
 
 ## Forbidden
 
-Product workflows for Gates/Formal Exceptions; BIM/IFC/BCF viewers; analytics; AI; K8s; microservices; CQRS; event sourcing; Kafka; invented permissions; second bypass; treating global templates as grants; implicit project access from org-level bindings; auto-IMPACTED / auto-Issues; auto-resolving Issues from Tasks; auto-achieving Milestones; mutating Document current revision from Coordination or Planning; Impact dashboard / Issue board / Planning Gantt / product nav.
+Product workflows for Gate Templates / Governance UX; BIM/IFC/BCF viewers; analytics; AI; K8s; microservices; CQRS; event sourcing; Kafka; invented permissions; second bypass (`gate.override` / forceRelease); treating global templates as grants; implicit project access from org-level bindings; auto-IMPACTED / auto-Issues; auto-resolving Issues from Tasks; auto-achieving Milestones; auto-releasing Gates; mutating Document/Issue/Task/Milestone from Governance; Impact dashboard / Issue board / Planning Gantt / Gate screens / product nav.
 
 Escalate HUMAN_REQUIRED on approved-spec conflict, HIGH architecture/security beyond contract, destructive ops, or a new product decision.

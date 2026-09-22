@@ -31,6 +31,10 @@ export const OUTBOX_EVENT_TYPES = {
   TaskCompleted: "TaskCompleted",
   MilestoneCreated: "MilestoneCreated",
   MilestoneAchieved: "MilestoneAchieved",
+  GateReleased: "GateReleased",
+  GateReleasedWithException: "GateReleasedWithException",
+  ExceptionApproved: "ExceptionApproved",
+  ExceptionRevoked: "ExceptionRevoked",
 } as const;
 
 /**

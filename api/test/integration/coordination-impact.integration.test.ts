@@ -414,19 +414,15 @@ describe("PF-1.4 Coordination / Impact Analysis Foundation", () => {
       WHERE table_schema IN ('coordination', 'planning', 'governance')
         AND table_name IN ('tasks', 'milestones', 'gates', 'formal_exceptions', 'task_dependencies')
     `;
-    expect(
-      tables.filter(
-        (row) =>
-          row.table_name === "gates" ||
-          row.table_name === "formal_exceptions" ||
-          row.table_schema === "coordination" ||
-          row.table_schema === "governance",
-      ),
-    ).toEqual([]);
+    expect(tables.filter((row) => row.table_schema === "coordination")).toEqual([]);
     expect(tables.filter((row) => row.table_schema === "planning").map((row) => row.table_name).sort()).toEqual([
       "milestones",
       "task_dependencies",
       "tasks",
+    ]);
+    expect(tables.filter((row) => row.table_schema === "governance").map((row) => row.table_name).sort()).toEqual([
+      "formal_exceptions",
+      "gates",
     ]);
 
     const document = await reviewer.get(`/api/v1/projects/${projectA}/documents/${documentId}`);

@@ -2,7 +2,7 @@
 
 Material decisions encoded for PF-1.0 and PF-1.1. Format: Status / Context / Decision / Alternatives / Consequences / Implementation Implications / Supersedes.
 
-Governance tables (Gate / Formal Exception) stay documented here as accepted architecture, not as implemented workflows. Planning tables are implemented in PF-1.5 (ADR-016).
+Governance tables (Gate / Formal Exception / release evidence) are implemented in PF-1.6 (ADR-017). Planning tables are implemented in PF-1.5 (ADR-016).
 
 | ID | Title |
 | --- | --- |
@@ -22,3 +22,4 @@ Governance tables (Gate / Formal Exception) stay documented here as accepted arc
 | [ADR-014](./ADR-014-revision-immutability-explicit-current.md) | Revision immutability & explicit current revision |
 | [ADR-015](./ADR-015-impact-analysis-outbox-consumer.md) | Impact Analysis outbox consumer (at-most-one PENDING_ANALYSIS) |
 | [ADR-016](./ADR-016-planning-tasks-milestones.md) | Planning Tasks, finish-to-start deps, derived Milestone risk |
+| [ADR-017](./ADR-017-governance-gates-formal-exceptions.md) | Governance Gates, typed requirements, Formal Exceptions |
