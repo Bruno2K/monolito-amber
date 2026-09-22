@@ -8,8 +8,8 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 | Status | ACTIVE |
 | Issue | https://github.com/Bruno2K/monolito-amber/issues/17 |
 | Branch | `pf-1.7-platform-foundation-exit-reconciliation` |
-| PR | pending |
-| SHA | pending |
+| PR | https://github.com/Bruno2K/monolito-amber/pull/18 |
+| SHA | `71b7d7271a6170c8573b808f5747a72a2de3556e` |
 | Repo | `Bruno2K/monolito-amber` |
 | Base | `main` @ `887d598ef69eb6898e445810863511e291cbee49` (PF-1.6 merged) |
 | Prior WI | PF-1.6 Governance / Gates / Formal Exceptions — DONE (`887d598ef69eb6898e445810863511e291cbee49`) |
