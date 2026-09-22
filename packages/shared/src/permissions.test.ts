@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   FORBIDDEN_PERMISSIONS,
+  ORG_SCOPED_PERMISSIONS,
   PERMISSIONS,
   assertClosedCatalog,
   isForbiddenPermission,
+  isOrgScopedPermission,
   isPermissionCode,
+  isProjectScopedPermission,
 } from "./permissions.js";
 import { ROLE_TEMPLATES } from "./role-templates.js";
 
@@ -33,5 +36,16 @@ describe("0.2A closed permission catalog", () => {
       }
     }
     expect(ROLE_TEMPLATES).toHaveLength(9);
+  });
+
+  it("splits org-scoped vs project-scoped permissions from the closed catalog", () => {
+    expect(ORG_SCOPED_PERMISSIONS).toContain("project.create");
+    expect(ORG_SCOPED_PERMISSIONS).toContain("project.archive");
+    expect(isOrgScopedPermission("organization.read")).toBe(true);
+    expect(isProjectScopedPermission("project.read")).toBe(true);
+    expect(isProjectScopedPermission("project.assign_roles")).toBe(true);
+    expect(PERMISSIONS.filter((code) => isOrgScopedPermission(code) || isProjectScopedPermission(code))).toHaveLength(
+      PERMISSIONS.length,
+    );
   });
 });

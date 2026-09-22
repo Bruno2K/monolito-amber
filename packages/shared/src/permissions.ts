@@ -138,5 +138,29 @@ export function moduleOf(code: PermissionCode): PermissionModule {
   return PERMISSION_DESCRIPTIONS[code].module;
 }
 
+/**
+ * Org-scoped permissions (0.2 / PF-1.2). Granted only by organization-level
+ * RoleBindings to Organization-owned RoleDefinitions. They never imply access
+ * to a specific Project.
+ */
+export const ORG_SCOPED_PERMISSIONS: readonly PermissionCode[] = [
+  "organization.read",
+  "organization.manage_settings",
+  "organization.manage_members",
+  "organization.manage_roles",
+  "organization.manage_catalogs",
+  "organization.read_audit",
+  "project.create",
+  "project.archive",
+];
+
+export function isOrgScopedPermission(code: PermissionCode): boolean {
+  return (ORG_SCOPED_PERMISSIONS as readonly string[]).includes(code);
+}
+
+export function isProjectScopedPermission(code: PermissionCode): boolean {
+  return isPermissionCode(code) && !isOrgScopedPermission(code);
+}
+
 export const CLOSED_CATALOG_SOURCE =
   "https://app.notion.com/p/3e3678e54c8d819fa690f4ade50c4e10";

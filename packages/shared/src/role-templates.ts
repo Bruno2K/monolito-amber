@@ -1,9 +1,11 @@
 import { type PermissionCode } from "./permissions.js";
 
 /**
- * Default Role templates — APPROVED 0.2A §2.
- * Permission sets are derived from the annex semantics; no invented permission strings.
- * Organizations may rename/clone later; PF-1.0 seeds these system templates only.
+ * Amber Role Templates — APPROVED 0.2A §2.
+ * Product-owned immutable baseline. Seeded as RoleDefinition rows with
+ * organizationId=null / isSystemTemplate=true. They are NOT operational AuthZ
+ * grants. On Organization create, each template is instantiated into an
+ * Organization-owned RoleDefinition (lineage via sourceTemplateKey/templateKey).
  */
 export const ROLE_TEMPLATE_KEYS = [
   "ORGANIZATION_ADMINISTRATOR",

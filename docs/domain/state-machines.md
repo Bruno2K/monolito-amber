@@ -1,10 +1,15 @@
 # State machines
 
-Encoded for implementers. Product Document/Coordination/Planning/Gate machines are **not** wired as APIs in PF-1.1.
+Encoded for implementers. Product Document/Coordination/Planning/Gate machines are **not** wired as APIs in PF-1.2.
 
 ## Organization membership
 `INVITED → ACTIVE → SUSPENDED | REMOVED`  
 `REMOVED → INVITED` on re-invitation (same row; soft history).
+
+## Project membership
+`ACTIVE → SUSPENDED | REMOVED`  
+`SUSPENDED → ACTIVE | REMOVED`  
+`REMOVED → ACTIVE` when the same historical member is re-added. ACTIVE OrgMembership is required for ACTIVE ProjectMembership.
 
 ## Document
 `ACTIVE | ARCHIVED`

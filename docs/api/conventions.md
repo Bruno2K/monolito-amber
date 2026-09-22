@@ -19,7 +19,7 @@ Identity & Organizations routes:
 | POST | `/api/v1/auth/login` | Login / MFA challenge |
 | POST | `/api/v1/auth/logout` | Revoke current session |
 | POST | `/api/v1/auth/logout-all` | Revoke all sessions |
-| GET | `/api/v1/auth/session` | Session-bound org + permissions |
+| GET | `/api/v1/auth/session` | Session-bound org + permissions; optional `projectId` is routing intent |
 | POST | `/api/v1/auth/active-organization` | Explicit org-switch |
 | POST | `/api/v1/auth/password/forgot` | Request reset (no enumeration) |
 | POST | `/api/v1/auth/password/reset` | Consume reset; revoke sessions |
@@ -36,7 +36,21 @@ Identity & Organizations routes:
 | POST | `/api/v1/organizations/:organizationId/invitations/:id/revoke` | Revoke invite |
 | POST | `/api/v1/invitations/accept` | Accept invite |
 | PATCH | `/api/v1/organizations/:organizationId/members/:id` | Suspend/remove/reactivate |
-| POST | `/api/v1/organizations/:organizationId/members/:id/roles` | Assign 0.2A template |
+| POST | `/api/v1/organizations/:organizationId/members/:id/roles` | Assign org-owned RoleDefinition |
+| GET | `/api/v1/organizations/:organizationId/roles` | List org-owned RoleDefinitions |
+| PATCH | `/api/v1/organizations/:organizationId/roles/:roleId` | Configure org-owned role (closed catalog) |
+| POST | `/api/v1/organizations/:organizationId/projects` | Create Project + actor coordinator membership |
+| GET | `/api/v1/organizations/:organizationId/projects` | Org-wide project list (not EXTERNAL) |
+| GET | `/api/v1/projects` | Caller's ACTIVE project memberships |
+| GET | `/api/v1/projects/:projectId` | Project read after membership + role check |
+| PATCH | `/api/v1/projects/:projectId` | Update project metadata |
+| POST | `/api/v1/projects/:projectId/archive` | Archive (org-scoped) |
+| GET | `/api/v1/projects/:projectId/members` | List ProjectMembership |
+| POST | `/api/v1/projects/:projectId/members` | Add existing Org member |
+| PATCH | `/api/v1/projects/:projectId/members/:id` | Suspend/remove/reactivate |
+| POST | `/api/v1/projects/:projectId/members/:id/roles` | Assign org-owned role on Project |
 | GET | `/api/v1/catalog/permissions` | Closed catalog |
-| GET | `/api/v1/catalog/role-templates` | Default templates |
+| GET | `/api/v1/catalog/role-templates` | Amber Role Templates (not grants) |
 | GET | `/api/v1/files/:objectId/access` | Fail-closed file-trust check |
+
+`GET /api/v1/auth/session?projectId=` treats `projectId` as routing intent and returns the union of org-scoped + that Project's assignments after server verification.

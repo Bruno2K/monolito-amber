@@ -3,8 +3,8 @@ import {
   DenyByDefaultError,
   assertMembershipTransition,
   assertRoleManagementSoD,
+  grantsOutsideExistingAuthority,
   redactSecrets,
-  roleTemplateByKey,
   type MembershipStatus,
   type RoleTemplateKey,
 } from "@amber/shared";
@@ -14,6 +14,7 @@ import type { RequestSession } from "../auth/session.types";
 import { AuthzService } from "../authz/authz.service";
 import { currentCorrelationId } from "../observability/request-context";
 import { PrismaService } from "../prisma/prisma.service";
+import { RolesService } from "./roles.service";
 
 @Injectable()
 export class MembershipsService {
@@ -22,6 +23,7 @@ export class MembershipsService {
     private readonly audit: AuditService,
     private readonly auth: AuthService,
     private readonly authz: AuthzService,
+    private readonly roles: RolesService,
   ) {}
 
   async updateStatus(
@@ -71,7 +73,7 @@ export class MembershipsService {
     session: RequestSession,
     organizationId: string,
     membershipId: string,
-    input: { templateKey: RoleTemplateKey; projectId?: string | null },
+    input: { templateKey?: RoleTemplateKey; roleId?: string },
   ) {
     const actor = await this.authz.assert(session, "organization.manage_roles");
     if (session.activeOrganizationId !== organizationId) {
@@ -84,28 +86,36 @@ export class MembershipsService {
     if (!membership || membership.organizationId !== organizationId) {
       throw new DenyByDefaultError("Membership not found in the authorized Organization");
     }
-    const template = roleTemplateByKey(input.templateKey);
-    const actorHoldsOrgAdmin = actor.grants.some((grant) => grant.templateKey === "ORGANIZATION_ADMINISTRATOR");
-    const existingKeys = new Set(membership.roleBindings.map((binding) => binding.role.templateKey));
-    const grantsOutsideExistingAuthority = !existingKeys.has(template.key);
+    const role = await this.roles.requireOrgOwnedRole(organizationId, input);
+    const actorHoldsOrgAdmin = actor.grants.some(
+      (grant) => grant.scope === "organization" && grant.templateKey === "ORGANIZATION_ADMINISTRATOR",
+    );
+    const existingKeys = membership.roleBindings.map((binding) => binding.role.templateKey);
+    const existingPermissions = actor.grants
+      .filter((grant) => grant.scope === "organization")
+      .flatMap((grant) => [...grant.permissions]);
     assertRoleManagementSoD({
       actorUserId: session.userId,
       targetUserId: membership.userId,
       actorHoldsOrgAdmin,
-      grantsOutsideExistingAuthority,
+      grantsOutsideExistingAuthority: grantsOutsideExistingAuthority({
+        existingTemplateKeys: existingKeys,
+        existingPermissions,
+        nextTemplateKey: role.templateKey,
+        nextPermissions: role.rolePermissions.map((row) => row.permission.code as never),
+      }),
     });
 
-    const role = await this.prisma.roleDefinition.findFirst({
-      where: { organizationId: null, templateKey: template.key },
+    const existing = await this.prisma.roleBinding.findUnique({
+      where: { membershipId_roleId: { membershipId: membership.id, roleId: role.id } },
     });
-    if (!role) {
-      throw new Error(`System role template ${template.key} is not seeded`);
+    if (existing) {
+      return existing;
     }
     const binding = await this.prisma.roleBinding.create({
       data: {
         membershipId: membership.id,
         roleId: role.id,
-        projectId: input.projectId ?? null,
       },
     });
     await this.audit.insert({
@@ -116,9 +126,10 @@ export class MembershipsService {
       resourceId: binding.id,
       correlationId: currentCorrelationId(),
       payload: redactSecrets({
-        templateKey: template.key,
+        templateKey: role.templateKey,
+        sourceTemplateKey: role.sourceTemplateKey,
+        roleId: role.id,
         targetUserId: membership.userId,
-        projectId: input.projectId ?? null,
       }),
     });
     return binding;

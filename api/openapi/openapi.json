@@ -184,7 +184,16 @@
     "/api/v1/auth/session": {
       "get": {
         "operationId": "AuthController_getSession",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -195,7 +204,7 @@
             "cookie": []
           }
         ],
-        "summary": "Return the session-bound active Organization (never trust client orgId)",
+        "summary": "Return the session-bound active Organization (optional projectId is routing intent only)",
         "tags": [
           "auth"
         ]
@@ -481,7 +490,73 @@
             "cookie": []
           }
         ],
-        "summary": "Assign a 0.2A Role template (high-risk; requires recent auth)",
+        "summary": "Assign an Organization-owned RoleDefinition (high-risk; requires recent auth)",
+        "tags": [
+          "organizations"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organizationId}/roles": {
+      "get": {
+        "operationId": "OrganizationsController_listRoles",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List Organization-owned RoleDefinitions (not global Amber templates)",
+        "tags": [
+          "organizations"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organizationId}/roles/{roleId}": {
+      "patch": {
+        "operationId": "OrganizationsController_updateRole",
+        "parameters": [
+          {
+            "name": "roleId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Rename/configure an org-owned RoleDefinition within the closed 0.2A catalog",
         "tags": [
           "organizations"
         ]
@@ -499,6 +574,297 @@
         "summary": "Accept an organization invitation; creates User if needed",
         "tags": [
           "organizations"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organizationId}/projects": {
+      "post": {
+        "operationId": "ProjectsController_create",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a Project and add the actor as Project Coordinator (explicit membership)",
+        "tags": [
+          "projects"
+        ]
+      },
+      "get": {
+        "operationId": "ProjectsController_listOrganization",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Org-wide project list (INTERNAL/ADMIN; EXTERNAL isolation)",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects": {
+      "get": {
+        "operationId": "ProjectsController_listMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Projects the caller has ACTIVE ProjectMembership in (session-bound org)",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}": {
+      "get": {
+        "operationId": "ProjectsController_get",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Read a Project after server-side membership + role verification",
+        "tags": [
+          "projects"
+        ]
+      },
+      "patch": {
+        "operationId": "ProjectsController_update",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update Project metadata (project-scoped)",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/archive": {
+      "post": {
+        "operationId": "ProjectsController_archive",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Archive a Project (org-scoped; session org must own the Project)",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/members": {
+      "get": {
+        "operationId": "ProjectsController_listMembers",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List ProjectMembership rows for an authorized Project",
+        "tags": [
+          "projects"
+        ]
+      },
+      "post": {
+        "operationId": "ProjectsController_addMember",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Add an existing Organization member to the Project (never creates a User)",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/members/{membershipId}": {
+      "patch": {
+        "operationId": "ProjectsController_updateMember",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Suspend, remove, or reactivate a ProjectMembership (soft history)",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/members/{membershipId}/roles": {
+      "post": {
+        "operationId": "ProjectsController_assignRole",
+        "parameters": [
+          {
+            "name": "membershipId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Assign an Organization-owned RoleDefinition on a Project (no self-escalation)",
+        "tags": [
+          "projects"
         ]
       }
     },
@@ -572,7 +938,7 @@
   "info": {
     "title": "Amber API",
     "description": "Amber Modular Monolith foundation API. Formal Exception is the sole Gate bypass. Closed 0.2A catalog only.",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "contact": {}
   },
   "tags": [
@@ -586,6 +952,10 @@
     },
     {
       "name": "organizations",
+      "description": ""
+    },
+    {
+      "name": "projects",
       "description": ""
     },
     {

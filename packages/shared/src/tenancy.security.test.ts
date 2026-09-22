@@ -5,6 +5,8 @@ import {
   evaluateOrgSwitch,
   resolveAuthorizedOrganization,
   assertProjectInOrganization,
+  assertOperationalRoleDefinition,
+  resolveAuthorizedProject,
 } from "./tenancy.js";
 
 const session = {
@@ -79,5 +81,53 @@ describe("F-04 tenant isolation (fail closed)", () => {
       }),
     ).toThrow(DenyByDefaultError);
     expect(() => denyExternalOrgWideAccess("EXTERNAL", "audit")).toThrow(DenyByDefaultError);
+  });
+
+  it("never treats client/path projectId as authority", () => {
+    expect(
+      resolveAuthorizedProject({
+        projectId: "p1",
+        projectOrganizationId: "org-a",
+        authorizedOrganizationId: "org-a",
+      }),
+    ).toBe("p1");
+    expect(() =>
+      resolveAuthorizedProject({
+        projectId: "p1",
+        projectOrganizationId: "org-b",
+        authorizedOrganizationId: "org-a",
+        pathProjectId: "p1",
+      }),
+    ).toThrow(DenyByDefaultError);
+    expect(() =>
+      resolveAuthorizedProject({
+        projectId: "p1",
+        projectOrganizationId: "org-a",
+        authorizedOrganizationId: "org-a",
+        clientProjectId: "p-forged",
+      }),
+    ).toThrow(DenyByDefaultError);
+  });
+
+  it("rejects global Amber Role Templates as operational grants", () => {
+    expect(() =>
+      assertOperationalRoleDefinition({
+        roleOrganizationId: null,
+        authorizedOrganizationId: "org-a",
+        isSystemTemplate: true,
+      }),
+    ).toThrow(DenyByDefaultError);
+    expect(() =>
+      assertOperationalRoleDefinition({
+        roleOrganizationId: "org-b",
+        authorizedOrganizationId: "org-a",
+        isSystemTemplate: false,
+      }),
+    ).toThrow(DenyByDefaultError);
+    assertOperationalRoleDefinition({
+      roleOrganizationId: "org-a",
+      authorizedOrganizationId: "org-a",
+      isSystemTemplate: false,
+    });
   });
 });

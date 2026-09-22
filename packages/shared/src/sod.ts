@@ -65,3 +65,19 @@ export function assertRoleManagementSoD(input: {
     );
   }
 }
+
+/**
+ * project.assign_roles cannot be used to self-escalate, including by an
+ * Organization Administrator acting through that project-scoped permission.
+ */
+export function assertProjectAssignRolesSoD(input: {
+  actorUserId: string;
+  targetUserId: string;
+  grantsOutsideExistingAuthority: boolean;
+}): void {
+  if (input.actorUserId === input.targetUserId && input.grantsOutsideExistingAuthority) {
+    throw new SodViolationError(
+      "project.assign_roles cannot be used to self-grant roles or permissions outside existing project authority",
+    );
+  }
+}

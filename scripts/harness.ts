@@ -20,7 +20,7 @@ const commands = [
   "pnpm prisma:validate",
 ];
 
-console.log("PF-1.1 harness (see docs/agentic/harness.md):\n");
+console.log("Foundation & Security Gates harness (see docs/agentic/harness.md):\n");
 for (const command of commands) {
   console.log(`  ${command}`);
 }

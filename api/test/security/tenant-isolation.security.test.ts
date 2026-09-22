@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { DenyByDefaultError, evaluateOrgSwitch, resolveAuthorizedOrganization } from "@amber/shared";
+import {
+  DenyByDefaultError,
+  evaluateOrgSwitch,
+  resolveAuthorizedOrganization,
+  resolveAuthorizedProject,
+} from "@amber/shared";
 
 const sessionA = {
   userId: "user-1",
@@ -57,6 +62,25 @@ describe("F-04 tenant isolation (fail closed)", () => {
         session: sessionA,
         targetOrganizationId: "org-b",
         membership: { userId: "user-1", organizationId: "org-b", status: "REMOVED", type: "INTERNAL" },
+      }),
+    ).toThrow(DenyByDefaultError);
+  });
+
+  it("never trusts a forged path/body projectId", () => {
+    expect(() =>
+      resolveAuthorizedProject({
+        projectId: "p1",
+        projectOrganizationId: "org-b",
+        authorizedOrganizationId: "org-a",
+        pathProjectId: "p1",
+      }),
+    ).toThrow(DenyByDefaultError);
+    expect(() =>
+      resolveAuthorizedProject({
+        projectId: "p1",
+        projectOrganizationId: "org-a",
+        authorizedOrganizationId: "org-a",
+        clientProjectId: "p-forged",
       }),
     ).toThrow(DenyByDefaultError);
   });

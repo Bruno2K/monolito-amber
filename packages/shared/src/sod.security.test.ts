@@ -3,6 +3,7 @@ import { SodViolationError } from "./errors.js";
 import {
   assertExceptionDecisionSoD,
   assertExceptionReleaseSoD,
+  assertProjectAssignRolesSoD,
   assertRevisionApprovalSoD,
   assertRevisionMakeCurrentSoD,
   assertRoleManagementSoD,
@@ -53,5 +54,20 @@ describe("0.2A resource-level SoD (fail closed)", () => {
         grantsOutsideExistingAuthority: true,
       }),
     ).toThrow(SodViolationError);
+  });
+
+  it("blocks project.assign_roles self-escalation even for Org Admin", () => {
+    expect(() =>
+      assertProjectAssignRolesSoD({
+        actorUserId: "u1",
+        targetUserId: "u1",
+        grantsOutsideExistingAuthority: true,
+      }),
+    ).toThrow(SodViolationError);
+    assertProjectAssignRolesSoD({
+      actorUserId: "u1",
+      targetUserId: "u2",
+      grantsOutsideExistingAuthority: true,
+    });
   });
 });

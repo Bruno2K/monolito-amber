@@ -1,6 +1,6 @@
 # Identity and authorization
 
-Source: APPROVED [0.2A](https://app.notion.com/p/3e3678e54c8d819fa690f4ade50c4e10). Implemented in PF-1.1; reconciled in PF-1.1R.
+Source: APPROVED [0.2](https://app.notion.com/p/3e2678e54c8d81a4b99bca837516b5b8) / [0.2A](https://app.notion.com/p/3e3678e54c8d819fa690f4ade50c4e10). Implemented in PF-1.1; reconciled in PF-1.1R; project context in PF-1.2.
 
 ## Identities
 
@@ -25,13 +25,21 @@ Source: APPROVED [0.2A](https://app.notion.com/p/3e3678e54c8d819fa690f4ade50c4e1
 
 ## AuthZ
 
-Closed catalog only. Roles are templates composed from that catalog. Resource-level SoD:
+Closed catalog only. Amber Role Templates are product-owned baselines (`organizationId = null`). They are **not** operational grants.
+
+On Organization create, Amber instantiates Organization-owned `RoleDefinition` rows (permission mappings + `sourceTemplateKey` / `templateKey` lineage). Project role assignment references those org-owned rows only.
+
+Resource-level SoD:
 
 1. Publisher cannot approve/reject or make-current that Revision.
 2. Exception requester cannot approve/reject or release via that Exception.
-3. Project role assignment cannot self-grant outside existing admin authority.
+3. `project.assign_roles` cannot self-grant outside existing project authority (including Org Admin acting through that permission).
 
-PF-1.1 shipped the SoD primitives without creating fake Gate/Revision/Exception entities. PF-1.1R keeps that boundary.
+Org-scoped permissions (organization.*, `project.create`, `project.archive`) come from org-level RoleBindings. Project-scoped permissions require ACTIVE ProjectMembership + ProjectRoleAssignment in that Project. Org-level binding never implies every Project.
+
+Authorization context: User + Session + active Org + ACTIVE OrgMembership + (when project-scoped) Project in that Org + ACTIVE ProjectMembership + assigned roles + permission + ownership + SoD. Deny by default.
+
+PF-1.1 / PF-1.1R shipped SoD primitives without creating fake Gate/Revision/Exception entities. PF-1.2 keeps that boundary.
 
 ## Audit read
 

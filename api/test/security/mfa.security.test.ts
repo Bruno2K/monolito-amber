@@ -26,6 +26,7 @@ describe("MFA and high-risk freshness (fail closed)", () => {
       grants: [
         {
           templateKey: "ORGANIZATION_ADMINISTRATOR",
+          scope: "organization",
           permissions: ["organization.manage_members", "organization.manage_roles"],
         },
       ],

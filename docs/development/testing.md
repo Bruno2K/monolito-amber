@@ -16,7 +16,7 @@ TEST_DATABASE_URL=postgresql://amber:amber@127.0.0.1:5432/amber_test
 
 and migrate that database first.
 
-Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-management tests. The security-gate test fails CI if they are skipped.
+Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-management / ProjectMembership / contextual RBAC / external isolation tests. The security-gate test fails CI if they are skipped.
 
 ### F-04 tenant-isolation evidence
 
@@ -31,3 +31,15 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | EXTERNAL cannot read org directory | same |
 | Removed member old session is `401 SESSION_REVOKED`; relogin cannot read org | same |
 | Org B cannot manage Org A members | same |
+
+### PF-1.2 ProjectMembership / contextual RBAC evidence
+
+| Test | Where |
+| --- | --- |
+| Org-scoped binding is not implicit project access | `packages/shared/src/authz.test.ts` |
+| Union only inside the selected Project | same |
+| Global templates are not operational grants | `packages/shared/src/tenancy.security.test.ts` |
+| Forged path/body projectId denied | `api/test/security/tenant-isolation.security.test.ts` |
+| Coordinator cannot self-escalate / invite / edit roles | `api/test/security/project-membership.security.test.ts` + integration |
+| EXTERNAL isolation (directory / list / other projects) | `api/test/security/external-isolation.security.test.ts` + integration |
+| HTTP ProjectMembership lifecycle + org override | `api/test/integration/project-membership.integration.test.ts` |

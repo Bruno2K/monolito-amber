@@ -6,7 +6,7 @@ Exact module names from APPROVED 0.1. Feature code does **not** join across modu
 | --- | --- | --- |
 | Identity & Access | User, AuthenticationIdentity, credential, session, invite, reset, MFA TOTP | AuthN floors from 0.2A |
 | Organizations | Organization, membership, Role/Permission definitions | Seed 0.2A catalog + templates; membership lifecycle |
-| Projects | Project (empreendimento), later disciplines/membership | Skeleton only |
+| Projects | Project (empreendimento), ProjectMembership, ProjectRoleAssignment | Contextual RBAC; no product pages |
 | Documents & Revisions | Document, Revision, current pointer, files | **Not implemented.** File-trust primitive (`scan_status`) only |
 | Coordination | Impact, Issue, comments, evidence | **Not implemented.** Outbox event name reserved |
 | Planning | Task, TaskDependency, Milestone | **Not implemented** |

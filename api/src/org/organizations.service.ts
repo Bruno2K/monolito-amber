@@ -10,6 +10,7 @@ import { AuthService } from "../auth/auth.service";
 import type { RequestSession } from "../auth/session.types";
 import { currentCorrelationId } from "../observability/request-context";
 import { PrismaService } from "../prisma/prisma.service";
+import { RolesService } from "./roles.service";
 
 @Injectable()
 export class OrganizationsService {
@@ -17,45 +18,53 @@ export class OrganizationsService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly auth: AuthService,
+    private readonly roles: RolesService,
   ) {}
 
   async create(session: RequestSession, input: { name: string; slug?: string }) {
     const slug = await this.uniqueSlug(input.slug ?? input.name);
-    const adminRole = await this.prisma.roleDefinition.findFirst({
-      where: { organizationId: null, templateKey: "ORGANIZATION_ADMINISTRATOR" },
-    });
-    if (!adminRole) {
-      throw new Error("System role template ORGANIZATION_ADMINISTRATOR is not seeded");
-    }
-
-    const organization = await this.prisma.organization.create({
-      data: { name: input.name.trim(), slug },
-    });
-    const membership = await this.prisma.organizationMembership.create({
-      data: {
-        organizationId: organization.id,
-        userId: session.userId,
-        type: "ADMINISTRATIVE",
-        status: "ACTIVE",
-      },
-    });
-    await this.prisma.roleBinding.create({
-      data: { membershipId: membership.id, roleId: adminRole.id },
-    });
-    await this.prisma.session.update({
-      where: { id: session.id },
-      data: { activeOrganizationId: organization.id, lastSeenAt: new Date() },
+    const created = await this.prisma.$transaction(async (tx) => {
+      const organization = await tx.organization.create({
+        data: { name: input.name.trim(), slug },
+      });
+      await this.roles.instantiateForOrganization(tx, organization.id);
+      const adminRole = await tx.roleDefinition.findFirst({
+        where: {
+          organizationId: organization.id,
+          templateKey: "ORGANIZATION_ADMINISTRATOR",
+          isSystemTemplate: false,
+        },
+      });
+      if (!adminRole) {
+        throw new Error("Organization-owned ORGANIZATION_ADMINISTRATOR was not instantiated");
+      }
+      const membership = await tx.organizationMembership.create({
+        data: {
+          organizationId: organization.id,
+          userId: session.userId,
+          type: "ADMINISTRATIVE",
+          status: "ACTIVE",
+        },
+      });
+      await tx.roleBinding.create({
+        data: { membershipId: membership.id, roleId: adminRole.id },
+      });
+      await tx.session.update({
+        where: { id: session.id },
+        data: { activeOrganizationId: organization.id, lastSeenAt: new Date() },
+      });
+      return { organization, membership };
     });
     await this.audit.insert({
-      organizationId: organization.id,
+      organizationId: created.organization.id,
       actorUserId: session.userId,
       eventType: "ORG_CREATED",
       resourceType: "organization",
-      resourceId: organization.id,
+      resourceId: created.organization.id,
       correlationId: currentCorrelationId(),
-      payload: redactSecrets({ slug, name: organization.name }),
+      payload: redactSecrets({ slug, name: created.organization.name }),
     });
-    return { organization, membership };
+    return created;
   }
 
   async listMine(session: RequestSession) {
@@ -112,9 +121,11 @@ export class OrganizationsService {
       type: row.type,
       roles: row.roleBindings.map((binding) => ({
         id: binding.id,
+        roleId: binding.role.id,
         templateKey: binding.role.templateKey,
+        sourceTemplateKey: binding.role.sourceTemplateKey,
         name: binding.role.name,
-        projectId: binding.projectId,
+        organizationId: binding.role.organizationId,
       })),
     }));
   }
