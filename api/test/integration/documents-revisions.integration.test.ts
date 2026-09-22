@@ -75,12 +75,22 @@ beforeAll(async () => {
 
   const roles = await ownerA.get(`/api/v1/organizations/${orgA}/roles`);
   const reviewerRole = roles.body.find((role: { templateKey: string }) => role.templateKey === "REVIEWER_REVISION_APPROVER");
+  const publisherRole = roles.body.find((role: { templateKey: string }) => role.templateKey === "DISCIPLINE_COORDINATOR");
   const reviewerTemplate = ROLE_TEMPLATES.find((role) => role.key === "REVIEWER_REVISION_APPROVER");
-  const patched = await ownerA.patch(`/api/v1/organizations/${orgA}/roles/${reviewerRole.id}`).send({
+  const publisherTemplate = ROLE_TEMPLATES.find((role) => role.key === "DISCIPLINE_COORDINATOR");
+  const patchedReviewer = await ownerA.patch(`/api/v1/organizations/${orgA}/roles/${reviewerRole.id}`).send({
     permissions: [...(reviewerTemplate?.permissions ?? []), "revision.make_current"],
   });
-  expect(patched.status).toBeLessThan(400);
-  expect(patched.body.permissions).toContain("revision.make_current");
+  expect(patchedReviewer.status).toBeLessThan(400);
+  const patchedPublisher = await ownerA.patch(`/api/v1/organizations/${orgA}/roles/${publisherRole.id}`).send({
+    permissions: [
+      ...(publisherTemplate?.permissions ?? []),
+      "revision.approve",
+      "revision.reject",
+      "revision.make_current",
+    ],
+  });
+  expect(patchedPublisher.status).toBeLessThan(400);
 
   publisher = await inviteToProject("publisher", "DISCIPLINE_COORDINATOR");
   reviewer = await inviteToProject("reviewer", "REVIEWER_REVISION_APPROVER");
@@ -127,10 +137,9 @@ async function uploadAndComplete(agent: Agent, docId: string, revId: string, con
   const url = await agent.post(`/api/v1/projects/${projectA}/documents/${docId}/revisions/${revId}/upload-url`);
   expect(url.status).toBeLessThan(400);
   await putObjectBytes(url.body.storageKey, bytes);
-  await agent.put(url.body.uploadUrl).set("Content-Type", "application/octet-stream").send(bytes);
   const complete = await agent
     .post(`/api/v1/projects/${projectA}/documents/${docId}/revisions/${revId}/complete-upload`)
-    .send({ checksumSha256: checksum, mimeType: "application/pdf", fileName: "model.pdf" });
+    .send({ checksumSha256: checksum, mimeType: "application/pdf" });
   expect(complete.status).toBeLessThan(400);
   return complete.body as { storedObjectId: string; scanStatus: string; duplicateWarning: boolean };
 }
@@ -208,11 +217,12 @@ describe("PF-1.3 Documents & Revisions Foundation", () => {
   });
 
   it("enforces SoD: publisher cannot approve/reject/make-current; REJECTED is preserved", async () => {
-    const sodApprove = await publisher
+    const tooEarly = await publisher
       .post(`/api/v1/projects/${projectA}/documents/${documentId}/revisions/${revisionR1}/approve`)
-      .set("Idempotency-Key", `sod-approve-${suffix}`)
+      .set("Idempotency-Key", `early-approve-${suffix}`)
       .send({});
-    expect(sodApprove.status).toBe(403);
+    expect(tooEarly.status).toBe(409);
+    expect(tooEarly.body.code).toBe("REVISION_STATE");
 
     const reviewed = await reviewer.post(
       `/api/v1/projects/${projectA}/documents/${documentId}/revisions/${revisionR1}/review`,
@@ -409,5 +419,6 @@ describe("PF-1.3 Documents & Revisions Foundation", () => {
       .set("Idempotency-Key", `pub-block-${suffix}`)
       .send({});
     expect(blockedPublish.status).toBe(403);
+    delete process.env.AMBER_SCANNER_AVAILABLE;
   });
 });
