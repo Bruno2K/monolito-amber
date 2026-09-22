@@ -82,23 +82,37 @@ async function main() {
     for (const template of templates) {
       const existing = await prisma.roleDefinition.findFirst({
         where: { organizationId: organization.id, templateKey: template.templateKey },
+        include: { rolePermissions: true },
       });
-      if (existing) {
+      if (!existing) {
+        await prisma.roleDefinition.create({
+          data: {
+            organizationId: organization.id,
+            templateKey: template.templateKey,
+            sourceTemplateKey: template.sourceTemplateKey || template.templateKey,
+            name: template.name,
+            description: template.description,
+            isSystemTemplate: false,
+            rolePermissions: {
+              create: template.rolePermissions.map((row) => ({ permissionId: row.permissionId })),
+            },
+          },
+        });
         continue;
       }
-      await prisma.roleDefinition.create({
-        data: {
-          organizationId: organization.id,
-          templateKey: template.templateKey,
-          sourceTemplateKey: template.sourceTemplateKey || template.templateKey,
-          name: template.name,
-          description: template.description,
-          isSystemTemplate: false,
-          rolePermissions: {
-            create: template.rolePermissions.map((row) => ({ permissionId: row.permissionId })),
-          },
-        },
-      });
+      const have = new Set(existing.rolePermissions.map((row) => row.permissionId));
+      const missing = template.rolePermissions.filter((row) => !have.has(row.permissionId));
+      if (missing.length > 0) {
+        await prisma.rolePermission.createMany({
+          data: missing.map((row) => ({ roleId: existing.id, permissionId: row.permissionId })),
+        });
+      }
+      if (existing.description !== template.description || existing.name !== template.name) {
+        await prisma.roleDefinition.update({
+          where: { id: existing.id },
+          data: { name: template.name, description: template.description },
+        });
+      }
     }
   }
 }

@@ -50,7 +50,7 @@ export const ROLE_TEMPLATES: readonly RoleTemplate[] = [
     key: "PROJECT_COORDINATOR",
     name: "Project Coordinator",
     description:
-      "Project read/update, project member/role assignment, document read, issue/task/milestone coordination, gate evaluation and normal project administration. High-risk approvals remain separate where SoD applies.",
+      "Project read/update, project member/role assignment, document read, issue/task/milestone coordination, gate evaluation, Formal Exception request, and normal project administration. High-risk approvals remain separate where SoD applies.",
     permissions: [
       "project.read",
       "project.update",
@@ -74,6 +74,7 @@ export const ROLE_TEMPLATES: readonly RoleTemplate[] = [
       "milestone.achieve",
       "gate.read",
       "gate.evaluate",
+      "exception.request",
     ],
   },
   {

@@ -41,7 +41,9 @@ export const IDEMPOTENCY_REQUIRED_OPERATIONS = [
   "issue.create",
   "issue.status",
   "gate.release",
+  "exception.request",
   "exception.approve",
+  "exception.reject",
 ] as const;
 
 export function requireIdempotencyKey(value: string | undefined | null): string {

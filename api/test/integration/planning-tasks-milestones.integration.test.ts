@@ -423,7 +423,7 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
     expect(issue.body.status).toBe("OPEN");
   });
 
-  it("isolates tenants, rejects spoofed project/task ids, and never introduces Gates", async () => {
+  it("isolates tenants, rejects spoofed project/task ids, and keeps Gates out of the planning schema", async () => {
     const cross = await ownerB.get(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}`);
     expect(cross.status).toBe(403);
     const crossMs = await ownerB.get(`/api/v1/projects/${projectA}/milestones/${milestoneId}`);
@@ -438,7 +438,8 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
       FROM information_schema.tables
       WHERE table_name IN ('gates', 'formal_exceptions', 'gate_requirements')
     `;
-    expect(tables).toEqual([]);
+    expect(tables.some((row) => row.table_schema === "planning")).toBe(false);
+    expect(tables.filter((row) => row.table_schema === "governance").length).toBeGreaterThan(0);
 
     const cancelled = await coordinator
       .post(`/api/v1/projects/${projectA}/milestones/${missedMilestoneId}/cancel`)

@@ -9,7 +9,8 @@
 - PF-1.2 adds `source_template_key`, org-owned RoleDefinition instantiation, `project_memberships`, `project_role_assignments`, and drops `role_bindings.project_id`. Prefer expand-then-contract; do not silently redesign unrelated modules.
 - PF-1.3 adds `document.documents` / `document.revisions`, binds `stored_objects` to documents, and adds tenant + immutability triggers. Additive only.
 - PF-1.4 adds `coordination` schema (`impact_analyses`, `issues`, comments/evidence/history) with tenant-binding triggers. Additive only.
-- PF-1.5 adds `planning` schema (`tasks`, `task_dependencies`, `milestones`) with tenant-binding triggers. Additive only. No Gate / Formal Exception tables.
+- PF-1.5 adds `planning` schema (`tasks`, `task_dependencies`, `milestones`) with tenant-binding triggers. Additive only.
+- PF-1.6 adds `governance` schema (`gates`, `gate_requirements`, `formal_exceptions`, `gate_release_decisions`, `gate_release_used_exceptions`) with tenant-binding triggers. Additive only. No `gate.override`. Seed additively refreshes org-owned PROJECT_COORDINATOR copies with `exception.request`.
 
 ```bash
 pnpm prisma:generate

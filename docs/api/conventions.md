@@ -5,7 +5,7 @@
 - Errors: `application/problem+json` with `type`, `title`, `status`, `detail`, `instance`, `correlationId`, `code`
 - Correlation: accept `X-Correlation-Id` or generate a UUID
 - Pagination (later): cursor for large lists; allowlisted sort/filter
-- Idempotency-Key required for publish, approve, reject, make-current, task create/status/complete/dependency, milestone create/achieve (later: gate release, exception approve)
+- Idempotency-Key required for publish, approve, reject, make-current, task create/status/complete/dependency, milestone create/achieve, gate release, exception request/approve/reject
 - AuthZ uses the closed 0.2A catalog
 - Download/preview denied unless `scan_status=CLEAN`
 - Browser sessions: `amber_session` HttpOnly cookie (opaque token; server stores hash)
@@ -90,5 +90,17 @@ Identity & Organizations routes:
 | GET / PATCH | `/api/v1/projects/:projectId/milestones/:milestoneId` | Read / update fields (`status` derived; `recordedStatus` stored) |
 | POST | `/api/v1/projects/:projectId/milestones/:milestoneId/achieve` | Explicit achieve |
 | POST | `/api/v1/projects/:projectId/milestones/:milestoneId/cancel` | Cancel a planned Milestone |
+| GET / POST | `/api/v1/projects/:projectId/gates` | List / create Gate (`NOT_READY`; create uses `gate.evaluate`) |
+| GET | `/api/v1/projects/:projectId/gates/:gateId` | Read Gate (satisfaction ≠ exception coverage) |
+| POST | `/api/v1/projects/:projectId/gates/:gateId/requirements` | Configure a typed requirement |
+| PATCH | `/api/v1/projects/:projectId/gates/:gateId/requirements/:requirementId` | Update requirement / checklist |
+| POST | `/api/v1/projects/:projectId/gates/:gateId/evaluate` | Deterministic evaluate (never auto-releases) |
+| POST | `/api/v1/projects/:projectId/gates/:gateId/release` | Explicit CAS release (`NORMAL` or `WITH_EXCEPTION`) |
+| GET | `/api/v1/projects/:projectId/gates/:gateId/releases` | Immutable release evidence |
+| GET / POST | `/api/v1/projects/:projectId/exceptions` | List / request Formal Exception (requirement-specific) |
+| GET | `/api/v1/projects/:projectId/exceptions/:exceptionId` | Read Formal Exception |
+| POST | `/api/v1/projects/:projectId/exceptions/:exceptionId/approve` | Approve (SoD + MFA + recent-auth; does not satisfy) |
+| POST | `/api/v1/projects/:projectId/exceptions/:exceptionId/reject` | Reject (SoD + MFA + recent-auth) |
+| POST | `/api/v1/projects/:projectId/exceptions/:exceptionId/revoke` | Revoke; re-eval may become BLOCKED |
 
 `GET /api/v1/auth/session?projectId=` treats `projectId` as routing intent and returns the union of org-scoped + that Project's assignments after server verification.

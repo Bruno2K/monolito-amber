@@ -9,8 +9,9 @@
 | Task | Planning work item. Task ≠ Issue. Completing a Task does not resolve an Issue |
 | Milestone | Planning checkpoint. ACHIEVED is explicit; AT_RISK / MISSED are derived (ADR-016) |
 | TaskDependency | Finish-to-start predecessor. Acyclic. Same Project only |
-| Gate | Governance checkpoint over mandatory requirements |
-| Formal Exception | Sole approved bypass of an unsatisfied GateRequirement |
+| Gate | Governance checkpoint over typed mandatory requirements. READY ≠ RELEASED |
+| Formal Exception | Sole approved bypass of an unsatisfied GateRequirement. Does not mark SATISFIED |
+| GateReleaseDecision | Immutable evidence of NORMAL or WITH_EXCEPTION release |
 | Document | Stable logical artifact under a Project; identity ≠ filename or storage key |
 | Revision | One version of a Document; immutable after publish |
 | Current revision | The operational base of a Document (`Document.currentRevisionId`); not a status |

@@ -19,7 +19,7 @@ Source: APPROVED [0.2](https://app.notion.com/p/3e2678e54c8d81a4b99bca837516b5b8
 - MFA TOTP required for Organization Administrator and Governance Approver.
 - Privileged permissions from those roles **fail closed** until MFA is enrolled (restricted session: enroll / challenge / logout remain available).
 - Recovery codes hashed; regenerate only after re-authentication.
-- High-risk re-auth (`Session.lastReauthAt`, 15 minutes) for Formal Exception approve and org security/role changes.
+- High-risk re-auth (`Session.lastReauthAt`, 15 minutes) for Formal Exception approve/reject/revoke, `gate.release`, and org security/role changes.
 - Login rate limit is **process-local / in-memory**. Correct for a single API instance. Horizontal (multi-instance) API scaling needs shared limiter state; do not add Redis solely for this constraint.
 - `POST /api/v1/auth/register` is **first-instance bootstrap only** (zero Users). It is not public product self-signup. Later Users are created by accepting an organization invitation.
 

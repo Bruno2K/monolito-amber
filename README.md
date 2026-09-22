@@ -6,9 +6,9 @@ This repository is the real product. **`Bruno2K/amber` is the Product Vision lan
 
 Official commercial name remains OPEN; **Amber** is the technical name.
 
-## PF-1.5 — Planning / Tasks / Milestones
+## PF-1.6 — Governance / Gates / Formal Exceptions
 
-Task lifecycle, finish-to-start dependencies, and Milestones with derived AT_RISK/MISSED (ADR-016). **Task ≠ Issue.** Completing a Task does not resolve an Issue or achieve a Milestone. **No Planning UI. No Gates / Formal Exceptions.**
+Gates, typed requirements, Formal Exceptions, and durable release evidence (ADR-017). **READY ≠ RELEASED.** Exception coverage does not satisfy a requirement. **RELEASED ≠ RELEASED_WITH_EXCEPTION.** Formal Exception is the sole bypass. **No Governance UI. No Gate Templates. No `gate.override`.**
 
 PF-1.0 planted the Modular Monolith layout, Prisma, catalog seed, and security stubs.
 

@@ -1,6 +1,6 @@
 # State machines
 
-Encoded for implementers. Gate machines are **not** wired as APIs in PF-1.5.
+Encoded for implementers. Gate machines are wired as APIs in PF-1.6.
 
 ## Organization membership
 `INVITED → ACTIVE → SUSPENDED | REMOVED`  
@@ -38,9 +38,10 @@ Sides: REJECTED, CANCELLED, REOPENED.
 ## Milestone (0.5 / PF-1.5)
 Stored: `PLANNED | ACHIEVED | CANCELLED`. Derived on read: `AT_RISK` (late linked Task) or `MISSED` (past `targetDate` while still PLANNED). ACHIEVED is explicit. See ADR-016.
 
-## Gate (0.5)
+## Gate (0.5 / PF-1.6)
 `NOT_READY | BLOCKED | READY | RELEASED | RELEASED_WITH_EXCEPTION`  
-READY ≠ RELEASED. RELEASED_WITH_EXCEPTION ≠ RELEASED.
+NOT_READY = never evaluated. BLOCKED = evaluated with an unsatisfied mandatory. READY = all mandatory SATISFIED only. READY ≠ RELEASED — evaluation never auto-releases. RELEASED_WITH_EXCEPTION ≠ RELEASED. Exception coverage does not produce READY.
 
-## Formal Exception (0.5)
-`REQUESTED → APPROVED | REJECTED`; `APPROVED → REVOKED`.
+## Formal Exception (0.5 / PF-1.6)
+`REQUESTED → APPROVED | REJECTED`; `APPROVED → REVOKED`.  
+Requirement-specific. Optional `expiresAt`. Approval does not mark the requirement SATISFIED. After RELEASED_WITH_EXCEPTION, revoke/expiry of a covering Exception + still UNSATISFIED → re-eval → BLOCKED; historical release rows stay.
