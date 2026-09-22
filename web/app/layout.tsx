@@ -12,8 +12,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <main>
           <nav>
-            <a href="/">Foundation</a>
-            <a href="/org-switch">Org switch stub</a>
+            <a href="/">Shell</a>
+            <a href="/org-switch">Org-switch stub</a>
           </nav>
           {children}
         </main>

@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-export default function OrgSwitchPage() {
+export default function OrgSwitchStubPage() {
   const [organizationId, setOrganizationId] = useState("");
   const [tokenHash, setTokenHash] = useState("");
   const [result, setResult] = useState<string>("");
@@ -25,13 +25,15 @@ export default function OrgSwitchPage() {
 
   return (
     <>
-      <h1>Organization switch stub</h1>
+      <p className="shell-banner">Foundation stub — not a product screen</p>
+      <h1>Org-switch stub</h1>
       <p>
-        Path/body <code>organizationId</code> is a routing hint. The API re-validates ACTIVE
-        membership and binds the session server-side. Forged org ids are denied.
+        Exercises session-bound Organization binding. Path/body <code>organizationId</code> is a
+        routing hint only; the API re-validates ACTIVE membership and binds the session
+        server-side.
       </p>
-      <form className="card" onSubmit={onSubmit}>
-        <label htmlFor="token">Session token hash (dev stub header)</label>
+      <form onSubmit={onSubmit}>
+        <label htmlFor="token">Session token hash (dev header)</label>
         <input
           id="token"
           value={tokenHash}
@@ -48,7 +50,7 @@ export default function OrgSwitchPage() {
         <button type="submit">Switch organization</button>
       </form>
       {result ? (
-        <pre className="card">
+        <pre>
           <code>{result}</code>
         </pre>
       ) : null}

@@ -31,12 +31,14 @@ code {
   padding: 0.1rem 0.3rem;
 }
 
-.card {
-  background: #fffdf8;
-  border: 1px solid #d9d0c1;
-  border-radius: 12px;
-  padding: 1.25rem 1.4rem;
-  margin: 1rem 0;
+.shell-banner {
+  display: inline-block;
+  margin: 0 0 1rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background: #ebe4d6;
 }
 
 label {
