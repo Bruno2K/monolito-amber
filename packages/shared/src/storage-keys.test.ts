@@ -19,7 +19,10 @@ describe("tenant-bound object keys", () => {
   });
 
   it("rejects traversal and cross-tenant keys", () => {
-    expect(() => documentObjectKey({ ...ids, fileName: "../x.pdf" })).toThrow(FileIntegrityError);
+    expect(documentObjectKey({ ...ids, fileName: "../x.pdf" })).toBe(
+      `org/${ids.organizationId}/project/${ids.projectId}/documents/${ids.documentId}/revisions/${ids.revisionId}/x.pdf`,
+    );
+    expect(() => documentObjectKey({ ...ids, fileName: ".." })).toThrow(FileIntegrityError);
     expect(() =>
       assertTenantBoundObjectKey("org/other/project/p/documents/d/revisions/r/f.pdf", ids),
     ).toThrow(FileIntegrityError);

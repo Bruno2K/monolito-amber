@@ -24,6 +24,7 @@ export class FilesController {
 
   @Put("objects/:token")
   @ApiOperation({ summary: "Redeem a short-lived server-minted upload grant (local/dev object store)" })
+  @ApiParam({ name: "token", required: true })
   async upload(@Param("token") token: string, @Req() req: Request) {
     const chunks: Buffer[] = [];
     await new Promise<void>((resolve, reject) => {
@@ -36,6 +37,7 @@ export class FilesController {
 
   @Get("objects/:token")
   @ApiOperation({ summary: "Redeem a short-lived server-minted download grant" })
+  @ApiParam({ name: "token", required: true })
   async download(@Param("token") token: string, @Res() res: Response) {
     const file = await this.files.readSignedDownload(token);
     res.setHeader("Content-Type", "application/octet-stream");
