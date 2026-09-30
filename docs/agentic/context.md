@@ -6,11 +6,11 @@ This repository is **PUBLIC** by design (portfolio). No secrets, credentials, or
 
 ## Current slice
 
-**PF-1.7 — Platform Foundation Exit Reconciliation** (Issue #17). Docs/Markdown only. Exit Gate is READY_FOR_FINAL_REVIEW. Do not auto-activate Notifications or any next Work Item.
+**M2.6 — Governance Gates & Exceptions Experience** (Issue #19). Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
 
-Platform Foundation **PF-1.0..1.6 is DONE**:
+Platform Foundation **PF-1.0..1.7 is DONE on main** (`49588c3cc9ec0f6b43be5c35f1e2712d09522d17`).
 
-**PF-1.6 — Governance / Gates / Formal Exceptions** is merged/DONE (`887d598ef69eb6898e445810863511e291cbee49`).  
+**PF-1.6 — Governance / Gates / Formal Exceptions** domain is merged/DONE (`887d598ef69eb6898e445810863511e291cbee49`).  
 **PF-1.5 — Planning / Tasks / Milestones** is merged/DONE (`d6c64703325a71c7cc240a7b60d5516d93ac2b8f`).  
 **PF-1.4 — Coordination / Impact Analysis Foundation** is merged/DONE (`404cfc5bdc9961f79392010bb012ba8f2b1a002a`).  
 **PF-1.3 — Documents & Revisions Foundation** is merged/DONE (`c4d9dffaad275f6419e5ff1fc8b732e690cfac3d`).  
@@ -26,7 +26,7 @@ Platform Foundation **PF-1.0..1.6 is DONE**:
 - No `gate.override`; Formal Exception is the sole bypass
 - Session-bound org; deny-by-default
 - Organization membership ≠ project membership
-- Client `organizationId` / `projectId` / `documentId` / `revisionId` / `impactId` / `issueId` / `taskId` / `milestoneId` are routing hints
+- Client routing ids are hints only
 - MFA required for Organization Administrator and Governance Approver; privileged AuthZ **fail closed** until MFA is satisfied
 - Registration is invitation/bootstrap-controlled (not public self-signup)
 - Audit insert-only; `organization.read_audit` for reads
@@ -41,11 +41,12 @@ Platform Foundation **PF-1.0..1.6 is DONE**:
 - READY ≠ RELEASED; Formal Exception is the sole bypass and does not satisfy a requirement
 - RELEASED ≠ RELEASED_WITH_EXCEPTION; Exception is requirement-specific
 - Governance reads Documents/Coordination/Planning via adapters and does not mutate upstream
+- **M2.6** delivers Governance Gates & Exceptions **product UX in Figma** + evidence docs (no backend changes)
 
 ## Forbidden (future phase — not activated)
 
-Product workflows for Gate Templates / Governance UX; BIM/IFC/BCF viewers; analytics; AI; K8s; microservices; CQRS; event sourcing; Kafka; invented permissions; second bypass (`gate.override` / forceRelease); treating global templates as grants; implicit project access from org-level bindings; auto-IMPACTED / auto-Issues; auto-resolving Issues from Tasks; auto-achieving Milestones; auto-releasing Gates; mutating Document/Issue/Task/Milestone from Governance; Impact dashboard / Issue board / Planning Gantt / Gate screens / product nav.
+Gate Templates builder; BIM/IFC/BCF viewers; analytics; AI; K8s; microservices; CQRS; event sourcing; Kafka; invented permissions; second bypass (`gate.override` / forceRelease); treating global templates as grants; implicit project access from org-level bindings; auto-IMPACTED / auto-Issues; auto-resolving Issues from Tasks; auto-achieving Milestones; auto-releasing Gates; mutating Document/Issue/Task/Milestone from Governance.
 
-Also deferred (HUMAN_ACTIVATION_REQUIRED, not next): notifications worker, Redis/BullMQ jobs, PaaS vendor, malware vendor, LGPD process, RPO/RTO, Gate templates, Audit read UX.
+Also deferred (HUMAN_ACTIVATION_REQUIRED unless Governor activates): notifications worker, Redis/BullMQ jobs, PaaS vendor, malware vendor, LGPD process, RPO/RTO, Audit read UX productization, Next.js Governance app pages implementation.
 
-Escalate HUMAN_REQUIRED on approved-spec conflict, HIGH architecture/security beyond contract, destructive ops, a new product decision, or any request to touch code/schema or activate a next Work Item from this slice.
+Escalate HUMAN_REQUIRED on approved-spec conflict, HIGH architecture/security beyond contract, destructive ops, a new product decision, or any request to expand M2.6 into backend/schema.
