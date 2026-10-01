@@ -193,6 +193,7 @@ export const M3_RC1_ARTIFACT_PATHS = [
   "docs/development/m3-rc1-evidence/INDEX.md",
   "docs/development/m3-rc1-evidence/manual-focus-review.md",
   "docs/development/m3-rc1-evidence/minio-live-adapter.md",
+  "docs/development/m3-rc1-evidence/reset-rehearsal.txt",
 ] as const;
 
 export const M3_1_ARTIFACT_PATHS = [

@@ -1,0 +1,29 @@
+# Reset rehearsal log from Local RC job on 381af894462a48f1ad3df4477b80aad23e50a659
+# Run: https://github.com/Bruno2K/monolito-amber/actions/runs/36925819708/job/110582754054
+#
+# The script printed candidate_sha=dev because `ensure_env` sourced `.env.example`
+# (`GIT_SHA=dev`) over the job env. Same job: Playwright `health/ready expose the
+# candidate SHA` passed against GIT_SHA=${{ github.sha }} = 381af89… (API process
+# inherits the job env and does not source .env).
+# `scripts/local-rc/_lib.sh` now preserves a pre-set GIT_SHA / GITHUB_SHA.
+#
+# Deterministic seed assertion on this run: status=ok (see below).
+
+M3 Local RC reset rehearsal
+candidate_sha=dev
+started_at=2026-10-01T21:02:09Z
+database_url_host=localhost:5432
+==> prisma migrate reset --force --skip-seed
+Database reset successful
+11 migrations applied (init through m3_7_cross_domain_traceability)
+==> prisma migrate deploy
+No pending migrations to apply.
+==> AMBER_SEED_M3=1 prisma:seed
+==> assert deterministic seed IDs
+seed_org_a=c3187a0b-db4b-4a6f-8e13-c2466c1b5d58
+seed_org_b=c2de9bac-b92c-4694-8c80-777a27818bd4
+seed_project_a1=50928deb-3787-41c7-8759-0544ac1b7425
+seed_user_coord_a=242c0931-7a5d-4342-8a99-86574090ab2c
+deterministic_seed=ok
+finished_at=2026-10-01T21:02:14Z
+status=ok
