@@ -10,6 +10,7 @@
   --text-sidebar-muted: #9ca3af;
   --text-sidebar-bright: #f9fafb;
   --amber: #d97706;
+  --btn-bg: #92400e;
   --header-bg: #ffffff;
   --header-border: #e5e7eb;
   --text-primary: #111827;
@@ -197,7 +198,7 @@ button.btn {
   margin-top: 1rem;
   height: var(--input-height);
   padding: 0 14px;
-  background: var(--amber);
+  background: var(--btn-bg);
   color: #fff;
   border: 0;
   border-radius: var(--radius-md);
