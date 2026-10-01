@@ -11,10 +11,15 @@ import {
   canCreateDeliverable,
   canDeliverDeliverable,
   canUpdateDeliverable,
+  canCreateWorkPackage,
+  canCompleteWorkPackage,
+  canDisassociateWorkPackage,
   deliverableStatusLabel,
   formatPhaseDate,
   formatProgress,
   newIdempotencyKey,
+  workPackageStatusLabel,
+  workPackagesDeepLink,
   type DeliverableListResponse,
   type DeliverableRow,
   type DisciplineListResponse,
@@ -24,6 +29,8 @@ import {
   type ProjectMemberRow,
   type TeamListResponse,
   type TeamRow,
+  type WorkPackageListResponse,
+  type WorkPackageRow,
 } from "../../lib/operations";
 import { useShell } from "../session/ShellProvider";
 
@@ -70,6 +77,9 @@ export function DeliverablesView({ projectId }: { projectId: string }) {
   const [disciplines, setDisciplines] = useState<DisciplineRow[]>([]);
   const [members, setMembers] = useState<ProjectMemberRow[]>([]);
   const [teams, setTeams] = useState<TeamRow[]>([]);
+  const [linkedPackages, setLinkedPackages] = useState<WorkPackageRow[]>([]);
+  const [linkedError, setLinkedError] = useState<string | null>(null);
+  const [wpDraftTitle, setWpDraftTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
@@ -146,6 +156,31 @@ export function DeliverablesView({ projectId }: { projectId: string }) {
     setTeams(teamResult.ok ? teamResult.body.items : []);
     setLoading(false);
   }, [disciplineFilter, phaseFilter, project?.organizationId, projectId, query, statusFilter]);
+
+  const loadLinked = useCallback(
+    async (deliverableId: string) => {
+      const result = await api<WorkPackageListResponse>(
+        `/api/v1/projects/${projectId}/work-packages?deliverableId=${encodeURIComponent(deliverableId)}`,
+      );
+      if (!result.ok) {
+        setLinkedPackages([]);
+        setLinkedError(result.problem.detail);
+        return;
+      }
+      setLinkedError(null);
+      setLinkedPackages(result.body.items);
+    },
+    [projectId],
+  );
+
+  useEffect(() => {
+    if (!selectedId || selectedId === "new") {
+      setLinkedPackages([]);
+      setLinkedError(null);
+      return;
+    }
+    void loadLinked(selectedId);
+  }, [loadLinked, selectedId]);
 
   useEffect(() => {
     void load();
@@ -591,6 +626,123 @@ export function DeliverablesView({ projectId }: { projectId: string }) {
                   </button>
                 </div>
               </form>
+              {selected ? (
+                <section className="linked-work-packages" aria-labelledby="linked-wp-title">
+                  <h3 id="linked-wp-title">Pacotes ligados</h3>
+                  <p className="muted">
+                    Pacotes não DONE bloqueiam Entregar. Lista permanece visível ao criar ou editar um pacote.
+                  </p>
+                  {linkedError ? (
+                    <p role="alert" className="error">
+                      {linkedError}
+                    </p>
+                  ) : null}
+                  {linkedPackages.length === 0 ? (
+                    <p className="muted">Nenhum WorkPackage ligado. Entregar permanece permitido com zero pacotes.</p>
+                  ) : (
+                    <ul className="linked-wp-list">
+                      {linkedPackages.map((row) => (
+                        <li key={row.id}>
+                          <a href={workPackagesDeepLink(projectId, row.id)}>
+                            {row.code ? `${row.code} · ` : ""}
+                            {row.title}
+                          </a>
+                          <span className={`status-pill status-${row.status.toLowerCase()}`}>
+                            {workPackageStatusLabel(row.status)}
+                          </span>
+                          {row.status === "BLOCKED" && row.blockedReason ? (
+                            <span className="muted"> — {row.blockedReason}</span>
+                          ) : null}
+                          {canCompleteWorkPackage(permissions) && row.status === "ACTIVE" ? (
+                            <button
+                              type="button"
+                              className="text-button"
+                              disabled={busy}
+                              onClick={() =>
+                                void mutate(`/api/v1/projects/${projectId}/work-packages/${row.id}/complete`, {
+                                  method: "POST",
+                                  headers: { "Idempotency-Key": newIdempotencyKey() },
+                                  body: JSON.stringify({ expectedVersion: row.version }),
+                                }).then((ok) => {
+                                  if (ok) {
+                                    void loadLinked(selected.id);
+                                  }
+                                })
+                              }
+                            >
+                              Concluir
+                            </button>
+                          ) : null}
+                          {canDisassociateWorkPackage(permissions) ? (
+                            <button
+                              type="button"
+                              className="text-button"
+                              disabled={busy}
+                              onClick={() =>
+                                void mutate(`/api/v1/projects/${projectId}/work-packages/${row.id}/disassociate`, {
+                                  method: "POST",
+                                  headers: { "Idempotency-Key": newIdempotencyKey() },
+                                  body: JSON.stringify({ expectedVersion: row.version }),
+                                }).then((ok) => {
+                                  if (ok) {
+                                    void loadLinked(selected.id);
+                                  }
+                                })
+                              }
+                            >
+                              Desassociar
+                            </button>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {canCreateWorkPackage(permissions) ? (
+                    <form
+                      className="linked-wp-create"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        const title = wpDraftTitle.trim();
+                        if (!title) {
+                          return;
+                        }
+                        setBusy(true);
+                        setFormError(null);
+                        void api<WorkPackageRow>(`/api/v1/projects/${projectId}/work-packages`, {
+                          method: "POST",
+                          headers: { "Idempotency-Key": newIdempotencyKey() },
+                          body: JSON.stringify({
+                            phaseId: selected.phaseId,
+                            deliverableId: selected.id,
+                            title,
+                          }),
+                        }).then((created) => {
+                          setBusy(false);
+                          if (!created.ok) {
+                            setFormError(created.problem.detail);
+                            return;
+                          }
+                          setWpDraftTitle("");
+                          void loadLinked(selected.id);
+                        });
+                      }}
+                    >
+                      <label htmlFor="linked-wp-title">
+                        Novo pacote nesta entrega
+                        <input
+                          id="linked-wp-title"
+                          value={wpDraftTitle}
+                          onChange={(event) => setWpDraftTitle(event.target.value)}
+                          required
+                        />
+                      </label>
+                      <button type="submit" className="btn secondary" disabled={busy}>
+                        Criar pacote
+                      </button>
+                    </form>
+                  ) : null}
+                </section>
+              ) : null}
             </aside>
           </div>
         ) : null}

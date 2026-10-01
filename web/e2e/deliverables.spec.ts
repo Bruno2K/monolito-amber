@@ -21,6 +21,8 @@ test.describe("M3.4 Entregas", () => {
     await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT_A}/deliverables\\?inspect=del-arch-001`));
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByRole("dialog").getByText(/Status:/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pacotes ligados" })).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("WP-PLAN-001")).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath(`entregas-${testInfo.project.name}.png`),
       fullPage: true,

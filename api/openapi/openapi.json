@@ -4329,6 +4329,592 @@
         ]
       }
     },
+    "/api/v1/projects/{projectId}/work-packages": {
+      "get": {
+        "operationId": "WorkPackagesController_list",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List WorkPackages of an authorized Project (omit archived by default; unauthorized rows omitted)",
+        "tags": [
+          "operations"
+        ]
+      },
+      "post": {
+        "operationId": "WorkPackagesController_create",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a WorkPackage in PLANNED with required phaseId",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}": {
+      "get": {
+        "operationId": "WorkPackagesController_get",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Read one WorkPackage. Cross-tenant and cross-project ids are denied without leakage.",
+        "tags": [
+          "operations"
+        ]
+      },
+      "patch": {
+        "operationId": "WorkPackagesController_update",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update WorkPackage fields. Status, ownership, and Deliverable association use dedicated endpoints. CAS expectedVersion is required.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/assign": {
+      "post": {
+        "operationId": "WorkPackagesController_assign",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Set ownership XOR (user | Team | none). Team does not grant Project access.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/unassign": {
+      "post": {
+        "operationId": "WorkPackagesController_unassign",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Clear WorkPackage ownership",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/activate": {
+      "post": {
+        "operationId": "WorkPackagesController_activate",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit PLANNED → ACTIVE. Dates never auto-activate.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/block": {
+      "post": {
+        "operationId": "WorkPackagesController_block",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit ACTIVE → BLOCKED. blockedReason is required and auditable.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/unblock": {
+      "post": {
+        "operationId": "WorkPackagesController_unblock",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit BLOCKED → ACTIVE. Clears blockedReason with audit.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/complete": {
+      "post": {
+        "operationId": "WorkPackagesController_complete",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit ACTIVE → DONE. Incidental Task links do not block. Does not complete Task, Deliverable, or Milestone.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/cancel": {
+      "post": {
+        "operationId": "WorkPackagesController_cancel",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit CANCELLED from PLANNED, ACTIVE, or BLOCKED",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/archive": {
+      "post": {
+        "operationId": "WorkPackagesController_archive",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Soft-archive a WorkPackage. Hard-delete is forbidden.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/associate": {
+      "post": {
+        "operationId": "WorkPackagesController_associate",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Associate a Deliverable in the same Project and Phase",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/disassociate": {
+      "post": {
+        "operationId": "WorkPackagesController_disassociate",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicitly disassociate from a Deliverable (required before delivering with still-linked CANCELLED WPs)",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
     "/api/v1/organizations/{organizationId}/teams": {
       "get": {
         "operationId": "TeamsController_list",

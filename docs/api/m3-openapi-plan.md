@@ -1,6 +1,6 @@
 # M3.1 OpenAPI plan
 
-**Status:** Phase/Discipline paths are generated from Nest in M3.3. Deliverable paths are generated in M3.4. WorkPackage remain plan-only until M3.5.
+**Status:** Phase/Discipline paths are generated from Nest in M3.3. Deliverable paths are generated in M3.4. WorkPackage paths are generated in M3.5.
 
 Prefix remains `/api/v1`. Errors remain RFC 7807 Problem Details with `correlationId`. Path `organizationId` / `projectId` are routing hints; session + membership is authoritative (F-04).
 
@@ -17,7 +17,7 @@ Especially KEEP:
 | GET | `/api/v1/catalog/permissions` | Closed catalog including M3.1 additive codes after seed |
 | GET | `/api/v1/catalog/role-templates` | Templates including additive grants |
 
-## ADD (M3.3–M3.4 implemented; M3.5 still planned)
+## ADD (M3.3–M3.5 implemented)
 
 Planned operations (collision-tested against today’s OpenAPI; none of these paths exist yet):
 
@@ -42,7 +42,15 @@ Planned operations (collision-tested against today’s OpenAPI; none of these pa
 | GET | `/api/v1/organizations/{organizationId}/teams` | `organization.manage_catalogs` or `project.read` | no |
 | GET/POST | `/api/v1/projects/{projectId}/work-packages` | `project.read` / `work_package.create` | POST yes |
 | GET/PATCH | `/api/v1/projects/{projectId}/work-packages/{workPackageId}` | `project.read` / `work_package.update` | no |
+| POST | `…/work-packages/{workPackageId}/assign` | `work_package.update` | yes |
+| POST | `…/work-packages/{workPackageId}/unassign` | `work_package.update` | yes |
+| POST | `…/work-packages/{workPackageId}/activate` | `work_package.update` | yes |
+| POST | `…/work-packages/{workPackageId}/block` | `work_package.update` | yes |
+| POST | `…/work-packages/{workPackageId}/unblock` | `work_package.update` | yes |
 | POST | `…/work-packages/{workPackageId}/complete` | `work_package.complete` | yes |
+| POST | `…/work-packages/{workPackageId}/cancel` | `work_package.update` | yes |
+| POST | `…/work-packages/{workPackageId}/archive` | `work_package.update` | yes |
+| POST | `…/work-packages/{workPackageId}/associate` | `work_package.update` | yes |
 | POST | `…/work-packages/{workPackageId}/disassociate` | `deliverable.update` | yes |
 
 CAS: mutating commands accept `expectedVersion` as elsewhere. Unauthorized rows are **omitted**, never returned as `count: 0` placeholders that reveal existence across tenants.

@@ -10,7 +10,7 @@ export interface UiRoutePlan {
   path: string;
   lifecycle: RouteLifecycle;
   purpose: string;
-  implementedIn: "m3.1-plan" | "foundation" | "m3.2+" | "m3.2" | "m3.3" | "m4" | "m5+" | "figma-prototype";
+  implementedIn: "m3.1-plan" | "foundation" | "m3.2+" | "m3.2" | "m3.3" | "m3.4" | "m3.5" | "m4" | "m5+" | "figma-prototype";
 }
 
 export interface ApiRoutePlan {
@@ -48,6 +48,12 @@ export const M3_CANONICAL_UI_ROUTES: readonly UiRoutePlan[] = [
     purpose: "Entregas list; detail via inspector/deep-link",
     implementedIn: "m3.2",
   },
+  {
+    path: "/projects/:projectId/work-packages",
+    lifecycle: "add",
+    purpose: "WorkPackage list; detail via inspector/deep-link",
+    implementedIn: "m3.5",
+  },
 ];
 
 export const M3_2_NEXT_APP_ROUTES = [
@@ -58,7 +64,10 @@ export const M3_2_NEXT_APP_ROUTES = [
   "/projects/[projectId]/deliverables",
 ] as const;
 
+export const M3_5_NEXT_APP_ROUTES = ["/projects/[projectId]/work-packages"] as const;
+
 export const M3_DETAIL_UI_PATTERN = "/projects/:projectId/deliverables?inspect=:deliverableId";
+export const M3_5_WP_DETAIL_UI_PATTERN = "/projects/:projectId/work-packages?inspect=:workPackageId";
 
 export const M4_RESERVED_UI_ROUTES: readonly UiRoutePlan[] = [
   {
@@ -364,7 +373,79 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     lifecycle: "add",
     permission: "work_package.update",
     idempotency: false,
-    purpose: "Update fields / activate / block / cancel",
+    purpose: "Update fields. Status and ownership use dedicated endpoints. CAS expectedVersion is required.",
+    implementedIn: "m3.5",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/work-packages/{workPackageId}/assign",
+    lifecycle: "add",
+    permission: "work_package.update",
+    idempotency: true,
+    purpose: "Set ownership XOR (user | Team | none). No work_package.assign in catalog.",
+    implementedIn: "m3.5",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/work-packages/{workPackageId}/unassign",
+    lifecycle: "add",
+    permission: "work_package.update",
+    idempotency: true,
+    purpose: "Clear WorkPackage ownership",
+    implementedIn: "m3.5",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/work-packages/{workPackageId}/activate",
+    lifecycle: "add",
+    permission: "work_package.update",
+    idempotency: true,
+    purpose: "Explicit PLANNED → ACTIVE",
+    implementedIn: "m3.5",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/work-packages/{workPackageId}/block",
+    lifecycle: "add",
+    permission: "work_package.update",
+    idempotency: true,
+    purpose: "ACTIVE → BLOCKED; blockedReason required and auditable",
+    implementedIn: "m3.5",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/work-packages/{workPackageId}/unblock",
+    lifecycle: "add",
+    permission: "work_package.update",
+    idempotency: true,
+    purpose: "BLOCKED → ACTIVE; clears blockedReason with audit",
+    implementedIn: "m3.5",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/work-packages/{workPackageId}/cancel",
+    lifecycle: "add",
+    permission: "work_package.update",
+    idempotency: true,
+    purpose: "Explicit CANCELLED from non-terminal states",
+    implementedIn: "m3.5",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/work-packages/{workPackageId}/archive",
+    lifecycle: "add",
+    permission: "work_package.update",
+    idempotency: true,
+    purpose: "Soft-archive a WorkPackage (never hard-delete)",
+    implementedIn: "m3.5",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/work-packages/{workPackageId}/associate",
+    lifecycle: "add",
+    permission: "work_package.update",
+    idempotency: true,
+    purpose: "Link a Deliverable in the same Project and Phase",
     implementedIn: "m3.5",
   },
   {
@@ -389,8 +470,9 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
 
 export const M3_3_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn === "m3.3");
 export const M3_4_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn === "m3.4");
+export const M3_5_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn === "m3.5");
 export const M3_LATER_API_ROUTES = M3_PLANNED_API_ROUTES.filter(
-  (row) => row.implementedIn !== "m3.3" && row.implementedIn !== "m3.4",
+  (row) => row.implementedIn !== "m3.3" && row.implementedIn !== "m3.4" && row.implementedIn !== "m3.5",
 );
 
 export const EXISTING_API_PATHS_TO_KEEP = [

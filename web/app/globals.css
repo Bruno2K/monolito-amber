@@ -891,6 +891,45 @@ button.btn {
   background: #fee2e2;
 }
 
+.status-pill.status-active,
+.status-pill.status-done {
+  background: #d1fae5;
+}
+
+.status-pill.status-blocked {
+  background: #fee2e2;
+}
+
+.linked-work-packages {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--header-border);
+}
+
+.linked-wp-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linked-wp-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.linked-wp-create,
+.block-reason-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .table-count {
   margin: 8px 12px 12px;
 }

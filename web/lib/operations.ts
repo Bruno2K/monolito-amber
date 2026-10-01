@@ -191,3 +191,71 @@ export function formatProgress(value: number | null | undefined): string {
   }
   return `${value}%`;
 }
+
+export const WORK_PACKAGE_STATUSES = ["PLANNED", "ACTIVE", "BLOCKED", "DONE", "CANCELLED"] as const;
+export type WorkPackageStatus = (typeof WORK_PACKAGE_STATUSES)[number];
+
+export interface WorkPackageRow {
+  id: string;
+  organizationId: string;
+  projectId: string;
+  phaseId: string;
+  deliverableId: string | null;
+  disciplineId: string | null;
+  code: string | null;
+  title: string;
+  description: string;
+  blockedReason: string | null;
+  ownerProjectMembershipId: string | null;
+  ownerTeamId: string | null;
+  plannedStartAt: string | null;
+  dueAt: string | null;
+  status: WorkPackageStatus | string;
+  version: number;
+  archivedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkPackageListResponse {
+  items: WorkPackageRow[];
+  nextCursor: string | null;
+}
+
+export function workPackageStatusLabel(status: string): string {
+  switch (status) {
+    case "PLANNED":
+      return "Planejado";
+    case "ACTIVE":
+      return "Ativo";
+    case "BLOCKED":
+      return "Bloqueado";
+    case "DONE":
+      return "Concluído";
+    case "CANCELLED":
+      return "Cancelado";
+    default:
+      return status;
+  }
+}
+
+export function workPackagesDeepLink(projectId: string, workPackageId?: string | null): string {
+  const base = `/projects/${projectId}/work-packages`;
+  return workPackageId ? `${base}?inspect=${encodeURIComponent(workPackageId)}` : base;
+}
+
+export function canCreateWorkPackage(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("work_package.create"));
+}
+
+export function canUpdateWorkPackage(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("work_package.update"));
+}
+
+export function canCompleteWorkPackage(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("work_package.complete"));
+}
+
+export function canDisassociateWorkPackage(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("deliverable.update"));
+}

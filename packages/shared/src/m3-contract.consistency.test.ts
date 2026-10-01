@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS, M3_4_ARTIFACT_PATHS, M3_4_REQUIREMENT_IDS } from "./m3-requirements.js";
+import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS, M3_4_ARTIFACT_PATHS, M3_4_REQUIREMENT_IDS, M3_5_ARTIFACT_PATHS, M3_5_REQUIREMENT_IDS } from "./m3-requirements.js";
 import { OPERATIONS_PERMISSIONS } from "./permissions.js";
 import { DELIVERABLE_FIELDS, PHASE_FIELDS, WORK_PACKAGE_FIELDS } from "./operations.js";
 
@@ -90,5 +90,25 @@ describe("M3.1 contract consistency", () => {
     expect(sql).toMatch(/CREATE TABLE "operations"\."deliverables"/);
     expect(sql).not.toMatch(/gate\.override/);
     expect(sql).not.toMatch(/DROP COLUMN\s+discipline_id/i);
+  });
+
+  it("embeds every M3.5 REQ id and keeps the WorkPackage artifacts additive", () => {
+    const matrix = read("docs/domain/m3.5-requirements-traceability.md");
+    for (const id of M3_5_REQUIREMENT_IDS) {
+      expect(matrix).toContain(id);
+    }
+    for (const rel of M3_5_ARTIFACT_PATHS) {
+      expect(existsSync(join(ROOT, rel)), rel).toBe(true);
+    }
+    expect(existsSync(join(ROOT, "prisma/migrations/20261001180000_m3_5_operations_work_package/migration.sql"))).toBe(
+      true,
+    );
+    const additive = read("prisma/migrations/20261001180000_m3_5_operations_work_package/migration.sql");
+    expect(additive).toMatch(/CREATE OR REPLACE FUNCTION operations.assert_same_tenant_work_package/);
+    expect(additive).not.toMatch(/DROP TABLE/);
+    expect(additive).not.toMatch(/CREATE TABLE "operations"\."work_packages"/);
+    expect(additive).not.toMatch(/forceRelease|force_release/);
+    const original = read("prisma/migrations/20261001170000_m3_4_operations_deliverable/migration.sql");
+    expect(original).toMatch(/CREATE TABLE "operations"\."work_packages"/);
   });
 });
