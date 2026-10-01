@@ -31,6 +31,9 @@ describe("contextual RBAC (fail closed)", () => {
     expect(isProjectScopedPermission("document.read")).toBe(true);
     expect(isProjectScopedPermission("gate.evaluate")).toBe(true);
     expect(isProjectScopedPermission("exception.approve")).toBe(true);
+    expect(isProjectScopedPermission("phase.create")).toBe(true);
+    expect(isProjectScopedPermission("deliverable.deliver")).toBe(true);
+    expect(isProjectScopedPermission("work_package.complete")).toBe(true);
   });
 
   it("denies forged/cross-project grants and org-level leakage", () => {

@@ -8,6 +8,8 @@ PF-1.6 implements Document + Revision + Impact Analysis + Issue + Task + Milesto
 
 Organization, Project, Document, Issue, Task, Milestone, Gate.
 
+M3.1 contracts additional Operations aggregates: **Phase**, **Discipline** (org catalog), **Deliverable**, **WorkPackage**, plus **Team** as an Organization-owned subject. See [m3-project-operations-contract.md](./m3-project-operations-contract.md). These are not implemented as Prisma models in M3.1.
+
 PF-1.6 persists Document, Revision, Impact Analysis, Issue, Task, TaskDependency, Milestone, Gate, GateRequirement, FormalException, and GateReleaseDecision. Document is the stable logical artifact (Project + Organization). Revision is one version of that Document. Impact Analysis is the at-most-one case created by a current-base change. Issue is the coordination problem / pendência. Task is executable Planning work (Task ≠ Issue). Milestone is an explicit project checkpoint. Gate is the governance checkpoint over typed requirements. Formal Exception is the sole requirement-specific bypass.
 
 ## Invariants already enforced in code
@@ -37,3 +39,6 @@ PF-1.6 persists Document, Revision, Impact Analysis, Issue, Task, TaskDependency
 - Governance reads Documents / Coordination / Planning via adapters and does not mutate upstream.
 - Exception is requirement-specific. Requester cannot approve/reject own Exception or release using it.
 - After RELEASED_WITH_EXCEPTION, revoke/expiry of a covering Exception + still UNSATISFIED → BLOCKED. Historical release evidence is immutable.
+- Phase ≠ Deliverable ≠ WorkPackage. Deliverable ≠ Document. WorkPackage ≠ Task.
+- Owner / Team / Discipline never grant Project access. TeamMembership ≠ ProjectMembership.
+- Deliverable DELIVERED requires every still-linked WorkPackage DONE; linked CANCELLED blocks until explicit disassociation. No `gate.override`.

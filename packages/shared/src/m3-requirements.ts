@@ -1,0 +1,58 @@
+/**
+ * M3.1 requirement identifiers. Traceability matrix lives in
+ * docs/domain/m3.1-requirements-traceability.md — CI asserts each id is present.
+ */
+export const M3_1_REQUIREMENT_IDS = [
+  "M3.1-REQ-01",
+  "M3.1-REQ-02",
+  "M3.1-REQ-03",
+  "M3.1-REQ-04",
+  "M3.1-REQ-05",
+  "M3.1-REQ-06",
+  "M3.1-REQ-07",
+  "M3.1-REQ-08",
+  "M3.1-REQ-09",
+  "M3.1-REQ-10",
+  "M3.1-REQ-11",
+  "M3.1-REQ-12",
+  "M3.1-REQ-13",
+  "M3.1-REQ-14",
+  "M3.1-REQ-15",
+  "M3.1-REQ-16",
+  "M3.1-REQ-17",
+  "M3.1-REQ-18",
+  "M3.1-REQ-19",
+  "M3.1-REQ-20",
+  "M3.1-REQ-21",
+  "M3.1-REQ-22",
+  "M3.1-REQ-23",
+  "M3.1-REQ-24",
+  "M3.1-REQ-25",
+  "M3.1-REQ-26",
+  "M3.1-REQ-27",
+  "M3.1-REQ-28",
+  "M3.1-REQ-29",
+  "M3.1-REQ-30",
+  "M3.1-REQ-31",
+  "M3.1-REQ-32",
+  "M3.1-REQ-33",
+  "M3.1-REQ-34",
+  "M3.1-REQ-35",
+  "M3.1-REQ-36",
+  "M3.1-REQ-37",
+  "M3.1-REQ-38",
+] as const;
+
+export type M31RequirementId = (typeof M3_1_REQUIREMENT_IDS)[number];
+
+export const M3_1_ARTIFACT_PATHS = [
+  "docs/domain/m3-project-operations-contract.md",
+  "docs/architecture/decisions/ADR-018-operations-module-state-transitions.md",
+  "docs/development/m3-migration-plan.md",
+  "docs/api/m3-openapi-plan.md",
+  "docs/architecture/m3-route-map.md",
+  "docs/security/m3-permission-role-template-delta.md",
+  "docs/development/m3-seed-design.md",
+  "docs/domain/m3.1-requirements-traceability.md",
+  "docs/architecture/m3-files-modules-impact-map.md",
+] as const;

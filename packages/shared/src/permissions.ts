@@ -1,8 +1,9 @@
 import { ForbiddenPermissionError } from "./errors.js";
 
 /**
- * Closed MVP permission catalog — APPROVED 0.2A §1.
- * Organizations compose roles from these permissions; they cannot invent semantics.
+ * Closed permission catalog — APPROVED 0.2A §1, additively extended by M3.1
+ * (ADR-018) with authorized Operations codes. Organizations compose roles from
+ * these permissions; they cannot invent semantics.
  * Intentionally absent: gate.override (Formal Exception is the sole Gate bypass).
  */
 export const PERMISSION_MODULES = [
@@ -12,6 +13,7 @@ export const PERMISSION_MODULES = [
   "coordination",
   "planning",
   "governance",
+  "operations",
 ] as const;
 
 export type PermissionModule = (typeof PERMISSION_MODULES)[number];
@@ -60,9 +62,35 @@ export const PERMISSIONS = [
   "exception.approve",
   "exception.reject",
   "exception.revoke",
+  "phase.create",
+  "phase.update",
+  "phase.complete",
+  "deliverable.create",
+  "deliverable.update",
+  "deliverable.assign",
+  "deliverable.approve",
+  "deliverable.deliver",
+  "work_package.create",
+  "work_package.update",
+  "work_package.complete",
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number];
+
+/** Authorized M3.1 additive Operations codes. Reads stay on project.read. */
+export const OPERATIONS_PERMISSIONS = [
+  "phase.create",
+  "phase.update",
+  "phase.complete",
+  "deliverable.create",
+  "deliverable.update",
+  "deliverable.assign",
+  "deliverable.approve",
+  "deliverable.deliver",
+  "work_package.create",
+  "work_package.update",
+  "work_package.complete",
+] as const satisfies readonly PermissionCode[];
 
 /** Strings that must never appear in seed, OpenAPI, routes, or AuthZ. */
 export const FORBIDDEN_PERMISSIONS = ["gate.override"] as const;
@@ -118,6 +146,17 @@ export const PERMISSION_DESCRIPTIONS: Record<PermissionCode, { module: Permissio
   "exception.approve": { module: "governance", description: "Approve a Formal Exception (does not satisfy the requirement)" },
   "exception.reject": { module: "governance", description: "Reject a Formal Exception" },
   "exception.revoke": { module: "governance", description: "Revoke an approved Formal Exception" },
+  "phase.create": { module: "operations", description: "Create a Phase in an authorized Project" },
+  "phase.update": { module: "operations", description: "Update Phase fields, activate, or cancel (not complete)" },
+  "phase.complete": { module: "operations", description: "Mark a Phase COMPLETED (explicit; dates do not transit state)" },
+  "deliverable.create": { module: "operations", description: "Create a Deliverable in an authorized Project" },
+  "deliverable.update": { module: "operations", description: "Update Deliverable fields or non-approve/deliver transitions" },
+  "deliverable.assign": { module: "operations", description: "Assign or clear Deliverable ownership (XOR user|Team|none)" },
+  "deliverable.approve": { module: "operations", description: "Explicitly approve a Deliverable (IN_REVIEW → APPROVED)" },
+  "deliverable.deliver": { module: "operations", description: "Mark a Deliverable DELIVERED when all linked WorkPackages are DONE" },
+  "work_package.create": { module: "operations", description: "Create a WorkPackage in an authorized Project" },
+  "work_package.update": { module: "operations", description: "Update WorkPackage fields, activate, block, or cancel (not complete)" },
+  "work_package.complete": { module: "operations", description: "Mark a WorkPackage DONE (incidental Task links do not block in M3)" },
 };
 
 export function isPermissionCode(value: string): value is PermissionCode {

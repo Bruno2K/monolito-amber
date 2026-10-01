@@ -45,3 +45,12 @@ NOT_READY = never evaluated. BLOCKED = evaluated with an unsatisfied mandatory. 
 ## Formal Exception (0.5 / PF-1.6)
 `REQUESTED → APPROVED | REJECTED`; `APPROVED → REVOKED`.  
 Requirement-specific. Optional `expiresAt`. Approval does not mark the requirement SATISFIED. After RELEASED_WITH_EXCEPTION, revoke/expiry of a covering Exception + still UNSATISFIED → re-eval → BLOCKED; historical release rows stay.
+
+## Phase (M3.1 contract / ADR-018)
+`PLANNED → ACTIVE → COMPLETED` with `CANCELLED` from `PLANNED` or `ACTIVE`. COMPLETED and CANCELLED are terminal. Dates do not transit status. Overlap allowed.
+
+## Deliverable (M3.1)
+`PLANNED → IN_PROGRESS → IN_REVIEW → APPROVED → DELIVERED`. `CANCELLED` from any state before DELIVERED. APPROVED and DELIVERED are explicit. Linear — no skip to DELIVERED.
+
+## WorkPackage (M3.1)
+`PLANNED → ACTIVE`; `ACTIVE ↔ BLOCKED`; `ACTIVE → DONE`; `PLANNED | ACTIVE | BLOCKED → CANCELLED`. DONE and CANCELLED are terminal. BLOCKED requires `blockedReason`.

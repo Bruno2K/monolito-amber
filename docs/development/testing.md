@@ -82,3 +82,13 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | G MFA + recent-auth | same |
 | H No upstream mutation | same |
 | I No `gate.override` | `scripts/assert-no-gate-override.ts`, `packages/shared/src/governance.security.test.ts` |
+
+### M3.1 Operations contract evidence
+
+| Test | Where |
+| --- | --- |
+| Phase / Deliverable / WorkPackage transition tables, XOR, delivery rule | `packages/shared/src/operations.test.ts` |
+| Permission uniqueness, no `gate.override`, role-template delta | `packages/shared/src/operations.security.test.ts`, `permissions.test.ts` |
+| Route collision (UI vs foundation pages; API vs OpenAPI) | `packages/shared/src/m3-routes.test.ts` |
+| Seed scenario completeness (2 orgs, roles, negatives, no PII) | `packages/shared/src/m3-seed-design.test.ts` |
+| Artifact + REQ matrix + migration hygiene | `packages/shared/src/m3-contract.consistency.test.ts` |

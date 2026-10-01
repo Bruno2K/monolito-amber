@@ -1,0 +1,70 @@
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, expect, it } from "vitest";
+import {
+  EXISTING_FOUNDATION_UI_ROUTES,
+  FIGMA_PROTOTYPE_ROUTE_MAP,
+  M3_CANONICAL_UI_ROUTES,
+  M3_PLANNED_API_ROUTES,
+  M4_RESERVED_UI_ROUTES,
+} from "./m3-routes.js";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+function listNextAppRoutes(appDir: string, prefix = ""): string[] {
+  if (!existsSync(appDir)) {
+    return [];
+  }
+  const routes: string[] = [];
+  for (const name of readdirSync(appDir)) {
+    if (name === "components" || name === "lib" || name.startsWith("_")) {
+      continue;
+    }
+    const full = join(appDir, name);
+    const st = statSync(full);
+    if (st.isDirectory()) {
+      routes.push(...listNextAppRoutes(full, `${prefix}/${name}`));
+    } else if (name === "page.tsx" || name === "page.ts") {
+      routes.push(prefix || "/");
+    }
+  }
+  return routes;
+}
+
+describe("M3.1 route collision audit", () => {
+  it("keeps canonical UI routes unique and does not collide with foundation pages", () => {
+    const paths = M3_CANONICAL_UI_ROUTES.map((row) => row.path);
+    expect(new Set(paths).size).toBe(paths.length);
+    const existing = listNextAppRoutes(join(ROOT, "web/app"));
+    expect(existing.sort()).toEqual([...EXISTING_FOUNDATION_UI_ROUTES].sort());
+    for (const planned of paths) {
+      const staticHead = planned.split("/:")[0] || planned;
+      expect(existing).not.toContain(staticHead);
+    }
+    expect(existsSync(join(ROOT, "web/app/projects"))).toBe(false);
+  });
+
+  it("reserves planner for M4 and does not treat Figma prototype Portuguese paths as product routes", () => {
+    expect(M4_RESERVED_UI_ROUTES.some((row) => row.path.includes("planner"))).toBe(true);
+    expect(FIGMA_PROTOTYPE_ROUTE_MAP.find((row) => row.figmaPath === "/planejamento")?.productPath).toBeNull();
+    expect(FIGMA_PROTOTYPE_ROUTE_MAP.find((row) => row.figmaPath === "/entregas")?.productPath).toBe(
+      "/projects/:projectId/deliverables",
+    );
+  });
+
+  it("does not collide planned Operations API paths with the current OpenAPI document", () => {
+    const openapi = JSON.parse(readFileSync(join(ROOT, "api/openapi/openapi.json"), "utf8")) as {
+      paths: Record<string, unknown>;
+    };
+    const existing = Object.keys(openapi.paths);
+    const planned = M3_PLANNED_API_ROUTES.map((row) => `${row.method} ${row.path}`);
+    expect(new Set(planned).size).toBe(planned.length);
+    for (const row of M3_PLANNED_API_ROUTES) {
+      expect(existing, row.path).not.toContain(row.path);
+    }
+    expect(existing).toContain("/api/v1/projects");
+    expect(existing).toContain("/api/v1/projects/{projectId}");
+    expect(M3_PLANNED_API_ROUTES.every((row) => !row.path.includes("gate.override"))).toBe(true);
+  });
+});

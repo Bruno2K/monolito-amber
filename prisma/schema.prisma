@@ -1,6 +1,7 @@
 // Amber Modular Monolith — schema-per-module (0.6).
 // PF-1.6: Governance owns Gate / GateRequirement / FormalException / release evidence.
-// Seed permissions ONLY from APPROVED 0.2A. There is no gate.override.
+// Seed permissions from the closed catalog (0.2A + authorized M3.1 Operations codes).
+// There is no gate.override.
 
 generator client {
   provider        = "prisma-client-js"

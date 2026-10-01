@@ -6,13 +6,13 @@ This repository is the real product. **`Bruno2K/amber` is the Product Vision lan
 
 Official commercial name remains OPEN; **Amber** is the technical name.
 
-## Platform Foundation (PF-1.0..1.6) — complete
+## Platform Foundation (PF-1.0..1.7) — complete · M2 COMPLETE / INTEGRATED
 
-PF-1.0 through PF-1.6 are merged on `main` (`887d598ef69eb6898e445810863511e291cbee49`). Current Work Item is **PF-1.7 — Platform Foundation Exit Reconciliation** (docs only). Exit Gate: READY_FOR_FINAL_REVIEW. Next slice requires Governor **HUMAN_ACTIVATION_REQUIRED**.
+PF-1.0 through PF-1.7 and M2 are merged on `main` (`4972176442bdb2631ea1f1710a86191109e79dab`). Current Work Item is **M3.1 — Contract, Migration & Test-Data Readiness** (**ACTIVE / LOCAL ONLY**). Do not claim M3.1 Exit Gate PASS from the Engineer pass. M3.2+ is not started.
 
 This repository is **PUBLIC** (portfolio). Do not commit secrets.
 
-Foundation delivered: identity, org-owned roles, ProjectMembership, Documents/Revisions, Coordination/Impact, Planning Tasks/Milestones, Governance Gates and Formal Exceptions (ADR-017). **READY ≠ RELEASED.** Formal Exception is the sole bypass. **No Governance UI. No Gate Templates. No `gate.override`.**
+Foundation delivered: identity, org-owned roles, ProjectMembership, Documents/Revisions, Coordination/Impact, Planning Tasks/Milestones, Governance Gates and Formal Exceptions (ADR-017). **READY ≠ RELEASED.** Formal Exception is the sole bypass. **No `gate.override`.** M3.1 additively extends the closed catalog with Operations codes (ADR-018) without implementing Ops UI.
 
 PF-1.0 planted the Modular Monolith layout, Prisma, catalog seed, and security stubs.
 
@@ -43,7 +43,7 @@ Milestone 0 Exit Gate: **PASS AT SPECIFICATION LEVEL**. See `docs/` and ADR inde
 
 ## Non-negotiables
 
-- Closed 0.2A permission catalog only — **no `gate.override`**
+- Closed permission catalog (0.2A + authorized M3.1 Operations codes) — **no `gate.override`**
 - Formal Exception is the **sole** Gate bypass
 - Audit: INSERT (+SELECT); **no UPDATE/DELETE** for the app role
 - Session-bound active Organization; never trust client `orgId` / `projectId` / `documentId` / `revisionId`
