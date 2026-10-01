@@ -92,6 +92,9 @@ export function Sidebar() {
             }}
             aria-label="Trocar Organization"
           >
+            {!state.organizations.some((org) => org.id === session?.activeOrganizationId) ? (
+              <option value={session?.activeOrganizationId ?? ""}>Organization</option>
+            ) : null}
             {state.organizations
               .filter((org) => org.status === "ACTIVE")
               .map((org) => (

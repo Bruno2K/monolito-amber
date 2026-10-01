@@ -8,6 +8,7 @@ export default defineConfig({
   timeout: 90_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
+  workers: 1,
   retries: 0,
   use: {
     baseURL: WEB,

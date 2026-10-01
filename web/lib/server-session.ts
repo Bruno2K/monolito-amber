@@ -1,8 +1,7 @@
 import { cookies } from "next/headers";
 import { api } from "./api";
-import type { ApiResult, ProjectDetail, SessionView } from "./types";
 import { classifyProblem } from "./errors";
-import type { UiStateKind } from "./types";
+import type { ApiResult, OrganizationRow, ProjectDetail, ProjectRow, SessionView, UiStateKind } from "./types";
 
 function accessKind(problem: Parameters<typeof classifyProblem>[0]): Exclude<UiStateKind, "loading" | "empty" | "no-project"> {
   const kind = classifyProblem(problem);
@@ -33,6 +32,16 @@ export async function loadProject(projectId: string): Promise<ApiResult<ProjectD
   return api<ProjectDetail>(`/api/v1/projects/${encodeURIComponent(projectId)}`, {
     headers: cookie ? { cookie } : {},
   });
+}
+
+export async function loadOrganizations(): Promise<ApiResult<OrganizationRow[]>> {
+  const cookie = await sessionCookieHeader();
+  return api("/api/v1/organizations", { headers: cookie ? { cookie } : {} });
+}
+
+export async function loadVisibleProjects(): Promise<ApiResult<ProjectRow[]>> {
+  const cookie = await sessionCookieHeader();
+  return api("/api/v1/projects", { headers: cookie ? { cookie } : {} });
 }
 
 export async function resolveProjectAccess(projectId: string): Promise<

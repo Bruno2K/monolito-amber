@@ -53,9 +53,13 @@ async function fetchBootstrap(): Promise<BootstrapResult> {
 
 export function ShellProvider({
   initialSession,
+  initialOrganizations = [],
+  initialProjects = [],
   children,
 }: {
   initialSession: SessionView;
+  initialOrganizations?: OrganizationRow[];
+  initialProjects?: ProjectRow[];
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -63,6 +67,8 @@ export function ShellProvider({
     ...initialShellState,
     status: "ready",
     session: initialSession,
+    organizations: initialOrganizations,
+    projects: initialProjects,
   });
 
   const redirectIfNeeded = useCallback(
