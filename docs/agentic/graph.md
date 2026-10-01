@@ -15,8 +15,8 @@ Platform Foundation progression (complete on main):
 ## M2 — Product Experience Foundation
 
 - **M2.1..M2.5** — prior Figma product surfaces (Shell, Planning, Calendar, Messages, Team) — delivered in canonical Figma
-- **M2.6** Governance Gates & Exceptions Experience — **ACTIVE** (Figma + docs evidence; PR open, do not merge)
-- **M2.7+** — stacks from M2.6 branch tip after PR open
+- **M2.6** Governance Gates & Exceptions Experience — **COMPLETE / PASS** (Figma + docs evidence; PR #20 OPEN, do not merge)
+- **M2.7** — stacked from the M2.6 branch tip in PR #22
 
 ## Deferred (not this PR)
 

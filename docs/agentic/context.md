@@ -6,7 +6,7 @@ This repository is **PUBLIC** by design (portfolio). No secrets, credentials, or
 
 ## Current slice
 
-**M2.6 — Governance Gates & Exceptions Experience** (Issue #19). Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
+**M2.6 — Governance Gates & Exceptions Experience** (Issue #19) is **COMPLETE / Exit Gate PASS** in PR #20. Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
 
 Platform Foundation **PF-1.0..1.7 is DONE on main** (`49588c3cc9ec0f6b43be5c35f1e2712d09522d17`).
 
@@ -41,7 +41,7 @@ Platform Foundation **PF-1.0..1.7 is DONE on main** (`49588c3cc9ec0f6b43be5c35f1
 - READY ≠ RELEASED; Formal Exception is the sole bypass and does not satisfy a requirement
 - RELEASED ≠ RELEASED_WITH_EXCEPTION; Exception is requirement-specific
 - Governance reads Documents/Coordination/Planning via adapters and does not mutate upstream
-- **M2.6** delivers Governance Gates & Exceptions **product UX in Figma** + evidence docs (no backend changes)
+- **M2.6** delivers Governance Gates & Exceptions **product UX in Figma** + evidence docs (COMPLETE/PASS; PR #20 OPEN; no backend changes)
 
 ## Forbidden (future phase — not activated)
 
