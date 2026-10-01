@@ -8,7 +8,7 @@ PF-1.7 DONE (main)
                  └─ M2.8 PR #24 OPEN @ 762ab787…
                       └─ M2.9 PR #26 OPEN @ branch m2.9-prototype-state-coverage
                            pack 917e95a… → Reviewer REQUEST_CHANGES
-                           this loop head PENDING_HEAD_SHA
+                           this loop head 8932a3a1868b4451edbbc99092b5601c38ac5a12
                            Exit: CORRECTION LOOP (not PASS)
                            Next: M2.10 NEXT only (do not start)
 ```

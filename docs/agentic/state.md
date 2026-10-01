@@ -13,7 +13,7 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 | Base | `m2.8-activity-experience` @ `762ab787943eba83e8185967094b9f3f91b7cae3` |
 | Audited head (pre-correction) | `e5cbc6e20a5d84b056a21ce0dc552dafebe8f492` |
 | Previous pack head | `917e95a983b7796b341d72c8e19b326cdd3a2101` |
-| Head | `PENDING_HEAD_SHA` |
+| Head | `8932a3a1868b4451edbbc99092b5601c38ac5a12` |
 | Prior WI | M2.8 — Activity Experience — PR #24 OPEN (do not merge); do not claim ACTIVE for M2.6–M2.8 beyond their open PRs |
 | Stack open | #20 (M2.6) · #22 (M2.7) · #24 (M2.8) · #26 (M2.9) — all OPEN |
 | Next WI | M2.10 NEXT only after Governor activation (do **not** start M2.10 now) |
@@ -36,7 +36,7 @@ This loop: footer h 50→56; parent-container NAVIGATE cleared; M2.4 ProtoNav un
 2. M2.9 overlap/clip fixes + regenerated PNGs
 3. State honesty annotations (M2.3/M2.5) + node-ID matrix
 4. Traceable inventory + corrected evidence doc
-5. Agentic docs sync (CORRECTION LOOP; PR #26 OPEN; head `PENDING_HEAD_SHA`)
+5. Agentic docs sync (CORRECTION LOOP; PR #26 OPEN; head `8932a3a1868b4451edbbc99092b5601c38ac5a12`)
 6. Push onto existing PR #26 only
 
 ## Out of scope

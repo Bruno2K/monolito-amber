@@ -4,7 +4,7 @@
 
 **M2.9 — Prototype & State Coverage** is in **CORRECTION LOOP** on PR [#26](https://github.com/Bruno2K/monolito-amber/pull/26) (`m2.9-prototype-state-coverage`), stacked on `m2.8-activity-experience` @ `762ab787943eba83e8185967094b9f3f91b7cae3`.
 
-Prior independent Reviewer PASS is **not sustained**. Pack head `917e95a983b7796b341d72c8e19b326cdd3a2101` received **REQUEST_CHANGES** (not Exit Gate PASS). This loop head: `PENDING_HEAD_SHA`.
+Prior independent Reviewer PASS is **not sustained**. Pack head `917e95a983b7796b341d72c8e19b326cdd3a2101` received **REQUEST_CHANGES** (not Exit Gate PASS). This loop head: `8932a3a1868b4451edbbc99092b5601c38ac5a12`.
 
 ## What this reviewer-response changed
 
