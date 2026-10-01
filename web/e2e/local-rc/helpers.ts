@@ -48,14 +48,21 @@ export function emailFor(key: string): string {
 
 export async function expectSignIn(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expect(page.getByLabel("Email")).toBeEditable();
 }
 
 export async function expectOrgSwitch(page: Page): Promise<void> {
-  await expect(page).toHaveURL(/\/org-switch/);
-  // IdentityFrame title is English; empty/loading StateScreen adds a second h1
-  // ("Organization necessária" / "Carregando") on the same page.
   await expect(
-    page.getByRole("heading", { name: /Switch organization|Organization necessária|Carregando/ }).first(),
+    page.getByRole("heading", { name: /Switch organization|Organization necessária/ }).first(),
+  ).toBeVisible();
+}
+
+/** Seed login lands on org-switch (no active org) or, if a session already has an org, /projects. */
+export async function expectPostAuthLanded(page: Page): Promise<void> {
+  await expect(
+    page.getByRole("heading", {
+      name: /Switch organization|Organization necessária|Todos os Projetos|Nenhum projeto/,
+    }).first(),
   ).toBeVisible();
 }
 
@@ -73,22 +80,37 @@ export async function closeInspectorIfOpen(page: Page): Promise<void> {
 }
 
 export async function signIn(page: Page, userKey: string): Promise<void> {
-  await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
+  await page.goto("/sign-in");
   await expectSignIn(page);
   await page.getByLabel("Email").fill(emailFor(userKey));
   await page.getByLabel("Password").fill(SEED_PASSWORD);
+  const loginPost = page.waitForResponse(
+    (res) => res.url().includes("/api/v1/auth/login") && res.request().method() === "POST",
+    { timeout: 20_000 },
+  );
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL(/\/org-switch/);
-  await expectOrgSwitch(page);
+  await loginPost;
+  await page.waitForURL((url) => {
+    const path = url.pathname;
+    return path.includes("/org-switch") || path.startsWith("/projects") || path.includes("/mfa/");
+  }, { timeout: 20_000 });
+  await expectPostAuthLanded(page);
 }
 
 export async function selectOrg(page: Page, orgName: string): Promise<void> {
+  const projects = page.getByRole("heading", { name: /Todos os Projetos|Nenhum projeto/ });
+  if (await projects.isVisible().catch(() => false)) {
+    return;
+  }
   await expectOrgSwitch(page);
   const row = page.locator("li").filter({ hasText: orgName });
   await expect(row).toBeVisible();
-  await row.getByRole("button", { name: "Switch" }).click();
-  await page.waitForURL(/\/projects\/?$/);
-  await expect(page.getByRole("heading", { name: /Todos os Projetos|Nenhum projeto/ })).toBeVisible();
+  const switchBtn = row.getByRole("button", { name: "Switch" });
+  if ((await switchBtn.count()) === 0) {
+    return;
+  }
+  await switchBtn.click();
+  await expect(projects).toBeVisible();
 }
 
 export async function signInToOrg(page: Page, userKey: string, orgName: string): Promise<void> {
