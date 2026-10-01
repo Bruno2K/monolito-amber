@@ -17,14 +17,16 @@ Platform Foundation progression (complete on main):
 - **M2.1..M2.5** — prior Figma product surfaces (Shell, Planning, Calendar, Messages, Team) — delivered in canonical Figma
 - **M2.6** Governance Gates & Exceptions Experience — **COMPLETE / PASS** (Figma + docs evidence; PR #20 OPEN, do not merge)
 - **M2.7** Overview & Portfolio Health Reconciliation — **COMPLETE / PASS** (Figma + docs; PR #22 OPEN; base = M2.6 branch **NOT** main; leave OPEN)
-- **M2.8** — stacked from the M2.7 branch tip in PR #24
+- **M2.8** Activity Experience — **COMPLETE / PASS** (Figma + docs; PR #24 OPEN; base = M2.7 branch **NOT** main; leave OPEN)
+- **M2.9** — NEXT in Notion; not started
 
 ## Stacking chain
 
 ```
 main (PF-1.7)
   └── m2.6-governance-gates-exceptions-experience @ 0dbf9b2…  (PR #20 OPEN)
-        └── m2.7-overview-portfolio-health  (this WI; PR base = M2.6 branch)
+        └── m2.7-overview-portfolio-health @ 85852e6…  (PR #22 OPEN)
+              └── m2.8-activity-experience  (this WI; PR base = M2.7 branch)
 ```
 
 ## Deferred (not this PR)
@@ -36,8 +38,9 @@ main (PF-1.7)
 - Analytics warehouse / health persistence SoT
 - Dashboard builder
 - Audit read UX productization
-- Next.js Overview / Portfolio app implementation (post-UX)
+- Activity event store / API productization
+- Next.js Atividade app implementation (post-UX)
 
 ## UX / Figma boundary
 
-M2.7 **authorizes** Visão Geral + Todos os Projetos / Portfolio Health product screens in Figma `fkE9SwcNlQG7m0HvcGQBw9` and repo evidence under `docs/ux/`. It does **not** authorize backend schema/API/analytics SoT, Gate Templates, or Messaging-as-health.
+M2.8 **authorizes** Project Atividade product screens in Figma `fkE9SwcNlQG7m0HvcGQBw9` and repo evidence under `docs/ux/`. It does **not** authorize backend schema/API/event store, Audit product UX, Notifications, Messaging content promotion into Activity, or Calendar private content in Activity.
