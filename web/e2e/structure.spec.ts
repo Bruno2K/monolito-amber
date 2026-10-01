@@ -26,7 +26,7 @@ test.describe("M3.3 structure", () => {
       path: testInfo.outputPath(`structure-${testInfo.project.name}.png`),
       fullPage: true,
     });
-    await page.getByRole("button", { name: "Fechar" }).click();
+    await page.getByRole("button", { name: "Fechar", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
