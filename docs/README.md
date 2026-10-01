@@ -38,7 +38,7 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [M2.6 — Governance Gates & Exceptions](./ux/m2.6-governance-gates-exceptions.md) — Figma frames, invariants, AuthZ/SoD, Exit Gate (PR #20 open; no backend)
 - [M2.7 — Overview & Portfolio Health](./ux/m2.7-overview-portfolio-health.md) — Visão Geral + Portfolio derived/read-model UX (stacked on M2.6; PR #22 open; no backend)
 - [M2.8 — Activity Experience](./ux/m2.8-activity-experience.md) — Project Atividade read-only material timeline UX (stacked on M2.7; PR #24 open; no backend; not chat / not Audit / not Messaging)
-- [M2.9 — Prototype & State Coverage](./ux/m2.9-prototype-state-coverage.md) — Integrated prototype + state/AuthZ/a11y coverage across M2.1–M2.8 (stacked on M2.8 @ 762ab787…; PR [#26](https://github.com/Bruno2K/monolito-amber/pull/26) OPEN; status **CORRECTION LOOP** RC2 — overlapping multi-dest 15→0 + Wiring clip fixed; transversal only; no backend; do not merge; do not start M2.10; head `917e95a983b7796b341d72c8e19b326cdd3a2101` until SHA sync commit)
+- [M2.9 — Prototype & State Coverage](./ux/m2.9-prototype-state-coverage.md) — Integrated prototype + state/AuthZ/a11y coverage across M2.1–M2.8 (stacked on M2.8 @ 762ab787…; PR [#26](https://github.com/Bruno2K/monolito-amber/pull/26) OPEN; status **CORRECTION LOOP** RC2 — overlapping multi-dest 15→0 + Wiring clip fixed; transversal only; no backend; do not merge; do not start M2.10; head `0758675d4cbb0d64fc1cb1aa84cd916e262ab990`)
 
 ## Deferred after Platform Foundation (PF-1.0..1.7)
 

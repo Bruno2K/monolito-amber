@@ -12,7 +12,7 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 | Repo | `Bruno2K/monolito-amber` |
 | Base | `m2.8-activity-experience` @ `762ab787943eba83e8185967094b9f3f91b7cae3` |
 | Previous audited head (RC1 REQUEST_CHANGES) | `917e95a983b7796b341d72c8e19b326cdd3a2101` |
-| Head after RC2 | `917e95a983b7796b341d72c8e19b326cdd3a2101` |
+| Head after RC2 | `0758675d4cbb0d64fc1cb1aa84cd916e262ab990` |
 | Prior WI | M2.8 — Activity Experience — PR #24 OPEN (do not merge) |
 | Stack open | #20 (M2.6) · #22 (M2.7) · #24 (M2.8) · #26 (M2.9) — all OPEN |
 | Next WI | M2.10 NEXT only after Governor activation (do **not** start M2.10 now) |

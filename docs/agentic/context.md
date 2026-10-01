@@ -11,7 +11,7 @@ Independent Amber Reviewer returned **REQUEST_CHANGES** on audited head `917e95a
 - Removed NAVIGATE from large parent regions that overlapped child controls with different destinations; fixed stacked ProtoNav on M2.4 Inbox; added visible ProtoNav Gates Lista (`316:15715`) and Privacy (`316:15718`)
 - Post-fix: **257** NAVIGATE · 0 broken · 0 orphans · **0** same-node multi-dest · **0** whole-frame · **0** overlapping multi-dest
 - Wiring footer `304:16606`/`304:16608`: auto-layout hug + `clipsContent=false` → **0** actionable clip on all 8 M2.9 frames; 8 PNGs regenerated
-- Docs status **CORRECTION LOOP**; previous audited head noted as `917e95a…`; head SHA synced in follow-up commit on PR #26
+- Docs status **CORRECTION LOOP**; previous audited head noted as `917e95a…`; head after RC2: `0758675d4cbb0d64fc1cb1aa84cd916e262ab990`
 
 ## Stack
 

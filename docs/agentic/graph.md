@@ -8,7 +8,7 @@ PF-1.7 DONE (main)
                  └─ M2.8 PR #24 OPEN @ 762ab787…
                       └─ M2.9 PR #26 OPEN @ branch m2.9-prototype-state-coverage
                            RC1 head 917e95a… → Reviewer REQUEST_CHANGES
-                           RC2 CORRECTION LOOP (head 917e95a983b7796b341d72c8e19b326cdd3a2101 until SHA sync)
+                           RC2 CORRECTION LOOP (head 0758675d4cbb0d64fc1cb1aa84cd916e262ab990)
                            Exit: CORRECTION LOOP (not PASS)
                            Next: M2.10 NEXT only (do not start)
 ```
