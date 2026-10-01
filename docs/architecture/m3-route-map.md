@@ -10,7 +10,8 @@ Product IA for M3. M3.2 mounts the authenticated shell and `/projects` context. 
 | `/projects/:projectId/overview` | Visão Geral / Project Hub | `project.read` on that Project | M3.2 shell; M3.6 hub data |
 | `/projects/:projectId/structure` | Phase + Discipline context | `project.read`; mutations `phase.*` / catalogs | M3.3 |
 | `/projects/:projectId/deliverables` | Entregas list | `project.read`; mutations `deliverable.*` | M3.4 |
-| inspector / deep-link query on deliverables | Detail without a colliding sibling route | re-authorize at destination | M3.4–M3.6 |
+| `/projects/:projectId/work-packages` | WorkPackage list | `project.read`; mutations `work_package.*` | M3.5 |
+| inspector / deep-link query on deliverables and work-packages | Detail without colliding sibling routes | re-authorize at destination | M3.4–M3.5 |
 
 Deep links re-authorize. Inaccessible resources are omitted without hidden counts.
 
@@ -38,7 +39,7 @@ Do **not** ship both `/visao-geral` and `/projects/:projectId/overview` as paral
 
 `/`, `/sign-in`, `/password/setup`, `/password/reset`, `/mfa/challenge`, `/mfa/enroll`, `/org-switch`, `/invite/accept`.
 
-Collision audit: `packages/shared/src/m3-routes.test.ts` asserts canonical paths are unique, M3.2 Next routes exist, Figma Portuguese prototype paths are absent, M3.3 Phase/Discipline API paths are present, M3.4 Deliverable API paths are present, and WorkPackage paths remain absent from current OpenAPI.
+Collision audit: `packages/shared/src/m3-routes.test.ts` asserts canonical paths are unique, M3.2 Next routes exist, Figma Portuguese prototype paths are absent, M3.3 Phase/Discipline API paths are present, M3.4 Deliverable API paths are present, and M3.5 WorkPackage API and UI paths are present.
 
 ## API pairing
 

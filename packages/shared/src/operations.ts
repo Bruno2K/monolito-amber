@@ -168,10 +168,14 @@ export const OPERATIONS_AUDIT_EVENTS = [
   "WORK_PACKAGE_CREATED",
   "WORK_PACKAGE_UPDATED",
   "WORK_PACKAGE_ASSIGNED",
+  "WORK_PACKAGE_STATUS_CHANGED",
+  "WORK_PACKAGE_ACTIVATED",
   "WORK_PACKAGE_BLOCKED",
   "WORK_PACKAGE_UNBLOCKED",
   "WORK_PACKAGE_COMPLETED",
   "WORK_PACKAGE_CANCELLED",
+  "WORK_PACKAGE_ARCHIVED",
+  "WORK_PACKAGE_ASSOCIATED",
   "WORK_PACKAGE_DISASSOCIATED",
 ] as const;
 
@@ -253,6 +257,35 @@ export function workPackageStatusRequiresCompletePermission(to: WorkPackageStatu
 
 export function workPackageStatusRequiresBlockedReason(to: WorkPackageStatus): boolean {
   return to === "BLOCKED";
+}
+
+export function workPackageStatusRequiresUpdatePermission(to: WorkPackageStatus): boolean {
+  return to === "ACTIVE" || to === "BLOCKED" || to === "CANCELLED";
+}
+
+/** Dates never transit WorkPackage status. DONE is an explicit action. */
+export function workPackageDatesTransitStatus(): boolean {
+  return false;
+}
+
+export function workPackageCompleteCascadesToTask(): boolean {
+  return false;
+}
+
+export function workPackageCompleteCascadesToDeliverable(): boolean {
+  return false;
+}
+
+export function workPackageCompleteCascadesToMilestone(): boolean {
+  return false;
+}
+
+export function hardDeleteWorkPackageAllowed(): boolean {
+  return false;
+}
+
+export function archiveIsWorkPackageRemovalPath(): boolean {
+  return true;
 }
 
 /** Dates never transit Phase status. Completing/activating is an explicit action. */
@@ -375,6 +408,16 @@ export function assertBlockedReason(to: WorkPackageStatus, blockedReason: string
   }
 }
 
+/** BLOCKED rows keep an auditable reason; clearing it while BLOCKED is forbidden. */
+export function assertBlockedReasonPersistsWhileBlocked(
+  status: WorkPackageStatus,
+  blockedReason: string | null | undefined,
+): void {
+  if (status === "BLOCKED" && !blockedReason?.trim()) {
+    throw new OperationsStateError("Cannot clear blockedReason while BLOCKED");
+  }
+}
+
 export function nextBlockedReason(
   from: WorkPackageStatus,
   to: WorkPackageStatus,
@@ -457,6 +500,37 @@ export function decodeDeliverableCursor(cursor: string): { code: string; id: str
       throw new Error("invalid");
     }
     return { code, id };
+  } catch {
+    throw new OperationsStateError("Invalid list cursor");
+  }
+}
+
+export const WORK_PACKAGE_LIST_DEFAULT_LIMIT = 100;
+export const WORK_PACKAGE_LIST_MAX_LIMIT = 100;
+
+export function clampWorkPackageListLimit(limit: number | undefined): number {
+  if (limit == null || !Number.isFinite(limit)) {
+    return WORK_PACKAGE_LIST_DEFAULT_LIMIT;
+  }
+  const parsed = Math.trunc(limit);
+  if (parsed < 1) {
+    return 1;
+  }
+  return Math.min(parsed, WORK_PACKAGE_LIST_MAX_LIMIT);
+}
+
+export function encodeWorkPackageCursor(title: string, id: string): string {
+  return Buffer.from(JSON.stringify({ title, id }), "utf8").toString("base64url");
+}
+
+export function decodeWorkPackageCursor(cursor: string): { title: string; id: string } {
+  try {
+    const raw = Buffer.from(cursor, "base64url").toString("utf8");
+    const parsed = JSON.parse(raw) as { title?: unknown; id?: unknown };
+    if (typeof parsed.title !== "string" || typeof parsed.id !== "string" || !parsed.title || !parsed.id) {
+      throw new Error("invalid");
+    }
+    return { title: parsed.title, id: parsed.id };
   } catch {
     throw new OperationsStateError("Invalid list cursor");
   }

@@ -1,6 +1,6 @@
 # M3.1 test-data / seed design
 
-Deterministic, synthetic, **no real PII**. Idempotent or resettable on a disposable database. Writer for Phase/Discipline/Team/memberships/Deliverable is `prisma/m3-seed.ts` (opt-in `AMBER_SEED_M3=1`). WorkPackage rows are inserted for the M3.4 delivery rule; WP CRUD waits for M3.5.
+Deterministic, synthetic, **no real PII**. Idempotent or resettable on a disposable database. Writer for Phase/Discipline/Team/memberships/Deliverable/WorkPackage is `prisma/m3-seed.ts` (opt-in `AMBER_SEED_M3=1`). WorkPackage CRUD APIs are implemented in M3.5.
 
 ## Inventory
 

@@ -439,8 +439,7 @@ model ProjectRoleAssignment {
 }
 
 // ---------------------------------------------------------------------------
-// operations — Phase (M3.3), Deliverable (M3.4). WorkPackage table is additive
-// schema for the M3.4 delivery rule; WP CRUD is M3.5.
+// operations — Phase (M3.3), Deliverable (M3.4), WorkPackage (M3.5 additive).
 // Does not move Project / Task / Document / Issue / Gate ownership.
 // ---------------------------------------------------------------------------
 
@@ -513,8 +512,9 @@ model Deliverable {
   @@schema("operations")
 }
 
-/// Operational breakdown unit. Schema exists so Deliverable.deliver can enforce
-/// the linked-WP rule. Nested WorkPackage CRUD is M3.5 — do not expose APIs here.
+/// Operational breakdown unit. Additive schema from M3.4 (delivery rule);
+/// M3.5 exposes WorkPackage CRUD, lifecycle, and Deliverable association.
+/// WorkPackage ≠ Task. Archive is the removal path (never hard-delete).
 model WorkPackage {
   id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organizationId           String    @map("organization_id") @db.Uuid
@@ -547,6 +547,8 @@ model WorkPackage {
   @@index([phaseId])
   @@index([deliverableId])
   @@index([disciplineId])
+  @@index([ownerProjectMembershipId])
+  @@index([ownerTeamId])
   @@map("work_packages")
   @@schema("operations")
 }

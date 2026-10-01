@@ -52,6 +52,17 @@ export const OUTBOX_EVENT_TYPES = {
   DeliverableDelivered: "DeliverableDelivered",
   DeliverableCancelled: "DeliverableCancelled",
   DeliverableArchived: "DeliverableArchived",
+  WorkPackageCreated: "WorkPackageCreated",
+  WorkPackageUpdated: "WorkPackageUpdated",
+  WorkPackageAssigned: "WorkPackageAssigned",
+  WorkPackageActivated: "WorkPackageActivated",
+  WorkPackageBlocked: "WorkPackageBlocked",
+  WorkPackageUnblocked: "WorkPackageUnblocked",
+  WorkPackageCompleted: "WorkPackageCompleted",
+  WorkPackageCancelled: "WorkPackageCancelled",
+  WorkPackageArchived: "WorkPackageArchived",
+  WorkPackageAssociated: "WorkPackageAssociated",
+  WorkPackageDisassociated: "WorkPackageDisassociated",
 } as const;
 
 /**

@@ -12,11 +12,26 @@ import { PhasesController } from "./phases.controller";
 import { PhasesService } from "./phases.service";
 import { TeamsController } from "./teams.controller";
 import { TeamsService } from "./teams.service";
+import { WorkPackagesController } from "./work-packages.controller";
+import { WorkPackagesService } from "./work-packages.service";
 
 @Module({
   imports: [AuditModule, AuthModule, AuthzModule, FoundationModule],
-  controllers: [PhasesController, DisciplinesController, DeliverablesController, TeamsController],
-  providers: [OperationsAccess, PhasesService, DisciplinesService, DeliverablesService, TeamsService],
-  exports: [PhasesService, DisciplinesService, DeliverablesService, TeamsService],
+  controllers: [
+    PhasesController,
+    DisciplinesController,
+    DeliverablesController,
+    WorkPackagesController,
+    TeamsController,
+  ],
+  providers: [
+    OperationsAccess,
+    PhasesService,
+    DisciplinesService,
+    DeliverablesService,
+    WorkPackagesService,
+    TeamsService,
+  ],
+  exports: [PhasesService, DisciplinesService, DeliverablesService, WorkPackagesService, TeamsService],
 })
 export class OperationsModule {}

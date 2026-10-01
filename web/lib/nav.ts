@@ -81,6 +81,14 @@ export const PROJECT_NAV: readonly NavItemDef[] = [
     icon: "layers",
   },
   {
+    id: "work-packages",
+    label: "Pacotes",
+    group: "project",
+    href: "/projects/:projectId/work-packages",
+    availability: "available",
+    icon: "layers",
+  },
+  {
     id: "coordination",
     label: "Coordenação",
     group: "project",

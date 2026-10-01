@@ -2,7 +2,7 @@
  * Deterministic M3 seed / test-data design. Synthetic identities only.
  * M3.3 implements the writer for Organizations, memberships, Teams,
  * Disciplines, and Phases. M3.4 writes Deliverable rows and WorkPackage
- * rows for the delivery rule. WorkPackage CRUD APIs wait for M3.5.
+ * rows for the delivery rule. M3.5 exposes WorkPackage CRUD against those rows.
  */
 
 export const M3_SEED_PASSWORD = "correct-horse-12";
@@ -63,10 +63,13 @@ export interface SeedWorkPackage {
   phaseKey: string;
   deliverableKey?: string;
   disciplineKey?: string;
+  code?: string;
   title: string;
   status: "PLANNED" | "ACTIVE" | "BLOCKED" | "DONE" | "CANCELLED";
   blockedReason?: string;
   ownerKind: "user" | "team" | "none";
+  ownerUserKey?: string;
+  ownerTeamKey?: string;
 }
 
 export const M3_SEED_EMAIL_DOMAIN = "amber.test";
@@ -261,6 +264,8 @@ export const M3_SEED_WORK_PACKAGES: readonly SeedWorkPackage[] = [
     projectKey: "project-a1",
     phaseKey: "phase-a1-planned",
     deliverableKey: "del-a1-planned-user",
+    disciplineKey: "disc-a-arch",
+    code: "WP-PLAN-001",
     title: "Outline programme",
     status: "PLANNED",
     ownerKind: "none",
@@ -270,36 +275,56 @@ export const M3_SEED_WORK_PACKAGES: readonly SeedWorkPackage[] = [
     projectKey: "project-a1",
     phaseKey: "phase-a1-active",
     deliverableKey: "del-a1-progress-team",
+    disciplineKey: "disc-a-str",
+    code: "WP-STR-010",
     title: "Framing model",
     status: "ACTIVE",
     ownerKind: "team",
+    ownerTeamKey: "team-a-structure",
   },
   {
     key: "wp-blocked",
     projectKey: "project-a1",
     phaseKey: "phase-a1-active",
     deliverableKey: "del-a1-progress-team",
+    disciplineKey: "disc-a-str",
+    code: "WP-STR-011",
     title: "Connection schedule",
     status: "BLOCKED",
     blockedReason: "Waiting for architect grid freeze",
     ownerKind: "user",
+    ownerUserKey: "discipline-a",
   },
   {
     key: "wp-done",
     projectKey: "project-a1",
     phaseKey: "phase-a1-completed",
     deliverableKey: "del-a1-approved",
+    disciplineKey: "disc-a-arch",
+    code: "WP-ARCH-000",
     title: "Brief drafting",
     status: "DONE",
     ownerKind: "user",
+    ownerUserKey: "coord-a",
   },
   {
     key: "wp-cancelled",
     projectKey: "project-a1",
     phaseKey: "phase-a1-active",
     deliverableKey: "del-a1-review-none",
+    disciplineKey: "disc-a-mep",
+    code: "WP-MEP-003",
     title: "Superseded option study",
     status: "CANCELLED",
+    ownerKind: "none",
+  },
+  {
+    key: "wp-unlinked",
+    projectKey: "project-a1",
+    phaseKey: "phase-a1-planned",
+    code: "WP-FREE-001",
+    title: "Unlinked package",
+    status: "PLANNED",
     ownerKind: "none",
   },
 ];

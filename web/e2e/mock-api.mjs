@@ -134,6 +134,30 @@ const phasesA = [
   },
 ];
 
+const workPackages = [
+  {
+    id: "wp-outline",
+    organizationId: ORG_A,
+    projectId: PROJECT_A,
+    phaseId: "phase-concept",
+    deliverableId: "del-arch-001",
+    disciplineId: "disc-arch",
+    code: "WP-PLAN-001",
+    title: "Outline programme",
+    description: "Pacote operacional — não é uma tarefa",
+    blockedReason: null,
+    ownerProjectMembershipId: null,
+    ownerTeamId: null,
+    plannedStartAt: null,
+    dueAt: null,
+    status: "PLANNED",
+    version: 1,
+    archivedAt: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  },
+];
+
 const deliverables = [
   {
     id: "del-arch-001",
@@ -290,6 +314,9 @@ const server = http.createServer(async (req, res) => {
         "deliverable.assign",
         "deliverable.approve",
         "deliverable.deliver",
+        "work_package.create",
+        "work_package.update",
+        "work_package.complete",
       ],
     });
     return;
@@ -559,6 +586,138 @@ const server = http.createServer(async (req, res) => {
         row.status = "CANCELLED";
       } else if (action === "archive") {
         row.archivedAt = new Date().toISOString();
+      }
+      row.version += 1;
+      row.updatedAt = new Date().toISOString();
+      json(res, 200, row);
+      return;
+    }
+  }
+
+  const workPackageListMatch = /^\/api\/v1\/projects\/([^/]+)\/work-packages$/.exec(path);
+  if (workPackageListMatch) {
+    const project = requireProject(session, workPackageListMatch[1], res);
+    if (!project) {
+      return;
+    }
+    if (req.method === "GET") {
+      const q = (url.searchParams.get("q") ?? "").toLowerCase();
+      const status = url.searchParams.get("status");
+      const phaseId = url.searchParams.get("phaseId");
+      const deliverableId = url.searchParams.get("deliverableId");
+      const disciplineId = url.searchParams.get("disciplineId");
+      const statuses = status ? status.split(",") : [];
+      const rows = workPackages.filter((row) => {
+        if (row.projectId !== project.id || row.archivedAt) {
+          return false;
+        }
+        if (q && !`${row.code ?? ""} ${row.title}`.toLowerCase().includes(q)) {
+          return false;
+        }
+        if (statuses.length && !statuses.includes(row.status)) {
+          return false;
+        }
+        if (phaseId && row.phaseId !== phaseId) {
+          return false;
+        }
+        if (deliverableId && row.deliverableId !== deliverableId) {
+          return false;
+        }
+        if (disciplineId && row.disciplineId !== disciplineId) {
+          return false;
+        }
+        return true;
+      });
+      json(res, 200, { items: rows, nextCursor: null });
+      return;
+    }
+    if (req.method === "POST") {
+      const body = await readBody(req);
+      const created = {
+        id: `wp-${Date.now()}`,
+        organizationId: project.organizationId,
+        projectId: project.id,
+        phaseId: body.phaseId,
+        deliverableId: body.deliverableId ?? null,
+        disciplineId: body.disciplineId ?? null,
+        code: body.code ?? null,
+        title: body.title,
+        description: body.description ?? "",
+        blockedReason: null,
+        ownerProjectMembershipId: body.ownerProjectMembershipId ?? null,
+        ownerTeamId: body.ownerTeamId ?? null,
+        plannedStartAt: body.plannedStartAt ?? null,
+        dueAt: body.dueAt ?? null,
+        status: "PLANNED",
+        version: 1,
+        archivedAt: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      workPackages.push(created);
+      json(res, 201, created);
+      return;
+    }
+  }
+
+  const workPackageAction = /^\/api\/v1\/projects\/([^/]+)\/work-packages\/([^/]+)(?:\/([^/]+))?$/.exec(path);
+  if (workPackageAction) {
+    const project = requireProject(session, workPackageAction[1], res);
+    if (!project) {
+      return;
+    }
+    const row = workPackages.find((item) => item.id === workPackageAction[2] && item.projectId === project.id);
+    if (!row) {
+      problem(res, 403, "TENANCY_DENIED", "WorkPackage is not bound to the authorized Project");
+      return;
+    }
+    const action = workPackageAction[3];
+    if (req.method === "GET" && !action) {
+      json(res, 200, row);
+      return;
+    }
+    if (req.method === "PATCH" && !action) {
+      const body = await readBody(req);
+      Object.assign(row, {
+        title: body.title ?? row.title,
+        code: body.code !== undefined ? body.code : row.code,
+        description: body.description ?? row.description,
+        phaseId: body.phaseId ?? row.phaseId,
+        disciplineId: body.disciplineId !== undefined ? body.disciplineId : row.disciplineId,
+        plannedStartAt: body.plannedStartAt !== undefined ? body.plannedStartAt : row.plannedStartAt,
+        dueAt: body.dueAt !== undefined ? body.dueAt : row.dueAt,
+        version: row.version + 1,
+        updatedAt: new Date().toISOString(),
+      });
+      json(res, 200, row);
+      return;
+    }
+    if (req.method === "POST" && action) {
+      const body = await readBody(req);
+      if (action === "assign") {
+        row.ownerProjectMembershipId = body.ownerProjectMembershipId ?? null;
+        row.ownerTeamId = body.ownerTeamId ?? null;
+      } else if (action === "unassign") {
+        row.ownerProjectMembershipId = null;
+        row.ownerTeamId = null;
+      } else if (action === "activate") {
+        row.status = "ACTIVE";
+      } else if (action === "block") {
+        row.status = "BLOCKED";
+        row.blockedReason = body.blockedReason;
+      } else if (action === "unblock") {
+        row.status = "ACTIVE";
+        row.blockedReason = null;
+      } else if (action === "complete") {
+        row.status = "DONE";
+      } else if (action === "cancel") {
+        row.status = "CANCELLED";
+      } else if (action === "archive") {
+        row.archivedAt = new Date().toISOString();
+      } else if (action === "associate") {
+        row.deliverableId = body.deliverableId ?? null;
+      } else if (action === "disassociate") {
+        row.deliverableId = null;
       }
       row.version += 1;
       row.updatedAt = new Date().toISOString();

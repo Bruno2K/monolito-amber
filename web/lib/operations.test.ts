@@ -8,12 +8,17 @@ import {
   canCreateDeliverable,
   canDeliverDeliverable,
   canUpdateDeliverable,
+  canCompleteWorkPackage,
+  canCreateWorkPackage,
+  canUpdateWorkPackage,
   deliverableStatusLabel,
   deliverablesDeepLink,
   formatPhaseDate,
   formatProgress,
   phaseStatusLabel,
   structureDeepLink,
+  workPackageStatusLabel,
+  workPackagesDeepLink,
 } from "./operations";
 
 describe("structure helpers", () => {
@@ -46,5 +51,20 @@ describe("deliverable helpers", () => {
     expect(deliverableStatusLabel("IN_REVIEW")).toBe("Em revisão");
     expect(formatProgress(72)).toBe("72%");
     expect(formatProgress(null)).toBe("—");
+  });
+});
+
+describe("work package helpers", () => {
+  it("builds a stable WorkPackage deep link", () => {
+    expect(workPackagesDeepLink("abc")).toBe("/projects/abc/work-packages");
+    expect(workPackagesDeepLink("abc", "wp-1")).toBe("/projects/abc/work-packages?inspect=wp-1");
+  });
+
+  it("gates mutations on work_package.* while reads stay on project.read", () => {
+    expect(canCreateWorkPackage(["project.read"])).toBe(false);
+    expect(canUpdateWorkPackage(["work_package.update"])).toBe(true);
+    expect(canCompleteWorkPackage(["work_package.complete"])).toBe(true);
+    expect(workPackageStatusLabel("BLOCKED")).toBe("Bloqueado");
+    expect(workPackageStatusLabel("DONE")).toBe("Concluído");
   });
 });

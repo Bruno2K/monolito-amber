@@ -9,6 +9,7 @@ import {
   REQUIRED_WORK_PACKAGE_RELATIONS,
   WORK_PACKAGE_FIELDS,
   assertBlockedReason,
+  assertBlockedReasonPersistsWhileBlocked,
   assertDeliverableCanBeDelivered,
   assertDeliverableTransition,
   assertOwnershipXor,
@@ -21,14 +22,18 @@ import {
   assertWorkPackageTransition,
   archiveIsDeliverableRemovalPath,
   archiveIsPhaseRemovalPath,
+  archiveIsWorkPackageRemovalPath,
   cancelledLinkedWorkPackageBlocksDelivery,
   decodePhaseCursor,
+  decodeWorkPackageCursor,
   deliverableDatesTransitStatus,
   deliverableStatusRequiresApprovePermission,
   deliverableStatusRequiresDeliverPermission,
   encodePhaseCursor,
+  encodeWorkPackageCursor,
   hardDeleteDeliverableAllowed,
   hardDeletePhaseAllowed,
+  hardDeleteWorkPackageAllowed,
   historicalDisciplineIdentifierPreserved,
   incidentalTasksBlockWorkPackageDone,
   leavingBlockedClearsReason,
@@ -40,6 +45,10 @@ import {
   progressPercentTransitsDeliverableStatus,
   teamMembershipImpliesProjectMembership,
   teamOwnerGrantsProjectAccess,
+  workPackageCompleteCascadesToDeliverable,
+  workPackageCompleteCascadesToMilestone,
+  workPackageCompleteCascadesToTask,
+  workPackageDatesTransitStatus,
   workPackageStatusRequiresBlockedReason,
   workPackageStatusRequiresCompletePermission,
 } from "./operations.js";
@@ -145,17 +154,31 @@ describe("WorkPackage state machine", () => {
     expect(workPackageStatusRequiresBlockedReason("BLOCKED")).toBe(true);
   });
 
-  it("requires blockedReason on BLOCKED and clears it when leaving BLOCKED", () => {
+  it("requires blockedReason on BLOCKED, forbids clearing it while BLOCKED, and clears it when leaving BLOCKED", () => {
     expect(() => assertBlockedReason("BLOCKED", "")).toThrow(/blockedReason/);
     expect(() => assertBlockedReason("BLOCKED", "grid freeze")).not.toThrow();
     expect(leavingBlockedClearsReason("BLOCKED", "ACTIVE")).toBe(true);
     expect(nextBlockedReason("BLOCKED", "ACTIVE", "grid freeze")).toBeNull();
     expect(nextBlockedReason("ACTIVE", "BLOCKED", "grid freeze")).toBe("grid freeze");
+    expect(() => assertBlockedReasonPersistsWhileBlocked("BLOCKED", "")).toThrow(/Cannot clear blockedReason/);
+    expect(() => assertBlockedReasonPersistsWhileBlocked("BLOCKED", "still waiting")).not.toThrow();
+    expect(() => assertBlockedReasonPersistsWhileBlocked("ACTIVE", null)).not.toThrow();
   });
 
-  it("does not let incidental Task links block DONE", () => {
+  it("encodes a deterministic WorkPackage list cursor", () => {
+    const encoded = encodeWorkPackageCursor("Outline programme", "wp-1");
+    expect(decodeWorkPackageCursor(encoded)).toEqual({ title: "Outline programme", id: "wp-1" });
+  });
+
+  it("does not let incidental Task links block DONE and never cascades complete", () => {
     expect(incidentalTasksBlockWorkPackageDone()).toBe(false);
     expect(REQUIRED_WORK_PACKAGE_RELATIONS).toEqual(["phaseId"]);
+    expect(workPackageCompleteCascadesToTask()).toBe(false);
+    expect(workPackageCompleteCascadesToDeliverable()).toBe(false);
+    expect(workPackageCompleteCascadesToMilestone()).toBe(false);
+    expect(workPackageDatesTransitStatus()).toBe(false);
+    expect(hardDeleteWorkPackageAllowed()).toBe(false);
+    expect(archiveIsWorkPackageRemovalPath()).toBe(true);
   });
 });
 

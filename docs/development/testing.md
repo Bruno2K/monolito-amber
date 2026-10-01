@@ -102,3 +102,20 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | Isolation, permission matrix, CAS, audit/outbox, seed | `api/test/integration/m33-phase-discipline.integration.test.ts` |
 | Security floors | `api/test/security/operations-phase.security.test.ts` |
 | Structure UI | `web/e2e/structure.spec.ts`, `web/lib/operations.test.ts` |
+
+### M3.4 Deliverable evidence
+
+| Test | Where |
+| --- | --- |
+| Isolation, permission matrix, CAS, delivery guard, seed | `api/test/integration/m34-deliverable.integration.test.ts` |
+| Security floors | `api/test/security/operations-deliverable.security.test.ts` |
+| Entregas UI | `web/e2e/deliverables.spec.ts` |
+
+### M3.5 WorkPackage evidence
+
+| Test | Where |
+| --- | --- |
+| Transitions, blockedReason, no-cascade | `packages/shared/src/operations.test.ts` |
+| Isolation, permission, CAS, idempotency, delivery-guard, audit/outbox | `api/test/integration/m35-work-package.integration.test.ts` |
+| Security floors | `api/test/security/operations-work-package.security.test.ts` |
+| Pacotes UI + Entregas inspector | `web/e2e/work-packages.spec.ts`, `web/e2e/deliverables.spec.ts` |

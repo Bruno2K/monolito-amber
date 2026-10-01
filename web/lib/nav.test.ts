@@ -9,6 +9,7 @@ describe("shell navigation", () => {
     expect(matchNavItem("/projects/abc/overview", "abc")?.id).toBe("overview");
     expect(matchNavItem("/projects/abc/overview", "abc")?.group).toBe("project");
     expect(matchNavItem("/projects/abc/structure", "abc")?.id).toBe("structure");
+    expect(matchNavItem("/projects/abc/work-packages", "abc")?.id).toBe("work-packages");
     expect(isGlobalPath("/projects/abc/overview")).toBe(false);
   });
 
@@ -38,5 +39,11 @@ describe("shell navigation", () => {
       projectName: "Aurora",
     });
     expect(structure.map((crumb) => crumb.label)).toContain("Estrutura");
+    const packages = breadcrumbsFor({
+      pathname: "/projects/abc/work-packages",
+      projectId: "abc",
+      projectName: "Aurora",
+    });
+    expect(packages.map((crumb) => crumb.label)).toContain("Pacotes");
   });
 });

@@ -383,6 +383,22 @@ export async function seedM3Dataset(prisma: PrismaClient): Promise<void> {
       throw new Error(`Missing endpoints for work package ${workPackage.key}`);
     }
     const deliverableId = workPackage.deliverableKey ? deliverableIds.get(workPackage.deliverableKey) : undefined;
+    const disciplineId = workPackage.disciplineKey ? disciplineIds.get(workPackage.disciplineKey) : undefined;
+    let ownerProjectMembershipId: string | null = null;
+    let ownerTeamId: string | null = null;
+    if (workPackage.ownerKind === "user" && workPackage.ownerUserKey) {
+      ownerProjectMembershipId =
+        projectMembershipIds.get(`${workPackage.ownerUserKey}:${workPackage.projectKey}`) ?? null;
+      if (!ownerProjectMembershipId) {
+        throw new Error(`Missing owner membership for ${workPackage.key}`);
+      }
+    }
+    if (workPackage.ownerKind === "team" && workPackage.ownerTeamKey) {
+      ownerTeamId = teamIds.get(workPackage.ownerTeamKey) ?? null;
+      if (!ownerTeamId) {
+        throw new Error(`Missing owner team for ${workPackage.key}`);
+      }
+    }
     const existing = await prisma.workPackage.findFirst({
       where: { projectId, title: workPackage.title, archivedAt: null },
     });
@@ -394,16 +410,31 @@ export async function seedM3Dataset(prisma: PrismaClient): Promise<void> {
           projectId,
           phaseId,
           deliverableId: deliverableId ?? null,
+          disciplineId: disciplineId ?? null,
+          code: workPackage.code ?? null,
           title: workPackage.title,
           description: "",
           status: workPackage.status,
           blockedReason: workPackage.blockedReason ?? null,
+          ownerProjectMembershipId,
+          ownerTeamId,
         },
       });
-    } else if (existing.status !== workPackage.status) {
+    } else if (
+      existing.status !== workPackage.status ||
+      existing.blockedReason !== (workPackage.blockedReason ?? null) ||
+      existing.ownerProjectMembershipId !== ownerProjectMembershipId ||
+      existing.ownerTeamId !== ownerTeamId
+    ) {
       await prisma.workPackage.update({
         where: { id: existing.id },
-        data: { status: workPackage.status, blockedReason: workPackage.blockedReason ?? null },
+        data: {
+          status: workPackage.status,
+          blockedReason: workPackage.blockedReason ?? null,
+          ownerProjectMembershipId,
+          ownerTeamId,
+          code: workPackage.code ?? existing.code,
+        },
       });
     }
   }
