@@ -1,9 +1,12 @@
 import { Injectable, NestMiddleware } from "@nestjs/common";
 import { CORRELATION_HEADER, resolveCorrelationId } from "@amber/shared";
 import type { NextFunction, Request, Response } from "express";
+import { logger } from "./logger";
 import { runWithCorrelation } from "./request-context";
 
 export const CORRELATION_REQUEST_KEY = "correlationId";
+
+const QUIET_PATHS = new Set(["/api/v1/health", "/api/v1/ready"]);
 
 @Injectable()
 export class CorrelationMiddleware implements NestMiddleware {
@@ -12,6 +15,23 @@ export class CorrelationMiddleware implements NestMiddleware {
     const correlationId = resolveCorrelationId(header);
     (req as Request & { correlationId: string }).correlationId = correlationId;
     res.setHeader(CORRELATION_HEADER, correlationId);
+    const started = Date.now();
+    res.on("finish", () => {
+      const path = req.originalUrl?.split("?")[0] ?? req.path;
+      if (QUIET_PATHS.has(path)) {
+        return;
+      }
+      logger.info(
+        {
+          correlationId,
+          method: req.method,
+          path,
+          status: res.statusCode,
+          ms: Date.now() - started,
+        },
+        "request",
+      );
+    });
     runWithCorrelation(correlationId, () => next());
   }
 }

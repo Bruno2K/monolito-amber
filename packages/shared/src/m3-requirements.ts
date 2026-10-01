@@ -147,6 +147,29 @@ export type M37RequirementId = (typeof M3_7_REQUIREMENT_IDS)[number];
 
 export const M3_7_ARTIFACT_PATHS = ["docs/domain/m3.7-requirements-traceability.md"] as const;
 
+export const M3_8_REQUIREMENT_IDS = [
+  "M3.8-REQ-01",
+  "M3.8-REQ-02",
+  "M3.8-REQ-03",
+  "M3.8-REQ-04",
+  "M3.8-REQ-05",
+  "M3.8-REQ-06",
+  "M3.8-REQ-07",
+  "M3.8-REQ-08",
+  "M3.8-REQ-09",
+  "M3.8-REQ-10",
+  "M3.8-REQ-11",
+  "M3.8-REQ-12",
+] as const;
+
+export type M38RequirementId = (typeof M3_8_REQUIREMENT_IDS)[number];
+
+export const M3_8_ARTIFACT_PATHS = [
+  "docs/domain/m3.8-requirements-traceability.md",
+  "docs/development/m3.8-local-rc-runbook.md",
+  "docs/development/m3.8-evidence/README.md",
+] as const;
+
 export const M3_1_ARTIFACT_PATHS = [
   "docs/domain/m3-project-operations-contract.md",
   "docs/architecture/decisions/ADR-018-operations-module-state-transitions.md",

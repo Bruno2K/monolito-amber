@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS, M3_4_ARTIFACT_PATHS, M3_4_REQUIREMENT_IDS, M3_5_ARTIFACT_PATHS, M3_5_REQUIREMENT_IDS, M3_6_ARTIFACT_PATHS, M3_6_REQUIREMENT_IDS, M3_7_ARTIFACT_PATHS, M3_7_REQUIREMENT_IDS } from "./m3-requirements.js";
+import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS, M3_4_ARTIFACT_PATHS, M3_4_REQUIREMENT_IDS, M3_5_ARTIFACT_PATHS, M3_5_REQUIREMENT_IDS, M3_6_ARTIFACT_PATHS, M3_6_REQUIREMENT_IDS, M3_7_ARTIFACT_PATHS, M3_7_REQUIREMENT_IDS, M3_8_ARTIFACT_PATHS, M3_8_REQUIREMENT_IDS } from "./m3-requirements.js";
 import { OPERATIONS_PERMISSIONS } from "./permissions.js";
 import { DELIVERABLE_FIELDS, PHASE_FIELDS, WORK_PACKAGE_FIELDS } from "./operations.js";
 
@@ -147,5 +147,37 @@ describe("M3.1 contract consistency", () => {
     expect(sql).not.toMatch(/DROP TABLE/);
     expect(sql).not.toMatch(/DROP COLUMN/);
     expect(sql).not.toMatch(/gate\.override/);
+  });
+
+  it("embeds every M3.8 REQ id and keeps the local RC pack artifacts", () => {
+    const matrix = read("docs/domain/m3.8-requirements-traceability.md");
+    for (const id of M3_8_REQUIREMENT_IDS) {
+      expect(matrix).toContain(id);
+    }
+    for (const rel of M3_8_ARTIFACT_PATHS) {
+      expect(existsSync(join(ROOT, rel)), rel).toBe(true);
+    }
+    expect(matrix).toMatch(/LOCAL ONLY/i);
+    expect(matrix).toMatch(/deferred/i);
+    expect(matrix).not.toMatch(/M3\.8 PASS/);
+    expect(matrix).not.toMatch(/M3 COMPLETE/);
+    expect(matrix).not.toMatch(/LOCAL RC READY FOR BRUNO/);
+    const runbook = read("docs/development/m3.8-local-rc-runbook.md");
+    expect(runbook).toMatch(/docker compose/i);
+    expect(runbook).toMatch(/AMBER_SEED_M3/);
+    expect(runbook).toMatch(/playwright/i);
+    expect(runbook).not.toMatch(/M3\.8 PASS/);
+    expect(existsSync(join(ROOT, "docker-compose.yml"))).toBe(true);
+    expect(existsSync(join(ROOT, ".env.example"))).toBe(true);
+    const compose = read("docker-compose.yml");
+    expect(compose).toMatch(/postgres:/);
+    expect(compose).toMatch(/minio:/);
+    expect(compose).toMatch(/api:/);
+    expect(compose).toMatch(/web:/);
+    expect(compose).toMatch(/profiles:\s*\n\s*- jobs/m);
+    const envExample = read(".env.example");
+    expect(envExample).toMatch(/SESSION_SECRET=/);
+    expect(envExample).not.toMatch(/vercel/i);
+    expect(envExample).not.toMatch(/RAILWAY_/);
   });
 });

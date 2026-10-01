@@ -4,18 +4,22 @@
 
 **M2 — Product Experience Foundation is COMPLETE, Exit Gate PASS, and integrated into `main` at `4972176442bdb2631ea1f1710a86191109e79dab`.**
 
-**M3 — Project Operations is ACTIVE / LOCAL ONLY.** Active Work Item: **M3.1 — Contract, Migration & Test-Data Readiness** (Issue [#30](https://github.com/Bruno2K/monolito-amber/issues/30)). Branch `m3.1-contract-migration-test-data`.
+**M3 — Project Operations is ACTIVE / LOCAL ONLY.** Active Work Item: **M3.8 — Local RC pack** (Issue [#44](https://github.com/Bruno2K/monolito-amber/issues/44)). Branch `m3.8-local-rc-pack`. M3.1–M3.7 are merged on `main` @ `73e55aaa433864a69757b526faa7f1cc5cc30576`.
 
-Authorization (Bruno 2026-10-01): local execution of M3.1→M3.7 and the M3.8 local test pack. **Forbidden:** Vercel/Railway/cloud credentials/deploy/domain; M3.8 PASS; M3.9; M3 COMPLETE; M4; starting M3.2/M3.3 domain implementation beyond this contract.
+Authorization (Bruno 2026-10-01): local execution of the M3.8 pack. **Forbidden:** Vercel/Railway/cloud credentials/deploy/domain; claiming the M3.8 Exit Gate; M3.9; M3 COMPLETE; M4.
 
-Do **not** mark M3.2+ ACTIVE. Do **not** self-PASS the M3.1 Exit Gate.
+Engineer delivers the local pack. Governor announces readiness. Do **not** self-PASS the M3.8 Exit Gate.
 
-## M3.1 in progress
+## M3.8 in progress
 
-- Objective: freeze executable repo artifacts (contract, ADR, migration/OpenAPI/route/permission/seed/REQ/impact) plus additive catalog deltas and CI tests. No Ops CRUD UI.
-- Canonical Notion: https://app.notion.com/p/3ec678e54c8d812d9f92d02f9f153568
+- Objective: reproducible localhost RC (compose, env contract, migrate+seed, health, Playwright against real API+DB, runbook). Not cloud staging.
+- Canonical Notion: https://app.notion.com/p/3ec678e54c8d8136be51cc5a7b7720a6
 - Pack: https://app.notion.com/p/3ec678e54c8d81c49efeccb527b3e2bd
-- Figma (reference only): `fkE9SwcNlQG7m0HvcGQBw9`
+- Runbook: `docs/development/m3.8-local-rc-runbook.md`
+
+## M3.1 (merged)
+
+M3.1 froze executable repo artifacts (contract, ADR, migration/OpenAPI/route/permission/seed/REQ/impact) plus additive catalog deltas. Canonical: https://app.notion.com/p/3ec678e54c8d812d9f92d02f9f153568
 
 ## M2 final evidence (KEEP / INTEGRATED)
 

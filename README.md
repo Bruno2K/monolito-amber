@@ -8,7 +8,7 @@ Official commercial name remains OPEN; **Amber** is the technical name.
 
 ## Platform Foundation (PF-1.0..1.7) — complete · M2 COMPLETE / INTEGRATED
 
-PF-1.0 through PF-1.7 and M2 are merged on `main`. **M3.1–M3.5** are merged. Current Work Item is **M3.6 — Operational Project Hub** (**ACTIVE / LOCAL ONLY**). Do not claim the M3.6 Exit Gate PASS from the Engineer pass.
+PF-1.0 through PF-1.7 and M2 are merged on `main`. **M3.1–M3.7** are merged. Current Work Item is **M3.8 — Local RC pack** (**ACTIVE / LOCAL ONLY**). Engineer delivers the local pack. Governor announces readiness. Do not claim the M3.8 Exit Gate from the Engineer pass.
 
 This repository is **PUBLIC** (portfolio). Do not commit secrets.
 
@@ -52,7 +52,7 @@ Milestone 0 Exit Gate: **PASS AT SPECIFICATION LEVEL**. See `docs/` and ADR inde
 
 ## Quick start
 
-See [docs/development/local-setup.md](docs/development/local-setup.md) and the agent [harness](docs/agentic/harness.md).
+See [docs/development/local-setup.md](docs/development/local-setup.md), the [M3.8 Local RC runbook](docs/development/m3.8-local-rc-runbook.md), and the agent [harness](docs/agentic/harness.md).
 
 ```bash
 pnpm install

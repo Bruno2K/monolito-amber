@@ -20,8 +20,9 @@ This is not the Product Vision landing (`Bruno2K/amber`).
 | 0.6 Persistence, Files & Async | Architecture | https://app.notion.com/p/3e3678e54c8d81fb9d8cf5687a762093 |
 | 0.7 API, Observability & Tests | Architecture | https://app.notion.com/p/3e3678e54c8d815388d4f0d50b8c70aa |
 | 0.8 Architecture Baseline & Roadmap | Architecture | https://app.notion.com/p/3e3678e54c8d81ca9c77dd2ad5439b30 |
-| **M3 Execution Pack** | **ACTIVE / LOCAL ONLY** | https://app.notion.com/p/3ec678e54c8d81c49efeccb527b3e2bd |
-| **M3.1 Contract, Migration & Test-Data** | **ACTIVE (this WI)** | https://app.notion.com/p/3ec678e54c8d812d9f92d02f9f153568 |
+| **M3 Execution Pack** | **ACTIVE / LOCAL ONLY** (M3.1–M3.7 merged; M3.8 local pack) | https://app.notion.com/p/3ec678e54c8d81c49efeccb527b3e2bd |
+| **M3.1 Contract, Migration & Test-Data** | **MERGED** | https://app.notion.com/p/3ec678e54c8d812d9f92d02f9f153568 |
+| **M3.8 Local RC pack** | **ACTIVE (this WI)** | https://app.notion.com/p/3ec678e54c8d8136be51cc5a7b7720a6 |
 
 Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED only. No foundation-only waiver.
 
@@ -31,10 +32,10 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [domain](./domain/domain-model.md) — model, state machines, glossary
 - [security](./security/identity-authorization.md) — 0.2A, tenancy, baseline
 - [api](./api/conventions.md) — REST `/api/v1`, OpenAPI 3.1, Problem Details
-- [development](./development/local-setup.md) — local, tests, migrations
+- [development](./development/local-setup.md) — local, tests, migrations, [M3.8 runbook](./development/m3.8-local-rc-runbook.md)
 - [agentic](./agentic/context.md) — agent operating context, harness, loop, roles
 - [ux](./ux/m2.10-final-ux-ui-audit.md) — product UX evidence (M2 COMPLETE; Exit Gate PASS)
-- [M3.1 Operations contract](./domain/m3-project-operations-contract.md) — ACTIVE / LOCAL ONLY
+- [M3.1 Operations contract](./domain/m3-project-operations-contract.md) — MERGED / LOCAL ONLY
 
 ## Product UX evidence (M2)
 
@@ -47,6 +48,8 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 ## M3 — Project Operations (ACTIVE / LOCAL ONLY)
 
 - [M3.1 contract](./domain/m3-project-operations-contract.md) — Issue [#30](https://github.com/Bruno2K/monolito-amber/issues/30)
+- [M3.8 Local RC pack](./development/m3.8-local-rc-runbook.md) — Issue [#44](https://github.com/Bruno2K/monolito-amber/issues/44); LOCAL ONLY; Engineer delivers the pack; Governor announces readiness; Exit Gate not claimed here
+- [M3.8 REQ map](./domain/m3.8-requirements-traceability.md)
 - [M3.3 Phase & Discipline](./development/m3-migration-plan.md) — Issue [#33](https://github.com/Bruno2K/monolito-amber/issues/33); LOCAL ONLY; Exit Gate not claimed here
 - [ADR-018](./architecture/decisions/ADR-018-operations-module-state-transitions.md) · [migration plan](./development/m3-migration-plan.md) · [OpenAPI plan](./api/m3-openapi-plan.md) · [route map](./architecture/m3-route-map.md) · [permission delta](./security/m3-permission-role-template-delta.md) · [seed design](./development/m3-seed-design.md) · [REQ matrix](./domain/m3.1-requirements-traceability.md) · [impact map](./architecture/m3-files-modules-impact-map.md)
 

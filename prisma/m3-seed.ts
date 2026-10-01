@@ -10,6 +10,7 @@ import {
   M3_SEED_PHASES,
   M3_SEED_PROJECT_MEMBERSHIPS,
   M3_SEED_PROJECTS,
+  M3_SEED_TEAM_MEMBERSHIPS,
   M3_SEED_TEAMS,
   M3_SEED_USERS,
   M3_SEED_WORK_PACKAGES,
@@ -240,6 +241,32 @@ export async function seedM3Dataset(prisma: PrismaClient): Promise<void> {
         data: { id: seedUuid(`team:${team.key}`), organizationId, name: team.name },
       }));
     teamIds.set(team.key, row.id);
+  }
+
+  for (const membership of M3_SEED_TEAM_MEMBERSHIPS) {
+    const teamId = teamIds.get(membership.teamKey);
+    const organizationMembershipId = orgMembershipIds.get(`${membership.orgKey}:${membership.userKey}`);
+    if (!teamId || !organizationMembershipId) {
+      throw new Error(`Missing team membership endpoints for ${membership.userKey}@${membership.teamKey}`);
+    }
+    const existing = await prisma.teamMembership.findUnique({
+      where: { teamId_organizationMembershipId: { teamId, organizationMembershipId } },
+    });
+    if (!existing) {
+      await prisma.teamMembership.create({
+        data: {
+          id: seedUuid(`tmem:${membership.teamKey}:${membership.userKey}`),
+          teamId,
+          organizationMembershipId,
+          status: membership.status,
+        },
+      });
+    } else if (existing.status !== membership.status) {
+      await prisma.teamMembership.update({
+        where: { id: existing.id },
+        data: { status: membership.status },
+      });
+    }
   }
 
   for (const discipline of M3_SEED_DISCIPLINES) {

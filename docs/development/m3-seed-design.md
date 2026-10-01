@@ -8,10 +8,10 @@ Deterministic, synthetic, **no real PII**. Idempotent or resettable on a disposa
 | --- | --- |
 | Organizations | 2 — `amber-demo-alpha`, `amber-demo-beta` |
 | Projects | 2 in Org A (`Alpha Tower`, `Alpha Plant`) + 1 in Org B (`Beta Campus`) |
-| Users | coordinator A/B, discipline coordinator A, contributor A, viewer A, external A, suspended A, removed A, unauthorized (no membership) |
+| Users | coordinator A/B, discipline coordinator A, contributor A, viewer A, external A, suspended A, removed A, unauthorized (no membership), team-only A (TeamMembership without ProjectMembership) |
 | Org membership | ACTIVE / SUSPENDED / REMOVED; INTERNAL + EXTERNAL |
 | Project membership | ACTIVE / SUSPENDED / REMOVED on Project A1; coordinator on A2; coordinator B on B1 |
-| Teams | Alpha Structure Team (Org A), Beta MEP Team (Org B) |
+| Teams | Alpha Structure Team (Org A), Beta MEP Team (Org B); team-only user on Alpha Structure Team with **no** ProjectMembership |
 | Disciplines | ≥3 in Org A (`ARCH`/`architecture`, `STR`/`structure`, `MEP`/`mep`) + ARCH in Org B. Historical identifier strings preserved as codes |
 | Phases | PLANNED, ACTIVE, COMPLETED on A1; ACTIVE on A2; PLANNED on B1 |
 | Deliverables | PLANNED + user owner; IN_PROGRESS + Team owner; IN_REVIEW + no owner; APPROVED + user owner; Org B PLANNED (cross-tenant) |

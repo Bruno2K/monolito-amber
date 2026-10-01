@@ -145,6 +145,12 @@ export const M3_SEED_USERS: readonly SeedUser[] = [
     displayName: "Seed Unauthorized User",
     role: "unauthorized user",
   },
+  {
+    key: "team-only-a",
+    email: `team.only.a@${M3_SEED_EMAIL_DOMAIN}`,
+    displayName: "Seed Team-Only Member A",
+    role: "team member without project access",
+  },
 ];
 
 export const M3_SEED_ORG_MEMBERSHIPS: readonly SeedMembership[] = [
@@ -156,6 +162,7 @@ export const M3_SEED_ORG_MEMBERSHIPS: readonly SeedMembership[] = [
   { userKey: "suspended-a", orgKey: "org-a", type: "INTERNAL", status: "SUSPENDED" },
   { userKey: "removed-a", orgKey: "org-a", type: "INTERNAL", status: "REMOVED" },
   { userKey: "coord-b", orgKey: "org-b", type: "INTERNAL", status: "ACTIVE" },
+  { userKey: "team-only-a", orgKey: "org-a", type: "INTERNAL", status: "ACTIVE" },
 ];
 
 export const M3_SEED_PROJECT_MEMBERSHIPS: readonly SeedProjectMembership[] = [
@@ -174,6 +181,15 @@ export const M3_SEED_PROJECT_MEMBERSHIPS: readonly SeedProjectMembership[] = [
   { userKey: "removed-a", projectKey: "project-a1", templateKey: "CONTRIBUTOR_DESIGNER", status: "REMOVED" },
   { userKey: "coord-b", projectKey: "project-b1", templateKey: "PROJECT_COORDINATOR", status: "ACTIVE" },
 ];
+
+export const M3_SEED_TEAM_MEMBERSHIPS = [
+  {
+    userKey: "team-only-a",
+    orgKey: "org-a",
+    teamKey: "team-a-structure",
+    status: "ACTIVE" as const,
+  },
+] as const;
 
 export const M3_SEED_DISCIPLINES: readonly SeedDiscipline[] = [
   {
@@ -371,6 +387,12 @@ export const M3_SEED_CROSS_TENANT_NEGATIVES = [
     forbiddenProjectKey: "project-a2",
     forbiddenOrgKey: "org-a",
     assertion: "External collaborator cannot see Org directory or the other Org A Project",
+  },
+  {
+    actorUserKey: "team-only-a",
+    forbiddenProjectKey: "project-a1",
+    forbiddenOrgKey: "org-a",
+    assertion: "TeamMembership without ProjectMembership does not grant Project access",
   },
 ] as const;
 

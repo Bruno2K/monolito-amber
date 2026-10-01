@@ -22,7 +22,13 @@
     "prisma:validate": "prisma validate && tsx scripts/validate-migrations.ts",
     "prisma:seed": "tsx prisma/seed.ts",
     "assert:no-gate-override": "tsx scripts/assert-no-gate-override.ts",
-    "harness": "tsx scripts/harness.ts"
+    "harness": "tsx scripts/harness.ts",
+    "local-rc:bootstrap": "bash scripts/local-rc/bootstrap.sh",
+    "local-rc:up": "bash scripts/local-rc/up.sh",
+    "local-rc:down": "bash scripts/local-rc/down.sh",
+    "local-rc:reset": "bash scripts/local-rc/reset.sh",
+    "local-rc:health": "bash scripts/local-rc/health.sh",
+    "local-rc:e2e": "bash scripts/local-rc/e2e.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
