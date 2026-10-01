@@ -31,3 +31,4 @@ export * from "./hub.js";
 export * from "./m3-routes.js";
 export * from "./m3-seed-design.js";
 export * from "./m3-requirements.js";
+export * from "./m39-adversarial.js";

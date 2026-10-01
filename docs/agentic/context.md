@@ -4,29 +4,36 @@
 
 **M2 — Product Experience Foundation is COMPLETE, Exit Gate PASS, and integrated into `main` at `4972176442bdb2631ea1f1710a86191109e79dab`.**
 
-**M3 — Project Operations is ACTIVE / LOCAL ONLY.** No active product Work Item. RC1 (Issue [#46](https://github.com/Bruno2K/monolito-amber/issues/46) / PR [#47](https://github.com/Bruno2K/monolito-amber/pull/47)) is **MERGED** and **Bruno homologated LOCAL RC** on 2026-10-01 ("Everything seems fine here."). Homologated merge SHA `6104276754607334c53c6864135d29c539db813e`. Reviewed tip `6683bba56299bb28f34029eab8c72dee63bf6aca`.
+**M3 — Project Operations is ACTIVE / LOCAL ONLY.** Active Work Item: **M3.9 — Final Product, Security & UX Audit / Exit Gate** (Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50)). Branch `m3-9-exit-gate-audit` from `main` @ `d01dfc9e202c60f027c242d187f6cf2e31c701bf`. Homologated Local RC narrative tip `6104276754607334c53c6864135d29c539db813e`.
 
-Authorization remains LOCAL ONLY. **Forbidden:** Vercel/Railway/cloud credentials/deploy/domain; claiming the M3.8 Exit Gate; M3.9; M3 COMPLETE; M4. Homologation of LOCAL RC is recorded and allowed.
+Authorization (Bruno 2026-10-01 via Altair): execute M3.9 audit + finding corrections only. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring the Exit Gate or M3 completion; starting M4.
 
-Historical: independent audit revoked an earlier READY / homologated claim on `main` @ `fd10166f4ff5288e14d2796be8950da5a02ca1b9`. RC1 restored truthful evidence and closed that gap. That revocation is not current status.
+Feature freeze. Primary evidence = Local RC + Foundation/Local RC CI. Shared staging only if existing credentials already allow — otherwise HUMAN_REQUIRED / NÃO COMPROVADO.
 
-Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; Windows PS1 host-pending (supported path = Docker Desktop + WSL2 + bash). Do not claim the Windows native host was executed.
+Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; Windows PS1 host-pending (supported path = Docker Desktop + WSL2 + bash).
+
+## M3.9 (ACTIVE)
+
+- Canonical Notion: https://app.notion.com/p/3ec678e54c8d81dab5fceda13242a69b
+- Pack: https://app.notion.com/p/3ec678e54c8d81c49efeccb527b3e2bd
+- Matrix: `docs/domain/m3.9-requirements-traceability.md`
+- Evidence: `docs/development/m3.9-evidence/`
+- Engineer recommendation lives in `EXIT-REPORT.md`. Independent Reviewer inspects raw evidence. Governor owns any Exit Gate / completion claim after merge.
 
 ## RC1 (MERGED → homologated)
 
-- Objective (closed): RC1-01…08 (M3.2 matrix, disassociate AuthZ, axe + focus, Windows path, MinIO live adapter, reset rehearsal, docs sync, reviewer index).
-- Canonical Notion: https://app.notion.com/p/3ec678e54c8d818e8c8fd4fc619059a8
-- Pack: https://app.notion.com/p/3ec678e54c8d81c49efeccb527b3e2bd
+- Issue [#46](https://github.com/Bruno2K/monolito-amber/issues/46) / PR [#47](https://github.com/Bruno2K/monolito-amber/pull/47)
+- Homologated merge SHA `6104276754607334c53c6864135d29c539db813e`
 - Evidence index: `docs/development/m3-rc1-evidence/INDEX.md`
-- Runbook: `docs/development/m3.8-local-rc-runbook.md`
+- Canonical: https://app.notion.com/p/3ec678e54c8d818e8c8fd4fc619059a8
 
 ## M3.8 (merged on main)
 
-M3.8 delivered the localhost pack (compose, env, migrate+seed, health, Playwright against real API+DB). Audit found eight IMPORTANT gaps. RC1 restored evidence; Bruno then homologated LOCAL RC. Canonical: https://app.notion.com/p/3ec678e54c8d8136be51cc5a7b7720a6
+M3.8 delivered the localhost pack. RC1 restored evidence; Bruno homologated LOCAL RC. Canonical: https://app.notion.com/p/3ec678e54c8d8136be51cc5a7b7720a6
 
 ## M3.1 (merged)
 
-M3.1 froze executable repo artifacts (contract, ADR, migration/OpenAPI/route/permission/seed/REQ/impact) plus additive catalog deltas. Canonical: https://app.notion.com/p/3ec678e54c8d812d9f92d02f9f153568
+M3.1 froze executable repo artifacts. Canonical: https://app.notion.com/p/3ec678e54c8d812d9f92d02f9f153568
 
 ## M2 final evidence (KEEP / INTEGRATED)
 
@@ -56,4 +63,4 @@ Formal Exception is the sole bypass; READY ≠ RELEASED; Exception ≠ SATISFIED
 
 ## Next boundary
 
-M3.9 / shared staging and M4 Planner remain frozen until new Bruno authorization. Cloud remains frozen.
+Do not start M4. Do not invent a shared staging URL. After Reviewer + merge, only Governor may mark the Exit Gate / M3 completion if Notion criteria are actually met.

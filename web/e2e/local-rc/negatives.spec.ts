@@ -12,7 +12,7 @@ import {
 } from "./helpers";
 
 test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
-  test("wrong org/project: Org A coordinator cannot open Org B project", async ({ page }, testInfo) => {
+  test("ADV-01/ADV-02 wrong org/project: Org A coordinator cannot open Org B project", async ({ page }, testInfo) => {
     await signInToOrg(page, "coord-a", "Amber Demo Alpha");
     await page.goto(`/projects/${IDS.projectB1}/overview`);
     await expect(page.getByRole("heading", { name: "Acesso negado" })).toBeVisible();
@@ -20,7 +20,7 @@ test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
     await capture(page, testInfo, "negative-wrong-org");
   });
 
-  test("revoked membership: suspended member cannot switch into the org; deep-link denied", async ({
+  test("ADV-03/ADV-09 revoked membership: suspended member cannot switch into the org; deep-link denied", async ({
     page,
   }, testInfo) => {
     await signIn(page, "suspended-a");
@@ -60,7 +60,7 @@ test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
     await capture(page, testInfo, "negative-external");
   });
 
-  test("TeamMembership without ProjectMembership does not grant Project access", async ({ page }, testInfo) => {
+  test("ADV-04 TeamMembership without ProjectMembership does not grant Project access", async ({ page }, testInfo) => {
     await signInToOrg(page, "team-only-a", "Amber Demo Alpha");
     await expect(page.getByRole("link", { name: "Alpha Tower" })).toHaveCount(0);
     await page.goto(`/projects/${IDS.projectA1}/overview`);
@@ -68,7 +68,7 @@ test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
     await capture(page, testInfo, "negative-team-only");
   });
 
-  test("stale expectedVersion and duplicate Idempotency-Key", async ({ page }) => {
+  test("ADV-11/ADV-12 stale expectedVersion and duplicate Idempotency-Key", async ({ page }) => {
     await signInToOrg(page, "coord-a", "Amber Demo Alpha");
     await page.getByRole("link", { name: "Alpha Tower" }).click();
     await page.waitForURL(`**/projects/${IDS.projectA1}/overview`);
@@ -105,7 +105,7 @@ test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
     expect(clash.status).toBeGreaterThanOrEqual(400);
   });
 
-  test("inaccessible deep-link and session expiry after logout", async ({ page }, testInfo) => {
+  test("ADV-10 inaccessible deep-link and session expiry after logout", async ({ page }, testInfo) => {
     await page.goto(`/projects/${IDS.projectA1}/deliverables?inspect=${IDS.delArch001}`);
     await expectUnauthenticatedSurface(page);
 
@@ -119,7 +119,7 @@ test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
     await capture(page, testInfo, "negative-session");
   });
 
-  test("hidden counts: unauthorized context is omitted without leak copy", async ({ page }, testInfo) => {
+  test("ADV-08 hidden counts: unauthorized context is omitted without leak copy", async ({ page }, testInfo) => {
     await signInToOrg(page, "viewer-a", "Amber Demo Alpha");
     await page.goto(`/projects/${IDS.projectA1}/deliverables?inspect=${IDS.delArch001}`);
     await expect(page.getByRole("heading", { name: "Entregas" })).toBeVisible();
@@ -135,11 +135,67 @@ test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
     await capture(page, testInfo, "negative-hidden-counts");
   });
 
-  test("removed membership cannot select an organization", async ({ page }, testInfo) => {
+  test("ADV-03 removed membership cannot select an organization", async ({ page }, testInfo) => {
     await signIn(page, "removed-a");
     await expectOrgSwitch(page);
     await expect(page.getByRole("button", { name: "Switch" })).toHaveCount(0);
     await capture(page, testInfo, "negative-removed");
+  });
+
+  test("ADV-05 dates/progress do not transit Deliverable or Phase status", async ({ page }) => {
+    await signInToOrg(page, "coord-a", "Amber Demo Alpha");
+    await page.getByRole("link", { name: "Alpha Tower" }).click();
+    await page.waitForURL(`**/projects/${IDS.projectA1}/overview`);
+
+    const deliverable = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/deliverables/${IDS.delArch001}`);
+    expect(deliverable.status).toBe(200);
+    expect(deliverable.body.status).toBe("PLANNED");
+    const patched = await apiJson(
+      page,
+      "PATCH",
+      `/api/v1/projects/${IDS.projectA1}/deliverables/${IDS.delArch001}`,
+      {
+        data: { progressPercent: 100, expectedVersion: deliverable.body.version },
+        headers: { "Idempotency-Key": `adv05-${Date.now()}` },
+      },
+    );
+    expect(patched.status).toBeLessThan(400);
+    expect(patched.body.status).toBe("PLANNED");
+    expect(patched.body.progressPercent).toBe(100);
+
+    const phase = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/phases/${IDS.phaseConcept}`);
+    expect(phase.status).toBe(200);
+    expect(phase.body.status).toBe("PLANNED");
+    const dated = await apiJson(page, "PATCH", `/api/v1/projects/${IDS.projectA1}/phases/${IDS.phaseConcept}`, {
+      data: {
+        plannedStartAt: "2024-01-01T00:00:00.000Z",
+        plannedEndAt: "2024-02-01T00:00:00.000Z",
+        expectedVersion: phase.body.version,
+      },
+      headers: { "Idempotency-Key": `adv05-phase-${Date.now()}` },
+    });
+    expect(dated.status).toBeLessThan(400);
+    expect(dated.body.status).toBe("PLANNED");
+  });
+
+  test("ADV-06 deliver is blocked while a linked WorkPackage is not DONE", async ({ page }) => {
+    await signInToOrg(page, "coord-a", "Amber Demo Alpha");
+    await page.getByRole("link", { name: "Alpha Tower" }).click();
+    await page.waitForURL(`**/projects/${IDS.projectA1}/overview`);
+
+    const current = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/deliverables/${IDS.delArch001}`);
+    expect(current.status).toBe(200);
+    const blocked = await apiJson(
+      page,
+      "POST",
+      `/api/v1/projects/${IDS.projectA1}/deliverables/${IDS.delArch001}/deliver`,
+      {
+        data: { expectedVersion: current.body.version },
+        headers: { "Idempotency-Key": `adv06-${Date.now()}` },
+      },
+    );
+    expect(blocked.status).toBeGreaterThanOrEqual(400);
+    expect(blocked.body.status ?? current.body.status).not.toBe("DELIVERED");
   });
 
   test("wrong password stays on sign-in without leaking accounts", async ({ page }) => {

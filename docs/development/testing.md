@@ -138,3 +138,12 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | REQ map | `docs/domain/m3.8-requirements-traceability.md` |
 | Bootstrap | `docs/development/m3.8-local-rc-runbook.md` |
 
+### M3.9 Exit Gate audit evidence
+
+| Test | Where |
+| --- | --- |
+| Fifteen adversarial floors | `packages/shared/src/m39-adversarial.test.ts`, `api/test/security/m39-adversarial.security.test.ts` |
+| Local RC ADV reuse/extension | `web/e2e/local-rc/negatives.spec.ts` (`ADV-01`…`ADV-12` where UI/API applies) |
+| Full WI matrix | `docs/domain/m3.9-requirements-traceability.md` |
+| Evidence index / recommendation | `docs/development/m3.9-evidence/` |
+
