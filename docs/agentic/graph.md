@@ -16,8 +16,8 @@ Platform Foundation progression (complete on main):
 
 - **M2.1..M2.5** — prior Figma product surfaces (Shell, Planning, Calendar, Messages, Team) — delivered in canonical Figma
 - **M2.6** Governance Gates & Exceptions Experience — **COMPLETE / PASS** (Figma + docs evidence; PR #20 OPEN, do not merge)
-- **M2.7** Overview & Portfolio Health Reconciliation — **ACTIVE** (Figma + docs; stacked on M2.6 tip `0dbf9b2`; PR #22 base = M2.6 branch **NOT** main; leave OPEN)
-- **M2.8+** — stacks from M2.7 tip after PR open
+- **M2.7** Overview & Portfolio Health Reconciliation — **COMPLETE / PASS** (Figma + docs; PR #22 OPEN; base = M2.6 branch **NOT** main; leave OPEN)
+- **M2.8** — stacked from the M2.7 branch tip in PR #24
 
 ## Stacking chain
 

@@ -6,7 +6,7 @@ This repository is **PUBLIC** by design (portfolio). No secrets, credentials, or
 
 ## Current slice
 
-**M2.7 — Overview & Portfolio Health Reconciliation** (Issue #21). Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
+**M2.7 — Overview & Portfolio Health Reconciliation** (Issue #21) is **COMPLETE / Exit Gate PASS** in PR #22. Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
 
 **Stacked on M2.6** branch `m2.6-governance-gates-exceptions-experience` @ `0dbf9b2`. **M2.6 is COMPLETE/PASS and PR #20 remains OPEN** — do not wait for merge; do not base on `main`.
 
@@ -44,7 +44,7 @@ Platform Foundation **PF-1.0..1.7 is DONE on main** (`49588c3cc9ec0f6b43be5c35f1
 - RELEASED ≠ RELEASED_WITH_EXCEPTION; Exception is requirement-specific
 - Governance reads Documents/Coordination/Planning via adapters and does not mutate upstream
 - **M2.6** delivers Governance Gates & Exceptions **product UX in Figma** + evidence docs (COMPLETE/PASS; PR #20 OPEN; no backend)
-- **M2.7** delivers Visão Geral + Portfolio Health as **derived/read-model** UX in Figma + evidence docs (stacked on M2.6; no backend; no health SoT; actor-visible portfolio only)
+- **M2.7** delivers Visão Geral + Portfolio Health as **derived/read-model** UX in Figma + evidence docs (COMPLETE/PASS; PR #22 OPEN; stacked on M2.6; no backend; no health SoT; actor-visible portfolio only)
 
 ## Forbidden (future phase — not activated)
 
