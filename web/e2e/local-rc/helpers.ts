@@ -6,6 +6,7 @@ import { expect, type APIRequestContext, type Cookie, type Page, type TestInfo }
 export const SEED_PASSWORD = process.env.AMBER_E2E_PASSWORD ?? "correct-horse-12";
 
 export const EVIDENCE_DIR = path.resolve(process.cwd(), "../docs/development/m3.8-evidence");
+export const RC1_EVIDENCE_DIR = path.resolve(process.cwd(), "../docs/development/m3-rc1-evidence");
 
 export const WEB = process.env.AMBER_WEB_URL ?? "http://127.0.0.1:3000";
 
@@ -149,6 +150,7 @@ export async function logoutToSignIn(page: Page): Promise<void> {
 export async function capture(page: Page, testInfo: TestInfo, name: string): Promise<void> {
   const file = `${name}-${testInfo.project.name}.png`;
   await page.screenshot({ path: path.join(EVIDENCE_DIR, file), fullPage: true });
+  await page.screenshot({ path: path.join(RC1_EVIDENCE_DIR, file), fullPage: true });
   await page.screenshot({ path: testInfo.outputPath(file), fullPage: true });
 }
 

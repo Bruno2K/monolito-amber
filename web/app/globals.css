@@ -7,13 +7,14 @@
   --border-sidebar: #1f2937;
   --nav-active-bg: #1f2937;
   --text-sidebar: #d1d5db;
-  --text-sidebar-muted: #4b5563;
+  --text-sidebar-muted: #9ca3af;
   --text-sidebar-bright: #f9fafb;
   --amber: #d97706;
+  --btn-bg: #92400e;
   --header-bg: #ffffff;
   --header-border: #e5e7eb;
   --text-primary: #111827;
-  --text-muted: #9ca3af;
+  --text-muted: #4b5563;
   --text-secondary: #4b5563;
   --bg-page: #f9fafb;
   --bg-input: #ffffff;
@@ -197,7 +198,7 @@ button.btn {
   margin-top: 1rem;
   height: var(--input-height);
   padding: 0 14px;
-  background: var(--amber);
+  background: var(--btn-bg);
   color: #fff;
   border: 0;
   border-radius: var(--radius-md);
@@ -354,7 +355,7 @@ button.btn {
 .nav-chevron {
   display: inline-flex;
   transform: rotate(180deg);
-  color: #6b7280;
+  color: var(--text-sidebar-muted);
 }
 
 .nav-active-dot {
@@ -1028,6 +1029,17 @@ button.btn {
 
 .hub-project-meta {
   margin-top: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media (max-width: 1180px) {

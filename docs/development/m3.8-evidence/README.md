@@ -33,6 +33,6 @@ Negatives:
 - `negative-hidden-counts-*.png`
 - `negative-removed-*.png`
 
-Keyboard / landmarks: `web/e2e/local-rc/golden-path.spec.ts` (“keyboard landmarks and skip link”). Automated axe is not in this harness; this is the a11y evidence the current Playwright pack allows.
+Keyboard / landmarks: `web/e2e/local-rc/golden-path.spec.ts` (“keyboard landmarks and skip link”). Automated axe: `web/e2e/local-rc/a11y.spec.ts` writing JSON under [m3-rc1-evidence](../m3-rc1-evidence/INDEX.md).
 
 LOCAL ONLY. Not Exit Gate evidence by itself.

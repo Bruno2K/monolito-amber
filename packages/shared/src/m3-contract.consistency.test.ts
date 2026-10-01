@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS, M3_4_ARTIFACT_PATHS, M3_4_REQUIREMENT_IDS, M3_5_ARTIFACT_PATHS, M3_5_REQUIREMENT_IDS, M3_6_ARTIFACT_PATHS, M3_6_REQUIREMENT_IDS, M3_7_ARTIFACT_PATHS, M3_7_REQUIREMENT_IDS, M3_8_ARTIFACT_PATHS, M3_8_REQUIREMENT_IDS } from "./m3-requirements.js";
+import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_2_ARTIFACT_PATHS, M3_2_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS, M3_4_ARTIFACT_PATHS, M3_4_REQUIREMENT_IDS, M3_5_ARTIFACT_PATHS, M3_5_REQUIREMENT_IDS, M3_6_ARTIFACT_PATHS, M3_6_REQUIREMENT_IDS, M3_7_ARTIFACT_PATHS, M3_7_REQUIREMENT_IDS, M3_8_ARTIFACT_PATHS, M3_8_REQUIREMENT_IDS, M3_RC1_ARTIFACT_PATHS } from "./m3-requirements.js";
 import { OPERATIONS_PERMISSIONS } from "./permissions.js";
 import { DELIVERABLE_FIELDS, PHASE_FIELDS, WORK_PACKAGE_FIELDS } from "./operations.js";
 
@@ -62,6 +62,31 @@ describe("M3.1 contract consistency", () => {
     expect(plan).toContain("responsible_discipline_id");
   });
 
+  it("embeds every M3.2 REQ id and keeps the shell traceability artifact", () => {
+    const matrix = read("docs/domain/m3.2-requirements-traceability.md");
+    for (const id of M3_2_REQUIREMENT_IDS) {
+      expect(matrix).toContain(id);
+    }
+    for (const rel of M3_2_ARTIFACT_PATHS) {
+      expect(existsSync(join(ROOT, rel)), rel).toBe(true);
+    }
+    expect(matrix).toMatch(/session-bound Organization/i);
+    expect(matrix).toMatch(/project\.read/);
+    expect(matrix).toMatch(/StateScreen/);
+    expect(matrix).toMatch(/1440/);
+    expect(matrix).toMatch(/1180/);
+    expect(matrix).toMatch(/not a uniform verdict/);
+    expect(matrix).not.toMatch(/LOCAL RC READY FOR BRUNO/);
+    expect(matrix).not.toMatch(/M3\.8 PASS/);
+    expect(matrix).not.toMatch(/M3 COMPLETE/);
+    expect(existsSync(join(ROOT, "web/app/projects/page.tsx"))).toBe(true);
+    expect(existsSync(join(ROOT, "web/app/projects/[projectId]/overview/page.tsx"))).toBe(true);
+    expect(existsSync(join(ROOT, "api/test/integration/m32-shell-context.integration.test.ts"))).toBe(true);
+    for (const rel of M3_RC1_ARTIFACT_PATHS) {
+      expect(existsSync(join(ROOT, rel)), rel).toBe(true);
+    }
+  });
+
   it("embeds every M3.3 REQ id and keeps the Phase/Discipline artifacts", () => {
     const matrix = read("docs/domain/m3.3-requirements-traceability.md");
     for (const id of M3_3_REQUIREMENT_IDS) {
@@ -108,6 +133,14 @@ describe("M3.1 contract consistency", () => {
     expect(additive).not.toMatch(/DROP TABLE/);
     expect(additive).not.toMatch(/CREATE TABLE "operations"\."work_packages"/);
     expect(additive).not.toMatch(/forceRelease|force_release/);
+    const disassociatePlan = read("docs/api/m3-openapi-plan.md");
+    expect(disassociatePlan).toMatch(/work-packages\/\{workPackageId\}\/disassociate` \| `work_package\.update`/);
+    const wpController = read("api/src/operations/work-packages.controller.ts");
+    expect(wpController).toMatch(
+      /@Post\(":workPackageId\/disassociate"\)[\s\S]*?@RequirePermission\("work_package\.update"\)/,
+    );
+    const wpService = read("api/src/operations/work-packages.service.ts");
+    expect(wpService).toMatch(/async disassociate\([\s\S]*?requireWorkPackage\(session, "work_package\.update"/);
     const original = read("prisma/migrations/20261001170000_m3_4_operations_deliverable/migration.sql");
     expect(original).toMatch(/CREATE TABLE "operations"\."work_packages"/);
   });
@@ -172,6 +205,9 @@ describe("M3.1 contract consistency", () => {
     const compose = read("docker-compose.yml");
     expect(compose).toMatch(/postgres:/);
     expect(compose).toMatch(/minio:/);
+    expect(compose).toMatch(/bitnamilegacy\/minio/);
+    expect(compose).not.toMatch(/^\s+image:\s+minio\/minio/m);
+    expect(compose).not.toMatch(/^\s+image:\s+minio\/mc/m);
     expect(compose).toMatch(/api:/);
     expect(compose).toMatch(/web:/);
     expect(compose).toMatch(/profiles:\s*\n\s*- jobs/m);

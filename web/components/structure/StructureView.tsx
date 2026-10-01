@@ -18,6 +18,7 @@ import {
   type PhaseRow,
 } from "../../lib/operations";
 import { useShell } from "../session/ShellProvider";
+import { useInspectorEscape } from "../../lib/use-inspector-escape";
 
 function isoDateInput(value: string | null | undefined): string {
   if (!value) {
@@ -66,6 +67,8 @@ export function StructureView({ projectId }: { projectId: string }) {
     },
     [pathname, router, searchParams],
   );
+
+  useInspectorEscape(Boolean(selectedId), openPhase);
 
   const load = useCallback(async () => {
     setLoading(true);

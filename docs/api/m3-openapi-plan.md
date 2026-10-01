@@ -56,7 +56,7 @@ Planned operations (collision-tested against today’s OpenAPI; none of these pa
 | POST | `…/work-packages/{workPackageId}/cancel` | `work_package.update` | yes |
 | POST | `…/work-packages/{workPackageId}/archive` | `work_package.update` | yes |
 | POST | `…/work-packages/{workPackageId}/associate` | `work_package.update` | yes |
-| POST | `…/work-packages/{workPackageId}/disassociate` | `deliverable.update` | yes |
+| POST | `…/work-packages/{workPackageId}/disassociate` | `work_package.update` | yes |
 
 CAS: mutating commands accept `expectedVersion` as elsewhere. Unauthorized rows are **omitted**, never returned as `count: 0` placeholders that reveal existence across tenants.
 

@@ -12,12 +12,14 @@ PF-1.7 DONE
                                 M2 COMPLETE / INTEGRATED
                                 main @ 4972176442bdb2631ea1f1710a86191109e79dab
                                      └─ M3 ACTIVE / LOCAL ONLY
-                                          └─ M3.1 ACTIVE (this WI) — contract / catalog / tests
-                                               ├─ M3.2 not started
-                                               ├─ M3.3 not started
-                                               ├─ M3.4–M3.7 not started
-                                               ├─ M3.8 local pack deferred until M3.7
-                                               └─ M3.9 / M3 COMPLETE / M4 forbidden
+                                          └─ M3.1–M3.7 MERGED
+                                               └─ M3.8 Local RC pack PR #45 MERGED
+                                                    main @ fd10166f4ff5288e14d2796be8950da5a02ca1b9
+                                                    prior LOCAL RC READY claim REVOKED by audit
+                                                         └─ RC1 corrections (this WI) — branch m3-local-rc-audit-corrections / Issue #46
+                                                              ├─ M3.8 Exit Gate not claimed
+                                                              ├─ M3.9 / shared staging frozen
+                                                              └─ M3 COMPLETE / M4 forbidden
 ```
 
 ## Integration edges
@@ -29,10 +31,12 @@ PF-1.7 DONE
 | PR #22 integrated | PR #24 retargeted to `main` | merge commit `130d9602…` |
 | PR #24 integrated | PR #26 retargeted to `main` | merge commit `64223fa3…` |
 | PR #26 integrated | PR #28 retargeted to `main` | merge commit `4e410b11…` |
-| `main` @ `4972176…` (M2 COMPLETE) | M3.1 branch `m3.1-contract-migration-test-data` | in review — do not merge from this Engineer pass |
+| `main` @ `4972176…` (M2 COMPLETE) | M3.1 … M3.8 pack | M3.8 merge `fd10166f…` |
+| `main` @ `fd10166f…` | RC1 branch `m3-local-rc-audit-corrections` | in review — Engineer must not merge |
 
 ## Current boundary
 
 - M2 integration is closed.
-- M3.1 is the only active Work Item (LOCAL ONLY).
-- M3.2+ must not start until M3.1 is MERGED / DONE.
+- M3.1–M3.8 pack are on `main`; READY/homologated language is revoked.
+- RC1 is the only active Work Item (LOCAL ONLY).
+- M3.9 / M3 COMPLETE / M4 remain frozen.

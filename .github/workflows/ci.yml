@@ -78,6 +78,13 @@ jobs:
       AMBER_SEED_M3: "1"
       REDIS_URL: ""
       LOG_LEVEL: info
+      S3_ENDPOINT: http://127.0.0.1:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: amberminio
+      S3_SECRET_KEY: amberminio
+      S3_BUCKET: amber-files
+      S3_FORCE_PATH_STYLE: "true"
+      AMBER_REQUIRE_S3: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -89,21 +96,40 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Generate Prisma client
         run: pnpm prisma:generate
+      - name: Start MinIO (live Local RC object storage)
+        run: |
+          docker compose up -d minio
+          for i in $(seq 1 45); do
+            if curl -sf http://127.0.0.1:9000/minio/health/live >/dev/null; then
+              echo "minio ready"
+              break
+            fi
+            if [[ "$i" -eq 45 ]]; then
+              echo "MinIO never became ready" >&2
+              docker compose logs minio >&2 || true
+              exit 1
+            fi
+            sleep 1
+          done
       - name: Migrate + M3 seed
         run: |
           pnpm prisma:migrate
           AMBER_SEED_M3=1 pnpm prisma:seed
+      - name: Reset rehearsal (drop → migrate → seed, assert deterministic IDs)
+        run: bash scripts/local-rc/rehearse-reset.sh
       - name: Build API
         run: pnpm --filter @amber/shared build && pnpm --filter @amber/api build
       - name: Install Playwright Chromium
         run: pnpm --filter @amber/web exec playwright install --with-deps chromium
       - name: Playwright Local RC (real stack)
         run: pnpm --filter @amber/web test:e2e:local-rc
-      - name: Upload evidence PNGs
+      - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: m3-8-local-rc-evidence
-          path: docs/development/m3.8-evidence
+          name: m3-rc1-local-rc-evidence
+          path: |
+            docs/development/m3.8-evidence
+            docs/development/m3-rc1-evidence
           if-no-files-found: warn
 

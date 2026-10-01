@@ -20,6 +20,9 @@ need_cmd() {
 }
 
 ensure_env() {
+  # Preserve a SHA already set by CI / the caller. Sourcing .env.example would
+  # otherwise overwrite it with the placeholder `dev`.
+  local preset_sha="${GIT_SHA-}"
   if [[ ! -f .env ]]; then
     cp .env.example .env
     echo "wrote .env from .env.example (local placeholders only)"
@@ -28,7 +31,13 @@ ensure_env() {
   # shellcheck disable=SC1091
   source .env
   set +a
-  export GIT_SHA="${GIT_SHA:-$(git rev-parse --short HEAD 2>/dev/null || echo dev)}"
+  if [[ -n "${preset_sha}" ]]; then
+    export GIT_SHA="$preset_sha"
+  elif [[ -n "${GITHUB_SHA:-}" ]]; then
+    export GIT_SHA="$GITHUB_SHA"
+  elif [[ "${GIT_SHA:-dev}" == "dev" ]]; then
+    export GIT_SHA="$(git rev-parse HEAD 2>/dev/null || echo dev)"
+  fi
   export BUILD_ID="${BUILD_ID:-local}"
 }
 

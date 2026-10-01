@@ -49,10 +49,10 @@ curl -sf http://127.0.0.1:3001/api/v1/ready
 kill $API_PID
 ```
 
-M3 Local RC (real Postgres + seed + Playwright): [m3.8-local-rc-runbook.md](../development/m3.8-local-rc-runbook.md).
+M3 Local RC (real Postgres + MinIO + seed + Playwright): [m3.8-local-rc-runbook.md](../development/m3.8-local-rc-runbook.md). Windows: [m3-windows-local-rc.md](../development/m3-windows-local-rc.md). RC1 evidence: [m3-rc1-evidence/INDEX.md](../development/m3-rc1-evidence/INDEX.md).
 
 `pnpm --filter @amber/web build` is included in `pnpm build`.
 
-CI jobs: **Foundation & Security Gates** (lint, typecheck, unit, security, no-gate-override, integration, build, OpenAPI, Prisma validate) and **Local RC (real API + Postgres)** (migrate + M3 seed + Playwright local-rc).
+CI jobs: **Foundation & Security Gates** (lint, typecheck, unit, security, no-gate-override, integration, build, OpenAPI, Prisma validate) and **Local RC (real API + Postgres + MinIO)** (migrate + M3 seed + reset rehearsal + Playwright local-rc including axe).
 
 Suites in this repository cover PF-1.0 through PF-1.6 plus M3.1 contract tests: identity/tenancy/MFA, ProjectMembership / contextual RBAC, Document/Revision, Coordination/Impact, Planning Task/Milestone, Governance Gate/Exception (Tests A–I), and Operations catalog/state/route/seed consistency. The security-gate test fails closed if those files are missing or skipped.

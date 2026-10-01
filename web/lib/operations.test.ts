@@ -10,6 +10,7 @@ import {
   canUpdateDeliverable,
   canCompleteWorkPackage,
   canCreateWorkPackage,
+  canDisassociateWorkPackage,
   canUpdateWorkPackage,
   deliverableStatusLabel,
   deliverablesDeepLink,
@@ -67,6 +68,8 @@ describe("work package helpers", () => {
     expect(canCreateWorkPackage(["project.read"])).toBe(false);
     expect(canUpdateWorkPackage(["work_package.update"])).toBe(true);
     expect(canCompleteWorkPackage(["work_package.complete"])).toBe(true);
+    expect(canDisassociateWorkPackage(["deliverable.update"])).toBe(false);
+    expect(canDisassociateWorkPackage(["work_package.update"])).toBe(true);
     expect(workPackageStatusLabel("BLOCKED")).toBe("Bloqueado");
     expect(workPackageStatusLabel("DONE")).toBe("Concluído");
   });

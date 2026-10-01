@@ -461,7 +461,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     method: "POST",
     path: "/api/v1/projects/{projectId}/work-packages/{workPackageId}/disassociate",
     lifecycle: "add",
-    permission: "deliverable.update",
+    permission: "work_package.update",
     idempotency: true,
     purpose: "Explicit disassociation from a Deliverable (required before delivering with CANCELLED WPs)",
     implementedIn: "m3.5",

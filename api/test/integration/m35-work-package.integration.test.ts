@@ -651,4 +651,87 @@ describe("M3.5 WorkPackage", () => {
     expect(first.status).toBeLessThan(400);
     expect(second.body.id).toBe(first.body.id);
   });
+
+  it("disassociates with work_package.update, denies missing permission, and stays anti-enumeration safe", async () => {
+    const deliverable = await createDeliverable("DEL-WP-AUTHZ");
+    const created = await coordinator
+      .post(`/api/v1/projects/${projectA}/work-packages`)
+      .set("Idempotency-Key", key("authz-create"))
+      .send(createBody({ title: "AuthZ package", deliverableId: deliverable.id }));
+    expect(created.body.deliverableId).toBe(deliverable.id);
+
+    const roles = await ownerA.get(`/api/v1/organizations/${orgA}/roles`);
+    const viewerRole = (roles.body as Array<{ id: string; templateKey: string; permissions: string[] }>).find(
+      (row) => row.templateKey === "VIEWER",
+    );
+    expect(viewerRole).toBeTruthy();
+    const patched = await ownerA.patch(`/api/v1/organizations/${orgA}/roles/${viewerRole!.id}`).send({
+      permissions: [...new Set([...(viewerRole!.permissions ?? []), "deliverable.update"])],
+    });
+    expect(patched.status).toBeLessThan(400);
+    expect(patched.body.permissions).toContain("deliverable.update");
+    expect(patched.body.permissions).not.toContain("work_package.update");
+
+    const missing = await viewer
+      .post(`/api/v1/projects/${projectA}/work-packages/${created.body.id}/disassociate`)
+      .set("Idempotency-Key", key("authz-viewer"))
+      .send({ expectedVersion: created.body.version });
+    expect(missing.status).toBe(403);
+    expect(missing.body.deliverableId).toBeUndefined();
+
+    const contrib = await contributor
+      .post(`/api/v1/projects/${projectA}/work-packages/${created.body.id}/disassociate`)
+      .set("Idempotency-Key", key("authz-contrib"))
+      .send({ expectedVersion: created.body.version });
+    expect(contrib.status).toBe(403);
+
+    const crossProject = await coordinator
+      .post(`/api/v1/projects/${projectA2}/work-packages/${created.body.id}/disassociate`)
+      .set("Idempotency-Key", key("authz-cross-project"))
+      .send({ expectedVersion: created.body.version });
+    expect(crossProject.status).toBe(403);
+    expect(crossProject.body.id).toBeUndefined();
+
+    const crossTenant = await ownerB
+      .post(`/api/v1/projects/${projectA}/work-packages/${created.body.id}/disassociate`)
+      .set("Idempotency-Key", key("authz-cross-tenant"))
+      .send({ expectedVersion: created.body.version });
+    expect(crossTenant.status).toBe(403);
+    expect(crossTenant.body.id).toBeUndefined();
+
+    const spoofed = await coordinator
+      .post(`/api/v1/projects/${projectA}/work-packages/${SPOOFED}/disassociate`)
+      .set("Idempotency-Key", key("authz-spoof"))
+      .send({ expectedVersion: created.body.version });
+    expect(spoofed.status).toBe(403);
+
+    const stale = await coordinator
+      .post(`/api/v1/projects/${projectA}/work-packages/${created.body.id}/disassociate`)
+      .set("Idempotency-Key", key("authz-cas"))
+      .send({ expectedVersion: 0 });
+    expect(stale.status).toBeGreaterThanOrEqual(400);
+
+    const idemKey = key("authz-ok");
+    const permitted = await disciplineCoord
+      .post(`/api/v1/projects/${projectA}/work-packages/${created.body.id}/disassociate`)
+      .set("Idempotency-Key", idemKey)
+      .send({ expectedVersion: created.body.version });
+    expect(permitted.status).toBeLessThan(400);
+    expect(permitted.body.deliverableId).toBeNull();
+
+    const replay = await disciplineCoord
+      .post(`/api/v1/projects/${projectA}/work-packages/${created.body.id}/disassociate`)
+      .set("Idempotency-Key", idemKey)
+      .send({ expectedVersion: created.body.version });
+    expect(replay.status).toBeLessThan(400);
+    expect(replay.body.id).toBe(permitted.body.id);
+    expect(replay.body.deliverableId).toBeNull();
+
+    const audit = await prisma.auditEvent.findMany({
+      where: { resourceId: created.body.id, eventType: "WORK_PACKAGE_DISASSOCIATED" },
+    });
+    expect(audit.length).toBeGreaterThan(0);
+    const stillLinked = await prisma.workPackage.findUnique({ where: { id: created.body.id } });
+    expect(stillLinked?.deliverableId).toBeNull();
+  });
 });
