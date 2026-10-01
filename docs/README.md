@@ -24,7 +24,9 @@ This is not the Product Vision landing (`Bruno2K/amber`).
 | **M3.1 Contract, Migration & Test-Data** | **MERGED** | https://app.notion.com/p/3ec678e54c8d812d9f92d02f9f153568 |
 | **M3.8 Local RC pack** | **MERGED**; Bruno homologated LOCAL RC | https://app.notion.com/p/3ec678e54c8d8136be51cc5a7b7720a6 |
 | **M3 Local RC Audit Corrections RC1** | **MERGED / homologated** | https://app.notion.com/p/3ec678e54c8d818e8c8fd4fc619059a8 |
-| **M3.9 Final Product, Security & UX Audit** | **ACTIVE (this WI)** | https://app.notion.com/p/3ec678e54c8d81dab5fceda13242a69b |
+| **M3.9 Final Product, Security & UX Audit** | **MERGED**; Exit Gate **FAIL — ACCEPTED** | https://app.notion.com/p/3ec678e54c8d81dab5fceda13242a69b |
+| **M4 Execution Pack** | **ACTIVE / LOCAL ONLY** | https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7 |
+| **M4.1 Contract, Baseline & Read-Model Plan** | **IN FLIGHT** (docs-only) | https://app.notion.com/p/3ec678e54c8d8103beafc69c3bb51edc |
 
 Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED only. No foundation-only waiver.
 
@@ -38,6 +40,7 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [agentic](./agentic/context.md) — agent operating context, harness, loop, roles
 - [ux](./ux/m2.10-final-ux-ui-audit.md) — product UX evidence (M2 COMPLETE; Exit Gate PASS)
 - [M3.1 Operations contract](./domain/m3-project-operations-contract.md) — MERGED / LOCAL ONLY
+- [M4.1 Planning contract](./domain/m4-planning-scheduling-contract.md) — IN FLIGHT / LOCAL ONLY
 
 ## Product UX evidence (M2)
 
@@ -47,7 +50,18 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [M2.9 — Prototype & State Coverage](./ux/m2.9-prototype-state-coverage.md) — **PASS / COMPLETE**, PR #26 MERGED as `64223fa3…`; NAVIGATE 257 / structural zeros; no backend
 - [M2.10 — Final UX/UI Audit & Exit Gate](./ux/m2.10-final-ux-ui-audit.md) — **PASS / COMPLETE**, PR #28 MERGED as `4e410b11…`; M2 Exit Gate PASS; R-01/R-02 CLEARED; F-04 OPTIONAL; 86 / 257 / zeros; **M2 COMPLETE / INTEGRATED**
 
-## M3 — Project Operations (ACTIVE / LOCAL ONLY)
+## M4 — Planning & Scheduling (ACTIVE / LOCAL ONLY)
+
+- [M4.1 requirement-to-change plan](./domain/m4.1-requirement-to-change-plan.md) — Issue [#54](https://github.com/Bruno2K/monolito-amber/issues/54); published first
+- [M4 Planning & Scheduling contract](./domain/m4-planning-scheduling-contract.md) — lifecycle, deps, read-model, AuthZ, audit/CAS
+- [M4.1 baseline inventory](./domain/m4.1-baseline-inventory.md) · [gap analysis](./domain/m4.1-gap-analysis.md)
+- [M4.1 migration/seed/rollback plan](./domain/m4.1-migration-seed-rollback-plan.md) — plan only; no applied DDL
+- [M4.1 Figma → route map](./domain/m4.1-figma-route-map.md) — documentary
+- [M4.1 test strategy](./domain/m4.1-test-strategy.md) · [R14 no-feature-code](./domain/m4.1-no-feature-code-evidence.md)
+- [M4.1 matrix](./domain/m4.1-requirements-traceability.md) — target 14 ATENDIDO
+- M3 Exit Gate **FAIL — ACCEPTED** remains accepted debt. **Not M3 COMPLETE.** M4.2–M4.9 LOCKED.
+
+## M3 — Project Operations (Exit Gate FAIL — ACCEPTED / LOCAL ONLY)
 
 - [M3.1 contract](./domain/m3-project-operations-contract.md) — Issue [#30](https://github.com/Bruno2K/monolito-amber/issues/30)
 - [M3.2 shell traceability](./domain/m3.2-requirements-traceability.md) — Issue [#32](https://github.com/Bruno2K/monolito-amber/issues/32)
@@ -61,4 +75,4 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 
 ## Deferred after Platform Foundation (PF-1.0..1.7)
 
-Gate Templates; Planning Gantt / critical path; Impact dashboard / Issue board / coordination timeline; BIM/IFC/BCF viewers; analytics; AI; Kubernetes; microservices; CQRS; event sourcing; Kafka; invented permissions; a second Gate bypass (`gate.override`); Next.js product pages for Documents, Coordination, Planning, or Governance (M2.6 Figma evidence is authorized — see above). M3 product `/projects` routes are **planned** in M3.1 and implemented from M3.2 — not in this contract WI.
+Gate Templates; Planning critical path (M4 Gantt is contracted, not implemented here); Impact dashboard / Issue board / coordination timeline; BIM/IFC/BCF viewers; analytics; AI; Kubernetes; microservices; CQRS; event sourcing; Kafka; invented permissions; a second Gate bypass (`gate.override`); Next.js product pages for Documents, Coordination, Planning, or Governance (M2.6 Figma evidence is authorized — see above). M3 product `/projects` routes are **planned** in M3.1 and implemented from M3.2 — not in this contract WI.

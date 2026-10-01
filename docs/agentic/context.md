@@ -4,13 +4,23 @@
 
 **M2 — Product Experience Foundation is COMPLETE, Exit Gate PASS, and integrated into `main` at `4972176442bdb2631ea1f1710a86191109e79dab`.**
 
-**M3 — Project Operations is ACTIVE / LOCAL ONLY.** Team is **cold**. No active implementation Work Item and no active M3.9 implementation branch. Audit WI Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51) squash-merged to `main` @ `762c3f3ba85ff899623cf4c3682e6bddad062bab`. Reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Independent Reviewer **PASS (audit WI only)**. Homologated Local RC narrative tip remains `6104276754607334c53c6864135d29c539db813e`.
+**M3 — Project Operations is ACTIVE / LOCAL ONLY with Exit Gate FAIL — ACCEPTED.** Audit WI Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51) squash-merged to `main` @ `762c3f3ba85ff899623cf4c3682e6bddad062bab`. Disposition sync #52 brought `main` to `a3eaadcd61c8f8153f61c6a51f920e37b8f362a0`. Reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Independent Reviewer **PASS (audit WI only)**. Homologated Local RC narrative tip remains `6104276754607334c53c6864135d29c539db813e`. **This is not M3 COMPLETE.**
 
-**M3.9 Exit Gate: FAIL — ACCEPTED.** Shared staging / public URL / PaaS deployed SHA (`EG-OPS-STAGING-URL`, `EG-OPS-PAAS-SHA`) stay HUMAN_REQUIRED / NÃO COMPROVADO. **LOCAL ONLY** — do not chase Vercel / Railway / a public URL. This is **not** M3 COMPLETE and **not** M4.
+**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** Only **M4.1** is unlocked (Issue [#54](https://github.com/Bruno2K/monolito-amber/issues/54), branch `m4-1-contract-baseline`). M4.2–M4.9 remain LOCKED until Governor Exit Gate PASS on M4.1 after Independent Reviewer and merge.
 
-Authorization (Bruno 2026-10-01 via Altair): docs-only disposition sync. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring Exit Gate PASS or M3 completion; starting M4.
+Authorization (Bruno 2026-10-01 via Altair): M4 ACTIVE / LOCAL ONLY; M4.1 READY only. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring Exit Gate PASS or M3/M4 completion; starting M4.2+.
 
-Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (supported path = Docker Desktop + WSL2 + bash).
+Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (supported path = Docker Desktop + WSL2 + bash). M3 cloud residuals are **accepted debt**, not M4 scope.
+
+## M4.1 (IN FLIGHT — docs-only)
+
+- Issue [#54](https://github.com/Bruno2K/monolito-amber/issues/54)
+- Branch `m4-1-contract-baseline` from `a3eaadcd61c8f8153f61c6a51f920e37b8f362a0`
+- Canonical Notion: https://app.notion.com/p/3ec678e54c8d8103beafc69c3bb51edc
+- Pack: https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7
+- Matrix: `docs/domain/m4.1-requirements-traceability.md`
+- Contract: `docs/domain/m4-planning-scheduling-contract.md`
+- Non-goals: no feature UI, no applied migration, no new API handlers
 
 ## M3.9 (MERGED — Exit Gate FAIL — ACCEPTED)
 
@@ -56,14 +66,14 @@ M3.1 froze executable repo artifacts. Canonical: https://app.notion.com/p/3ec678
 | --- | --- | --- | --- |
 | #20 | M2.6 Governance Gates & Exceptions | `23aeadeec53ffb5713d5d680015adf9bc59e9b3d` | MERGED |
 | #22 | M2.7 Overview & Portfolio Health | `58453e63234aebb427e7fe748a4e2f69ceb8e066` | MERGED |
-| #24 | M2.8 Activity Experience | `130d9602ce103c685ee7467be60434fbde21bd6e` | MERGED |
+| #24 | M2.8 Activity Experience | `130d9602ce103c685ee7fe60434fbde21bd6e` | MERGED |
 | #26 | M2.9 Prototype & State Coverage | `64223fa361bf2600f9e1a1799278e3ddc3e056e5` | MERGED |
 | #28 | M2.10 Final UX/UI Audit & Exit Gate | `4e410b11c8712873ace558b931ea141762ee15bb` | MERGED |
 
 ## Preserved invariants
 
-Formal Exception is the sole bypass; READY ≠ RELEASED; Exception ≠ SATISFIED; Issue ≠ Task; Deliverable ≠ Document; WorkPackage ≠ Task; Phase ≠ Deliverable ≠ WorkPackage; Health and Activity are derived; Activity ≠ chat/Audit/Messaging; Organization/Team membership ≠ Project access; owner/Team/Discipline ≠ Project access; inaccessible resources are omitted without hidden counts; deep links re-authorize; backend remains authoritative; Shell M2.1 remains canonical.
+Formal Exception is the sole bypass; READY ≠ RELEASED; Exception ≠ SATISFIED; Issue ≠ Task; Deliverable ≠ Document; WorkPackage ≠ Task; Phase ≠ Deliverable ≠ WorkPackage; Health and Activity are derived; Activity ≠ chat/Audit/Messaging; Organization/Team membership ≠ Project access; owner/Team/Discipline ≠ Project access; inaccessible resources are omitted without hidden counts; deep links re-authorize; backend remains authoritative; Shell M2.1 remains canonical; DONE/ACHIEVED explicit; FS-only deps; no auto date propagation; no silent cascades; every Planning read model re-authorized.
 
 ## Next boundary
 
-Team remains cold. Do not start M4. Do not invent a shared staging URL or chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA. Only Governor may later mark the Exit Gate / M3 completion if Notion criteria are actually met.
+M4.1 documentary freeze is in flight. Independent Reviewer required. Do not start M4.2+. Do not invent a shared staging URL or chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA. Only Governor may mark the M4.1 Exit Gate / unlock M4.2 after merge.
