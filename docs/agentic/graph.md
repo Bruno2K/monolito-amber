@@ -15,18 +15,20 @@ Platform Foundation progression (complete on main):
 ## M2 — Product Experience Foundation
 
 - **M2.1..M2.5** — prior Figma product surfaces (Shell, Planning, Calendar, Messages, Team) — delivered in canonical Figma
-- **M2.6** Governance Gates & Exceptions Experience — **COMPLETE / PASS** (Figma + docs evidence; PR #20 OPEN, do not merge)
-- **M2.7** Overview & Portfolio Health Reconciliation — **COMPLETE / PASS** (Figma + docs; PR #22 OPEN; base = M2.6 branch **NOT** main; leave OPEN)
-- **M2.8** Activity Experience — **COMPLETE / PASS** (Figma + docs; PR #24 OPEN; base = M2.7 branch **NOT** main; leave OPEN)
-- **M2.9** — NEXT in Notion; not started
+- **M2.6** Governance Gates & Exceptions Experience — **ACTIVE** (Figma + docs; PR #20 OPEN on `main`; do not merge)
+- **M2.7** Overview & Portfolio Health Reconciliation — **ACTIVE** (Figma + docs; stacked on M2.6 tip; PR #22 OPEN; base = M2.6 branch **NOT** main; leave OPEN)
+- **M2.8** Activity Experience — **ACTIVE** (Figma + docs; stacked on M2.7; PR #24 OPEN; base = M2.7 branch **NOT** main; leave OPEN)
+- **M2.9** Prototype & State Coverage — **ACTIVE** (transversal Figma + docs; stacked on M2.8 @ `762ab787…`; PR base = M2.8 branch **NOT** main; leave OPEN)
+- **M2.10** — NEXT only (Governor activation required; do **not** execute now)
 
 ## Stacking chain
 
 ```
 main (PF-1.7)
-  └── m2.6-governance-gates-exceptions-experience @ 0dbf9b2…  (PR #20 OPEN)
-        └── m2.7-overview-portfolio-health @ 85852e6…  (PR #22 OPEN)
-              └── m2.8-activity-experience  (this WI; PR base = M2.7 branch)
+  └── m2.6-governance-gates-exceptions-experience @ c653ef2…  (PR #20 OPEN)
+        └── m2.7-overview-portfolio-health @ c3638e34…  (PR #22 OPEN)
+              └── m2.8-activity-experience @ 762ab787…  (PR #24 OPEN)
+                    └── m2.9-prototype-state-coverage  (this WI; PR base = M2.8 branch)
 ```
 
 ## Deferred (not this PR)
@@ -39,8 +41,9 @@ main (PF-1.7)
 - Dashboard builder
 - Audit read UX productization
 - Activity event store / API productization
-- Next.js Atividade app implementation (post-UX)
+- Next.js app implementation (post-UX)
+- **M2.10**
 
 ## UX / Figma boundary
 
-M2.8 **authorizes** Project Atividade product screens in Figma `fkE9SwcNlQG7m0HvcGQBw9` and repo evidence under `docs/ux/`. It does **not** authorize backend schema/API/event store, Audit product UX, Notifications, Messaging content promotion into Activity, or Calendar private content in Activity.
+M2.9 **authorizes** transversal prototype/state/AuthZ/a11y consolidation artifacts in Figma `fkE9SwcNlQG7m0HvcGQBw9` and repo evidence under `docs/ux/`. It does **not** authorize backend schema/API/domain/AuthZ catalog changes, redesign of approved M2.1–M2.8 screens, or M2.10.
