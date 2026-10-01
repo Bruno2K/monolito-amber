@@ -18,7 +18,7 @@ Platform Foundation progression (complete on main):
 - **M2.6** Governance Gates & Exceptions Experience — **ACTIVE** (Figma + docs; PR #20 OPEN on `main`; do not merge)
 - **M2.7** Overview & Portfolio Health Reconciliation — **ACTIVE** (Figma + docs; stacked on M2.6 tip; PR #22 OPEN; base = M2.6 branch **NOT** main; leave OPEN)
 - **M2.8** Activity Experience — **ACTIVE** (Figma + docs; stacked on M2.7; PR #24 OPEN; base = M2.7 branch **NOT** main; leave OPEN)
-- **M2.9** Prototype & State Coverage — **ACTIVE** (transversal Figma + docs; stacked on M2.8 @ `762ab787…`; PR base = M2.8 branch **NOT** main; leave OPEN)
+- **M2.9** Prototype & State Coverage — **ACTIVE** (transversal Figma + docs; stacked on M2.8 @ `762ab787…`; PR #26 OPEN on `m2.9-prototype-state-coverage`; base = M2.8 branch **NOT** main; loop-2 orphan wiring; leave OPEN)
 - **M2.10** — NEXT only (Governor activation required; do **not** execute now)
 
 ## Stacking chain
@@ -28,7 +28,7 @@ main (PF-1.7)
   └── m2.6-governance-gates-exceptions-experience @ c653ef2…  (PR #20 OPEN)
         └── m2.7-overview-portfolio-health @ c3638e34…  (PR #22 OPEN)
               └── m2.8-activity-experience @ 762ab787…  (PR #24 OPEN)
-                    └── m2.9-prototype-state-coverage  (this WI; PR base = M2.8 branch)
+                    └── m2.9-prototype-state-coverage @ (loop-2 head TBD)  (PR #26 OPEN; base = M2.8 branch)
 ```
 
 ## Deferred (not this PR)

@@ -48,7 +48,7 @@ Platform Foundation **PF-1.0..1.7 is DONE on main** (`49588c3cc9ec0f6b43be5c35f1
 - **M2.6** delivers Governance Gates & Exceptions **product UX in Figma** + evidence docs (PR #20 OPEN; no backend)
 - **M2.7** delivers Visão Geral + Portfolio Health as **derived/read-model** UX in Figma + evidence docs (PR #22 OPEN; stacked on M2.6; no backend; no health SoT; actor-visible portfolio only)
 - **M2.8** delivers Project **Atividade** as **read-only material operational timeline** UX in Figma + evidence docs (PR #24 OPEN; stacked on M2.7; not chat; Messaging/Calendar private excluded; not Audit backdoor; project.read + per-item AuthZ)
-- **M2.9** consolidates/validates **integrated prototype navigation + state coverage** across M2.1–M2.8 (transversal Figma + docs only; stacked on M2.8 @ 762ab787…; no redesign; no backend)
+- **M2.9** consolidates/validates **integrated prototype navigation + state coverage** across M2.1–M2.8 (transversal Figma + docs only; stacked on M2.8 @ 762ab787…; PR #26 OPEN — loop-2 orphan wiring; leave OPEN; no redesign; no backend)
 
 ## Forbidden (future phase — not activated)
 
