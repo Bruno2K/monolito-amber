@@ -202,6 +202,92 @@ const deliverables = [
   },
 ];
 
+const deliverableDocuments = [
+  {
+    id: "link-doc-arch",
+    deliverableId: "del-arch-001",
+    documentId: "doc-arch-001",
+  },
+];
+
+const contextDocuments = [
+  {
+    id: "doc-arch-001",
+    code: "DOC-ARCH-001",
+    title: "Concept brief",
+    status: "ACTIVE",
+    currentRevision: {
+      id: "rev-arch-001",
+      revisionCode: "R1",
+      status: "APPROVED",
+      publishedAt: "2026-01-15T00:00:00.000Z",
+    },
+  },
+];
+
+function contextPayload(project, row, workPackageId) {
+  const deliverableId = workPackageId ? row.deliverableId : row.id;
+  const documents = deliverableDocuments
+    .filter((link) => link.deliverableId === deliverableId)
+    .map((link) => contextDocuments.find((doc) => doc.id === link.documentId))
+    .filter(Boolean);
+  return {
+    organizationId: project.organizationId,
+    projectId: project.id,
+    deliverableId,
+    workPackageId,
+    phaseId: row.phaseId,
+    canLinkDocuments: true,
+    documents,
+    tasks: [
+      {
+        id: workPackageId ? "task-wp-outline" : "task-del-outline",
+        title: "Draft outline",
+        status: "TODO",
+        progressPercent: 0,
+        dueDate: null,
+        issueId: "issue-clash",
+        milestoneId: "ms-concept",
+        workPackageId: workPackageId ?? "wp-outline",
+        deliverableId: "del-arch-001",
+        phaseId: "phase-concept",
+      },
+    ],
+    milestones: [
+      {
+        id: "ms-concept",
+        title: "Concept freeze",
+        status: "PLANNED",
+        recordedStatus: "PLANNED",
+        targetDate: "2026-06-01T00:00:00.000Z",
+        phaseId: "phase-concept",
+        deliverableId: "del-arch-001",
+      },
+    ],
+    issues: [
+      {
+        id: "issue-clash",
+        title: "Clash with structure",
+        status: "OPEN",
+        origin: "MANUAL",
+        severity: "MEDIUM",
+        priority: "P2",
+      },
+    ],
+    gates: [
+      {
+        id: "gate-concept",
+        name: "Concept gate",
+        status: "NOT_READY",
+        lastEvaluatedAt: null,
+        releasedAt: null,
+        releaseKind: null,
+        readOnly: true,
+      },
+    ],
+  };
+}
+
 function requireProject(session, projectId, res) {
   if (!session) {
     problem(res, 401, "SESSION_EXPIRED", "Session has expired");
@@ -327,6 +413,8 @@ const server = http.createServer(async (req, res) => {
       roles: [{ templateKey: "PROJECT_COORDINATOR" }],
       permissions: [
         "project.read",
+        "document.read",
+        "gate.read",
         "phase.create",
         "phase.update",
         "phase.complete",
@@ -554,6 +642,69 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  const deliverableContext = /^\/api\/v1\/projects\/([^/]+)\/deliverables\/([^/]+)\/context$/.exec(path);
+  if (deliverableContext && req.method === "GET") {
+    const project = requireProject(session, deliverableContext[1], res);
+    if (!project) {
+      return;
+    }
+    const row = deliverables.find((item) => item.id === deliverableContext[2] && item.projectId === project.id);
+    if (!row) {
+      problem(res, 403, "TENANCY_DENIED", "Deliverable is not bound to the authorized Project");
+      return;
+    }
+    json(res, 200, contextPayload(project, row, null));
+    return;
+  }
+
+  const deliverableDocumentLink = /^\/api\/v1\/projects\/([^/]+)\/deliverables\/([^/]+)\/documents$/.exec(path);
+  if (deliverableDocumentLink && req.method === "POST") {
+    const project = requireProject(session, deliverableDocumentLink[1], res);
+    if (!project) {
+      return;
+    }
+    const row = deliverables.find((item) => item.id === deliverableDocumentLink[2] && item.projectId === project.id);
+    if (!row) {
+      problem(res, 403, "TENANCY_DENIED", "Deliverable is not bound to the authorized Project");
+      return;
+    }
+    const body = await readBody(req);
+    if (body.status) {
+      problem(res, 409, "OPERATIONS_STATE", "Document status is not mutated via Ops");
+      return;
+    }
+    const documentId = body.documentId;
+    const known = contextDocuments.find((doc) => doc.id === documentId);
+    if (!known) {
+      problem(res, 403, "TENANCY_DENIED", "Document is not bound to the authorized Project");
+      return;
+    }
+    if (!deliverableDocuments.some((link) => link.deliverableId === row.id && link.documentId === documentId)) {
+      deliverableDocuments.push({ id: `link-${Date.now()}`, deliverableId: row.id, documentId });
+    }
+    json(res, 201, { deliverableId: row.id, documentId });
+    return;
+  }
+
+  const deliverableUnlink = /^\/api\/v1\/projects\/([^/]+)\/deliverables\/([^/]+)\/documents\/([^/]+)\/unlink$/.exec(path);
+  if (deliverableUnlink && req.method === "POST") {
+    const project = requireProject(session, deliverableUnlink[1], res);
+    if (!project) {
+      return;
+    }
+    const idx = deliverableDocuments.findIndex(
+      (link) => link.deliverableId === deliverableUnlink[2] && link.documentId === deliverableUnlink[3],
+    );
+    if (idx === -1) {
+      problem(res, 403, "TENANCY_DENIED", "Document is not bound to the authorized Deliverable");
+      return;
+    }
+    const existing = deliverableDocuments[idx];
+    deliverableDocuments.splice(idx, 1);
+    json(res, 200, { ok: true, deliverableId: existing.deliverableId, documentId: existing.documentId });
+    return;
+  }
+
   const deliverableAction = /^\/api\/v1\/projects\/([^/]+)\/deliverables\/([^/]+)(?:\/([^/]+))?$/.exec(path);
   if (deliverableAction) {
     const project = requireProject(session, deliverableAction[1], res);
@@ -679,6 +830,21 @@ const server = http.createServer(async (req, res) => {
       json(res, 201, created);
       return;
     }
+  }
+
+  const workPackageContext = /^\/api\/v1\/projects\/([^/]+)\/work-packages\/([^/]+)\/context$/.exec(path);
+  if (workPackageContext && req.method === "GET") {
+    const project = requireProject(session, workPackageContext[1], res);
+    if (!project) {
+      return;
+    }
+    const row = workPackages.find((item) => item.id === workPackageContext[2] && item.projectId === project.id);
+    if (!row) {
+      problem(res, 403, "TENANCY_DENIED", "WorkPackage is not bound to the authorized Project");
+      return;
+    }
+    json(res, 200, contextPayload(project, row, row.id));
+    return;
   }
 
   const workPackageAction = /^\/api\/v1\/projects\/([^/]+)\/work-packages\/([^/]+)(?:\/([^/]+))?$/.exec(path);

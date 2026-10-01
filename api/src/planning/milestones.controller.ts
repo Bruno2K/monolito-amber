@@ -26,6 +26,16 @@ class CreateMilestoneDto {
   @IsString()
   targetDate?: string;
 
+  @ApiPropertyOptional({ description: "Optional same-Project Phase (M3.7 context)." })
+  @IsOptional()
+  @IsString()
+  phaseId?: string;
+
+  @ApiPropertyOptional({ description: "Optional same-Project Deliverable. Achieving the Milestone is explicit." })
+  @IsOptional()
+  @IsString()
+  deliverableId?: string;
+
   @ApiPropertyOptional({ description: "Ignored. Server session binding is authoritative." })
   @IsOptional()
   @IsString()
@@ -52,6 +62,16 @@ class UpdateMilestoneDto {
   @IsOptional()
   @IsString()
   targetDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  phaseId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  deliverableId?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()

@@ -21,6 +21,10 @@ test.describe("M3.5 Work Packages", () => {
     await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT_A}/work-packages\\?inspect=wp-outline`));
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByRole("dialog").getByText(/Status:/)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Evidências (Documentos / Revisões)" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tarefas" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Gates (somente leitura)" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Abrir entrega" })).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath(`work-packages-${testInfo.project.name}.png`),
       fullPage: true,

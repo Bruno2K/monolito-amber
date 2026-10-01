@@ -2463,6 +2463,178 @@
         ]
       }
     },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/context": {
+      "get": {
+        "operationId": "DeliverableTraceabilityController_context",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Authorized delivery context. Unauthorized sections omitted (no hidden count). Gate links are read-only.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/documents": {
+      "post": {
+        "operationId": "DeliverableTraceabilityController_link",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Link a same-Project Document. Requires document.read on the target. Does not mutate Document/Revision.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/documents/{documentId}/unlink": {
+      "post": {
+        "operationId": "DeliverableTraceabilityController_unlink",
+        "parameters": [
+          {
+            "name": "documentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Unlink Document evidence. Both-side AuthZ. IDs-only audit.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/work-packages/{workPackageId}/context": {
+      "get": {
+        "operationId": "WorkPackageTraceabilityController_context",
+        "parameters": [
+          {
+            "name": "workPackageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Authorized WorkPackage context sections. Gate links are read-only.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
     "/api/v1/catalog/permissions": {
       "get": {
         "operationId": "CatalogController_listPermissions",

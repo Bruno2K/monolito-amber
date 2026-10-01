@@ -129,6 +129,24 @@ export const M3_6_ARTIFACT_PATHS = [
   "docs/development/m3.6-performance-baseline.md",
 ] as const;
 
+export const M3_7_REQUIREMENT_IDS = [
+  "M3.7-REQ-01",
+  "M3.7-REQ-02",
+  "M3.7-REQ-03",
+  "M3.7-REQ-04",
+  "M3.7-REQ-05",
+  "M3.7-REQ-06",
+  "M3.7-REQ-07",
+  "M3.7-REQ-08",
+  "M3.7-REQ-09",
+  "M3.7-REQ-10",
+  "M3.7-REQ-11",
+] as const;
+
+export type M37RequirementId = (typeof M3_7_REQUIREMENT_IDS)[number];
+
+export const M3_7_ARTIFACT_PATHS = ["docs/domain/m3.7-requirements-traceability.md"] as const;
+
 export const M3_1_ARTIFACT_PATHS = [
   "docs/domain/m3-project-operations-contract.md",
   "docs/architecture/decisions/ADR-018-operations-module-state-transitions.md",

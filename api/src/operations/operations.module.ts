@@ -17,6 +17,12 @@ import { WorkPackagesService } from "./work-packages.service";
 import { HubCacheService } from "./hub.cache";
 import { HubController } from "./hub.controller";
 import { HubService } from "./hub.service";
+import { GateReadAdapter } from "./adapters/gate.read-adapter";
+import { TraceabilityService } from "./traceability.service";
+import {
+  DeliverableTraceabilityController,
+  WorkPackageTraceabilityController,
+} from "./traceability.controller";
 
 @Module({
   imports: [AuditModule, AuthModule, AuthzModule, FoundationModule],
@@ -27,6 +33,8 @@ import { HubService } from "./hub.service";
     WorkPackagesController,
     TeamsController,
     HubController,
+    DeliverableTraceabilityController,
+    WorkPackageTraceabilityController,
   ],
   providers: [
     OperationsAccess,
@@ -37,6 +45,8 @@ import { HubService } from "./hub.service";
     TeamsService,
     HubCacheService,
     HubService,
+    GateReadAdapter,
+    TraceabilityService,
   ],
   exports: [
     PhasesService,
@@ -45,6 +55,8 @@ import { HubService } from "./hub.service";
     WorkPackagesService,
     TeamsService,
     HubCacheService,
+    TraceabilityService,
+    GateReadAdapter,
   ],
 })
 export class OperationsModule {}

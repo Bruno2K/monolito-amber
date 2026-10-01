@@ -5,13 +5,14 @@ import { AuthModule } from "../auth/auth.module";
 import { AuthzModule } from "../authz/authz.module";
 import { FoundationModule } from "../foundation/foundation.module";
 import { OutboxProcessor } from "../foundation/outbox.processor";
+import { OperationsModule } from "../operations/operations.module";
 import { ImpactsController } from "./impacts.controller";
 import { ImpactsService } from "./impacts.service";
 import { IssuesController } from "./issues.controller";
 import { IssuesService } from "./issues.service";
 
 @Module({
-  imports: [AuditModule, AuthModule, AuthzModule, FoundationModule],
+  imports: [AuditModule, AuthModule, AuthzModule, FoundationModule, OperationsModule],
   controllers: [ImpactsController, IssuesController],
   providers: [ImpactsService, IssuesService],
   exports: [ImpactsService, IssuesService],

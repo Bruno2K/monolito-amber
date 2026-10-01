@@ -244,6 +244,99 @@ export function workPackagesDeepLink(projectId: string, workPackageId?: string |
   return workPackageId ? `${base}?inspect=${encodeURIComponent(workPackageId)}` : base;
 }
 
+export function withReturnPath(href: string, returnTo?: string | null): string {
+  if (!returnTo) {
+    return href;
+  }
+  const url = new URL(href, "https://amber.invalid");
+  url.searchParams.set("returnTo", returnTo);
+  return `${url.pathname}${url.search}`;
+}
+
+export function safeReturnTo(value: string | null | undefined, projectId: string): string | null {
+  if (!value) {
+    return null;
+  }
+  const prefix = `/projects/${projectId}/`;
+  if (!value.startsWith(prefix) || value.includes("://") || value.startsWith("//")) {
+    return null;
+  }
+  return value;
+}
+
+export interface TraceabilityDocumentRow {
+  id: string;
+  code: string;
+  title: string;
+  status: string;
+  currentRevision: {
+    id: string;
+    revisionCode: string;
+    status: string;
+    publishedAt: string | null;
+  } | null;
+}
+
+export interface TraceabilityTaskRow {
+  id: string;
+  title: string;
+  status: string;
+  progressPercent: number | null;
+  dueDate: string | null;
+  issueId: string | null;
+  milestoneId: string | null;
+  workPackageId: string | null;
+  deliverableId: string | null;
+  phaseId: string | null;
+}
+
+export interface TraceabilityMilestoneRow {
+  id: string;
+  title: string;
+  status: string;
+  recordedStatus?: string;
+  targetDate: string | null;
+  phaseId: string | null;
+  deliverableId: string | null;
+}
+
+export interface TraceabilityIssueRow {
+  id: string;
+  title: string;
+  status: string;
+  origin: string;
+  severity: string | null;
+  priority: string | null;
+}
+
+export interface TraceabilityGateRow {
+  id: string;
+  name: string;
+  status: string;
+  lastEvaluatedAt: string | null;
+  releasedAt: string | null;
+  releaseKind: string | null;
+  readOnly: boolean;
+}
+
+export interface TraceabilityContext {
+  organizationId: string;
+  projectId: string;
+  deliverableId: string | null;
+  workPackageId: string | null;
+  phaseId: string;
+  canLinkDocuments?: boolean;
+  documents?: TraceabilityDocumentRow[];
+  tasks?: TraceabilityTaskRow[];
+  milestones?: TraceabilityMilestoneRow[];
+  issues?: TraceabilityIssueRow[];
+  gates?: TraceabilityGateRow[];
+}
+
+export function canLinkDeliverableDocument(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("deliverable.update") && permissions?.includes("document.read"));
+}
+
 export function canCreateWorkPackage(permissions: string[] | undefined): boolean {
   return Boolean(permissions?.includes("work_package.create"));
 }

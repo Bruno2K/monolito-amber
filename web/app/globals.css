@@ -930,6 +930,20 @@ button.btn {
   margin-top: 12px;
 }
 
+.traceability-panel {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--header-border);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.traceability-section h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
 .table-count {
   margin: 8px 12px 12px;
 }

@@ -177,3 +177,6 @@ export function assertFinishToStartType(value: string | undefined): asserts valu
 export function prerequisitesBlockStart(predecessors: readonly { status: string }[]): boolean {
   return predecessors.some((row) => row.status !== "DONE");
 }
+
+/** M3.7 additive Task schedule fields. Status remains an explicit transition. */
+export const TASK_PROGRESS_FIELDS = ["plannedStartAt", "estimatedMinutes", "progressPercent"] as const;

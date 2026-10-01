@@ -23,6 +23,7 @@ import { FoundationService } from "../foundation/foundation.service";
 import { IdempotencyService } from "../foundation/idempotency.service";
 import { currentCorrelationId } from "../observability/request-context";
 import { PrismaService } from "../prisma/prisma.service";
+import { TraceabilityService } from "../operations/traceability.service";
 import { ImpactsService } from "./impacts.service";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -36,6 +37,7 @@ export class IssuesService {
     private readonly foundation: FoundationService,
     private readonly idempotency: IdempotencyService,
     private readonly impacts: ImpactsService,
+    private readonly traceability: TraceabilityService,
   ) {}
 
   async list(session: RequestSession, projectId: string) {
@@ -49,7 +51,14 @@ export class IssuesService {
 
   async get(session: RequestSession, projectId: string, issueId: string) {
     const bound = await this.requireIssue(session, "project.read", projectId, issueId);
-    return this.toDto(bound.issue);
+    const dto = this.toDto(bound.issue);
+    const deliveryContext = await this.traceability.deliveryContextForIssue(
+      session,
+      bound.issue.organizationId,
+      bound.issue.projectId,
+      bound.issue.id,
+    );
+    return deliveryContext === undefined ? dto : { ...dto, deliveryContext };
   }
 
   async createManual(

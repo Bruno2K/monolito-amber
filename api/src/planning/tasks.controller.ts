@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiCookieAuth, ApiHeader, ApiOperation, ApiParam, ApiProperty, ApiPropertyOptional, ApiTags } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsInt, IsOptional, IsString, Min, MinLength, ValidateIf } from "class-validator";
+import { IsInt, IsOptional, IsString, Max, Min, MinLength, ValidateIf } from "class-validator";
 import { AuthService } from "../auth/auth.service";
 import { CurrentSession } from "../auth/current-session.decorator";
 import { SessionGuard } from "../auth/session.guard";
@@ -45,6 +45,41 @@ class CreateTaskDto {
   @IsOptional()
   @IsString()
   milestoneId?: string;
+
+  @ApiPropertyOptional({ description: "Optional same-Project Phase (M3.7 context). Completing the Task does not complete it." })
+  @IsOptional()
+  @IsString()
+  phaseId?: string;
+
+  @ApiPropertyOptional({ description: "Optional same-Project Deliverable. Completing the Task does not deliver it." })
+  @IsOptional()
+  @IsString()
+  deliverableId?: string;
+
+  @ApiPropertyOptional({ description: "Optional same-Project WorkPackage. Completing the Task does not complete it." })
+  @IsOptional()
+  @IsString()
+  workPackageId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  plannedStartAt?: string;
+
+  @ApiPropertyOptional({ minimum: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  estimatedMinutes?: number;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  progressPercent?: number;
 
   @ApiPropertyOptional({ description: "Ignored. Server session binding is authoritative." })
   @IsOptional()
@@ -95,6 +130,41 @@ class UpdateTaskDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  phaseId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  deliverableId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  workPackageId?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  plannedStartAt?: string | null;
+
+  @ApiPropertyOptional({ minimum: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  estimatedMinutes?: number | null;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  progressPercent?: number | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -136,6 +206,23 @@ class CompleteTaskDto {
   expectedVersion?: number;
 }
 
+class ListTasksQueryDto {
+  @ApiPropertyOptional({ format: "uuid" })
+  @IsOptional()
+  @IsString()
+  phaseId?: string;
+
+  @ApiPropertyOptional({ format: "uuid" })
+  @IsOptional()
+  @IsString()
+  deliverableId?: string;
+
+  @ApiPropertyOptional({ format: "uuid" })
+  @IsOptional()
+  @IsString()
+  workPackageId?: string;
+}
+
 class CreateDependencyDto {
   @ApiProperty({ description: "Predecessor that must reach DONE before this Task may start." })
   @IsString()
@@ -161,8 +248,12 @@ export class TasksController {
   @ApiCookieAuth()
   @ApiParam({ name: "projectId", format: "uuid" })
   @ApiOperation({ summary: "List Tasks for an authorized Project (Task ≠ Issue)" })
-  list(@CurrentSession() session: RequestSession, @Param("projectId") projectId: string) {
-    return this.tasks.list(this.auth.requireSession(session), projectId);
+  list(
+    @CurrentSession() session: RequestSession,
+    @Param("projectId") projectId: string,
+    @Query() query: ListTasksQueryDto,
+  ) {
+    return this.tasks.list(this.auth.requireSession(session), projectId, query);
   }
 
   @Post()

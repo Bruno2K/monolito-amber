@@ -11,6 +11,7 @@ import {
   M3_5_API_ROUTES,
   M3_5_NEXT_APP_ROUTES,
   M3_6_API_ROUTES,
+  M3_7_API_ROUTES,
   M3_CANONICAL_UI_ROUTES,
   M3_LATER_API_ROUTES,
   M3_PLANNED_API_ROUTES,
@@ -69,7 +70,7 @@ describe("M3 route collision audit", () => {
     expect(existing).not.toContain("/projects/[projectId]/planner");
   });
 
-  it("exposes M3.3–M3.6 Phase/Discipline/Deliverable/WorkPackage/Hub API paths in OpenAPI", () => {
+  it("exposes M3.3–M3.7 Phase/Discipline/Deliverable/WorkPackage/Hub/Traceability API paths in OpenAPI", () => {
     const openapi = JSON.parse(readFileSync(join(ROOT, "api/openapi/openapi.json"), "utf8")) as {
       paths: Record<string, unknown>;
     };
@@ -86,6 +87,9 @@ describe("M3 route collision audit", () => {
       expect(existing, row.path).toContain(row.path);
     }
     for (const row of M3_6_API_ROUTES) {
+      expect(existing, row.path).toContain(row.path);
+    }
+    for (const row of M3_7_API_ROUTES) {
       expect(existing, row.path).toContain(row.path);
     }
     for (const row of M3_LATER_API_ROUTES) {

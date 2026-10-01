@@ -1,6 +1,6 @@
 # M3.1 OpenAPI plan
 
-**Status:** Phase/Discipline paths are generated from Nest in M3.3. Deliverable paths are generated in M3.4. WorkPackage paths are generated in M3.5. The Project Hub read model is generated in M3.6.
+**Status:** Phase/Discipline paths are generated from Nest in M3.3. Deliverable paths are generated in M3.4. WorkPackage paths are generated in M3.5. The Project Hub read model is generated in M3.6. Cross-domain context and Document↔Deliverable link/unlink are generated in M3.7.
 
 Prefix remains `/api/v1`. Errors remain RFC 7807 Problem Details with `correlationId`. Path `organizationId` / `projectId` are routing hints; session + membership is authoritative (F-04).
 
@@ -43,6 +43,10 @@ Planned operations (collision-tested against today’s OpenAPI; none of these pa
 | GET/POST | `/api/v1/projects/{projectId}/work-packages` | `project.read` / `work_package.create` | POST yes |
 | GET/PATCH | `/api/v1/projects/{projectId}/work-packages/{workPackageId}` | `project.read` / `work_package.update` | no |
 | GET | `/api/v1/projects/{projectId}/hub` | `project.read` | no — derived read model; origin+derivation on each signal |
+| GET | `/api/v1/projects/{projectId}/deliverables/{deliverableId}/context` | `project.read` | no — unauthorized sections omitted |
+| POST | `…/deliverables/{deliverableId}/documents` | `deliverable.update` (+ `document.read` both-side) | yes |
+| POST | `…/deliverables/{deliverableId}/documents/{documentId}/unlink` | `deliverable.update` (+ `document.read` both-side) | yes |
+| GET | `/api/v1/projects/{projectId}/work-packages/{workPackageId}/context` | `project.read` | no |
 | POST | `…/work-packages/{workPackageId}/assign` | `work_package.update` | yes |
 | POST | `…/work-packages/{workPackageId}/unassign` | `work_package.update` | yes |
 | POST | `…/work-packages/{workPackageId}/activate` | `work_package.update` | yes |

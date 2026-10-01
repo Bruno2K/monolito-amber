@@ -23,6 +23,20 @@ test.describe("M3.4 Entregas", () => {
     await expect(page.getByRole("dialog").getByText(/Status:/)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Pacotes ligados" })).toBeVisible();
     await expect(page.getByRole("dialog").getByText("WP-PLAN-001")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Evidências (Documentos / Revisões)" })).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("DOC-ARCH-001")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Tarefas" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Marcos" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Issues" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Gates (somente leitura)" })).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("somente leitura")).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("1 item oculto")).toHaveCount(0);
+    await page.getByRole("link", { name: /WP-PLAN-001/ }).click();
+    await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT_A}/work-packages\\?inspect=wp-outline`));
+    await expect(page).toHaveURL(/returnTo=/);
+    await expect(page.getByRole("link", { name: "Voltar" })).toBeVisible();
+    await page.getByRole("link", { name: "Voltar" }).click();
+    await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT_A}/deliverables\\?inspect=del-arch-001`));
     await page.screenshot({
       path: testInfo.outputPath(`entregas-${testInfo.project.name}.png`),
       fullPage: true,

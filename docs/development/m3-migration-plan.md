@@ -1,6 +1,6 @@
 # M3.1 migration plan (forward-only)
 
-**Status:** M3.3 applied Phase/Discipline (+ Team catalog tables). M3.4 applied Deliverable (+ WorkPackage table for the delivery rule). M3.5 additively extends `operations.work_packages` (tenant trigger + indexes) and exposes WP CRUD. Additive only.
+**Status:** M3.3 applied Phase/Discipline (+ Team catalog tables). M3.4 applied Deliverable (+ WorkPackage table for the delivery rule). M3.5 additively extends `operations.work_packages` (tenant trigger + indexes) and exposes WP CRUD. M3.6 is Hub-only (no new tables). M3.7 additively extends `planning.tasks` / `planning.milestones` and adds `operations.deliverable_documents`. Additive only.
 
 ## Goals
 
@@ -15,7 +15,8 @@
 | Schema | Change | WI that applies |
 | --- | --- | --- |
 | `org` | `CREATE TABLE teams`, `team_memberships`, `disciplines` | M3.3 (catalog + Team subject) |
-| `operations` | `CREATE SCHEMA operations`; `phases`, `deliverables`, `work_packages` | M3.3 phases; M3.4 deliverables + work_packages table; M3.5 WP CRUD (additive trigger/indexes) |
+| `operations` | `CREATE SCHEMA operations`; `phases`, `deliverables`, `work_packages`, `deliverable_documents` | M3.3 phases; M3.4 deliverables + work_packages table; M3.5 WP CRUD (additive trigger/indexes); M3.7 Document↔Deliverable join |
+| `planning` | Additive nullable Task/Milestone delivery refs | M3.7 |
 | `project` | Relation comments only; no column drop | — |
 | `document` / `coordination` / `planning` | **KEEP** existing string discipline columns | Never drop in M3 |
 | `org.permission_definitions` | Additive seed upsert of M3.1 codes (already supported by `prisma/seed.ts`) | This WI (catalog in code); seed on next `prisma:seed` |

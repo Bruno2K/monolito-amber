@@ -19,6 +19,9 @@ import {
   structureDeepLink,
   workPackageStatusLabel,
   workPackagesDeepLink,
+  withReturnPath,
+  safeReturnTo,
+  canLinkDeliverableDocument,
 } from "./operations";
 
 describe("structure helpers", () => {
@@ -66,5 +69,15 @@ describe("work package helpers", () => {
     expect(canCompleteWorkPackage(["work_package.complete"])).toBe(true);
     expect(workPackageStatusLabel("BLOCKED")).toBe("Bloqueado");
     expect(workPackageStatusLabel("DONE")).toBe("Concluído");
+  });
+
+  it("preserves a same-project return path and refuses off-project URLs", () => {
+    expect(withReturnPath("/projects/abc/work-packages?inspect=wp-1", "/projects/abc/deliverables?inspect=d1")).toBe(
+      "/projects/abc/work-packages?inspect=wp-1&returnTo=%2Fprojects%2Fabc%2Fdeliverables%3Finspect%3Dd1",
+    );
+    expect(safeReturnTo("/projects/abc/deliverables?inspect=d1", "abc")).toBe("/projects/abc/deliverables?inspect=d1");
+    expect(safeReturnTo("https://evil.example/projects/abc/deliverables", "abc")).toBeNull();
+    expect(canLinkDeliverableDocument(["deliverable.update"])).toBe(false);
+    expect(canLinkDeliverableDocument(["deliverable.update", "document.read"])).toBe(true);
   });
 });
