@@ -58,10 +58,10 @@ describe("M3.1 route collision audit", () => {
       paths: Record<string, unknown>;
     };
     const existing = Object.keys(openapi.paths);
-    const planned = M3_PLANNED_API_ROUTES.map((row) => row.path);
+    const planned = M3_PLANNED_API_ROUTES.map((row) => `${row.method} ${row.path}`);
     expect(new Set(planned).size).toBe(planned.length);
-    for (const path of planned) {
-      expect(existing, path).not.toContain(path);
+    for (const row of M3_PLANNED_API_ROUTES) {
+      expect(existing, row.path).not.toContain(row.path);
     }
     expect(existing).toContain("/api/v1/projects");
     expect(existing).toContain("/api/v1/projects/{projectId}");

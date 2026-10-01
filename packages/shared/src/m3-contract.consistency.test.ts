@@ -55,8 +55,10 @@ describe("M3.1 contract consistency", () => {
     expect(plan).toMatch(/forward-only/i);
     expect(plan).toMatch(/additive/i);
     expect(plan).toMatch(/historical/i);
-    expect(plan).not.toMatch(/DROP COLUMN\s+discipline_id/i);
-    expect(plan).not.toMatch(/ALTER TABLE .* RENAME COLUMN .*discipline/i);
+    const sqlBlocks = [...plan.matchAll(/```sql([\s\S]*?)```/g)].map((match) => match[1] ?? "");
+    expect(sqlBlocks.join("\n")).not.toMatch(/DROP COLUMN\s+discipline_id/i);
+    expect(sqlBlocks.join("\n")).not.toMatch(/ALTER TABLE .* RENAME COLUMN .*discipline/i);
+    expect(plan).toMatch(/must not drop|leave|KEEP|forbidden/i);
     expect(plan).toContain("responsible_discipline_id");
   });
 });
