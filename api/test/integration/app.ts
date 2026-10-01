@@ -10,6 +10,13 @@ export async function createTestApp(databaseUrl: string): Promise<INestApplicati
   process.env.SKIP_DB = "";
   process.env.SESSION_COOKIE_SECURE = "false";
   process.env.NODE_ENV = "test";
+  if (process.env.AMBER_TEST_MINIO !== "1") {
+    delete process.env.S3_ENDPOINT;
+    delete process.env.S3_BUCKET;
+    delete process.env.S3_ACCESS_KEY;
+    delete process.env.S3_SECRET_KEY;
+    delete process.env.AMBER_REQUIRE_S3;
+  }
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = moduleRef.createNestApplication();
   app.setGlobalPrefix("api/v1");

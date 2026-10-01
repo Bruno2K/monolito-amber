@@ -45,6 +45,23 @@ export const M3_1_REQUIREMENT_IDS = [
 
 export type M31RequirementId = (typeof M3_1_REQUIREMENT_IDS)[number];
 
+export const M3_2_REQUIREMENT_IDS = [
+  "M3.2-REQ-01",
+  "M3.2-REQ-02",
+  "M3.2-REQ-03",
+  "M3.2-REQ-04",
+  "M3.2-REQ-05",
+  "M3.2-REQ-06",
+  "M3.2-REQ-07",
+  "M3.2-REQ-08",
+  "M3.2-REQ-09",
+  "M3.2-REQ-10",
+] as const;
+
+export type M32RequirementId = (typeof M3_2_REQUIREMENT_IDS)[number];
+
+export const M3_2_ARTIFACT_PATHS = ["docs/domain/m3.2-requirements-traceability.md"] as const;
+
 export const M3_3_REQUIREMENT_IDS = [
   "M3.3-REQ-01",
   "M3.3-REQ-02",
@@ -168,6 +185,14 @@ export const M3_8_ARTIFACT_PATHS = [
   "docs/domain/m3.8-requirements-traceability.md",
   "docs/development/m3.8-local-rc-runbook.md",
   "docs/development/m3.8-evidence/README.md",
+] as const;
+
+export const M3_RC1_ARTIFACT_PATHS = [
+  "docs/domain/m3.2-requirements-traceability.md",
+  "docs/development/m3-windows-local-rc.md",
+  "docs/development/m3-rc1-evidence/INDEX.md",
+  "docs/development/m3-rc1-evidence/manual-focus-review.md",
+  "docs/development/m3-rc1-evidence/minio-live-adapter.md",
 ] as const;
 
 export const M3_1_ARTIFACT_PATHS = [

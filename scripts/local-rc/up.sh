@@ -9,15 +9,20 @@ need_cmd curl
 ensure_env
 wait_postgres
 
-mkdir -p .data/objects
-
+mkdir -p .data/local-rc
 export GIT_SHA="${GIT_SHA:-$(git rev-parse HEAD)}"
 export BUILD_ID="${BUILD_ID:-local}"
 export REDIS_URL="${REDIS_URL:-}"
 export API_INTERNAL_URL="${API_INTERNAL_URL:-http://127.0.0.1:3001}"
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-http://localhost:3001}"
+export AMBER_REQUIRE_S3="${AMBER_REQUIRE_S3:-1}"
+export S3_ENDPOINT="${S3_ENDPOINT:-http://127.0.0.1:9000}"
+export S3_REGION="${S3_REGION:-us-east-1}"
+export S3_ACCESS_KEY="${S3_ACCESS_KEY:-amberminio}"
+export S3_SECRET_KEY="${S3_SECRET_KEY:-amberminio}"
+export S3_BUCKET="${S3_BUCKET:-amber-files}"
+export S3_FORCE_PATH_STYLE="${S3_FORCE_PATH_STYLE:-true}"
 
-mkdir -p .data/local-rc
 if [[ -f .data/local-rc/api.pid ]] || [[ -f .data/local-rc/web.pid ]]; then
   echo "existing pid files in .data/local-rc — run scripts/local-rc/down.sh first" >&2
   exit 1

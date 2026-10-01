@@ -1030,6 +1030,17 @@ button.btn {
   margin-top: 16px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @media (max-width: 1180px) {
   .deliverables-table th:nth-child(3),
   .deliverables-table td:nth-child(3) {

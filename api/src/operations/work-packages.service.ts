@@ -720,7 +720,7 @@ export class WorkPackagesService {
     idempotencyKey: string | undefined,
     input: { expectedVersion?: number },
   ) {
-    const bound = await this.requireWorkPackage(session, "deliverable.update", projectId, workPackageId);
+    const bound = await this.requireWorkPackage(session, "work_package.update", projectId, workPackageId);
     const started = await this.idempotency.begin(bound.organizationId, idempotencyKey, {
       workPackageId,
       action: "disassociate",

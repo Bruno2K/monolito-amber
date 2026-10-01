@@ -350,5 +350,5 @@ export function canCompleteWorkPackage(permissions: string[] | undefined): boole
 }
 
 export function canDisassociateWorkPackage(permissions: string[] | undefined): boolean {
-  return Boolean(permissions?.includes("deliverable.update"));
+  return Boolean(permissions?.includes("work_package.update"));
 }

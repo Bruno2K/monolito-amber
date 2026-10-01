@@ -4,18 +4,23 @@
 
 **M2 — Product Experience Foundation is COMPLETE, Exit Gate PASS, and integrated into `main` at `4972176442bdb2631ea1f1710a86191109e79dab`.**
 
-**M3 — Project Operations is ACTIVE / LOCAL ONLY.** Active Work Item: **M3.8 — Local RC pack** (Issue [#44](https://github.com/Bruno2K/monolito-amber/issues/44)). Branch `m3.8-local-rc-pack`. M3.1–M3.7 are merged on `main` @ `73e55aaa433864a69757b526faa7f1cc5cc30576`.
+**M3 — Project Operations is ACTIVE / LOCAL ONLY.** Active Work Item: **M3 — Local RC Audit Corrections RC1** (Issue [#46](https://github.com/Bruno2K/monolito-amber/issues/46)). Branch `m3-local-rc-audit-corrections`. M3.1–M3.8 pack are merged on `main` @ `fd10166f4ff5288e14d2796be8950da5a02ca1b9`. The prior LOCAL RC READY / homologated claim is **revoked by independent audit**.
 
-Authorization (Bruno 2026-10-01): local execution of the M3.8 pack. **Forbidden:** Vercel/Railway/cloud credentials/deploy/domain; claiming the M3.8 Exit Gate; M3.9; M3 COMPLETE; M4.
+Authorization (Bruno 2026-10-01 via Altair): local execution of RC1-01…08. **Forbidden:** Vercel/Railway/cloud credentials/deploy/domain; claiming the M3.8 Exit Gate; claiming Bruno homologated; M3.9; M3 COMPLETE; M4.
 
-Engineer delivers the local pack. Governor announces readiness. Do **not** self-PASS the M3.8 Exit Gate.
+Engineer delivers a candidate PR with truthful evidence. Governor owns scope. Independent Reviewer inspects the full diff and raw evidence. Do **not** self-PASS LOCAL RC READY.
 
-## M3.8 in progress
+## RC1 in progress
 
-- Objective: reproducible localhost RC (compose, env contract, migrate+seed, health, Playwright against real API+DB, runbook). Not cloud staging.
-- Canonical Notion: https://app.notion.com/p/3ec678e54c8d8136be51cc5a7b7720a6
+- Objective: close RC1-01…08 (M3.2 matrix, disassociate AuthZ, axe + focus, Windows path, MinIO live adapter, reset rehearsal, docs sync, reviewer index).
+- Canonical Notion: https://app.notion.com/p/3ec678e54c8d818e8c8fd4fc619059a8
 - Pack: https://app.notion.com/p/3ec678e54c8d81c49efeccb527b3e2bd
+- Evidence index: `docs/development/m3-rc1-evidence/INDEX.md`
 - Runbook: `docs/development/m3.8-local-rc-runbook.md`
+
+## M3.8 (merged on main; READY revoked)
+
+M3.8 delivered the localhost pack (compose, env, migrate+seed, health, Playwright against real API+DB). Audit found eight IMPORTANT gaps. This RC1 restores evidence. Canonical: https://app.notion.com/p/3ec678e54c8d8136be51cc5a7b7720a6
 
 ## M3.1 (merged)
 
@@ -49,4 +54,4 @@ Formal Exception is the sole bypass; READY ≠ RELEASED; Exception ≠ SATISFIED
 
 ## Next boundary
 
-M3.2 (Authenticated Application Shell & Project Context) starts only after M3.1 is MERGED / DONE. Planner remains M4.
+M3.9 / shared staging and M4 Planner remain frozen until new Bruno authorization. Cloud remains frozen.

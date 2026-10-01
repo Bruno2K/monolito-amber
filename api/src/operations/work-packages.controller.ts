@@ -553,7 +553,7 @@ export class WorkPackagesController {
 
   @Post(":workPackageId/disassociate")
   @UseGuards(SessionGuard, PermissionGuard)
-  @RequirePermission("deliverable.update")
+  @RequirePermission("work_package.update")
   @ApiCookieAuth()
   @ApiHeader({ name: "Idempotency-Key", required: true })
   @ApiParam({ name: "projectId", format: "uuid" })

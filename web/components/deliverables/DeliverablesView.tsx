@@ -6,6 +6,7 @@ import { StateScreen } from "../shell/StateScreen";
 import { TraceabilityContextPanel } from "../operations/TraceabilityContextPanel";
 import { api } from "../../lib/api";
 import { classifyProblem } from "../../lib/errors";
+import { useInspectorEscape } from "../../lib/use-inspector-escape";
 import {
   canApproveDeliverable,
   canAssignDeliverable,
@@ -111,6 +112,8 @@ export function DeliverablesView({ projectId }: { projectId: string }) {
     },
     [pathname, router, searchParams],
   );
+
+  useInspectorEscape(Boolean(selectedId), openItem);
 
   const load = useCallback(async () => {
     setLoading(true);

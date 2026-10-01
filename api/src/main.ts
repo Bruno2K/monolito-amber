@@ -7,6 +7,7 @@ import { ProblemDetailsFilter } from "./http/problem-details.filter";
 import { logger } from "./observability/logger";
 import { startOpenTelemetry } from "./observability/otel";
 import { buildOpenApiDocument } from "./openapi/document";
+import { assertLiveObjectStorageReady } from "./files/object-storage";
 import { SwaggerModule } from "@nestjs/swagger";
 
 async function bootstrap() {
@@ -29,6 +30,7 @@ async function bootstrap() {
   SwaggerModule.setup("api/docs", app, buildOpenApiDocument(app));
 
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
+  const objectStorage = await assertLiveObjectStorageReady();
   await app.listen(port, "0.0.0.0");
   logger.info(
     {
@@ -36,6 +38,7 @@ async function bootstrap() {
       bind: "0.0.0.0",
       commit: process.env.GIT_SHA ?? process.env.GITHUB_SHA ?? "dev",
       build: process.env.BUILD_ID ?? "local",
+      objectStorage,
     },
     "amber-api listening",
   );

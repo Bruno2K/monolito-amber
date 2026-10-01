@@ -28,7 +28,8 @@
     "local-rc:down": "bash scripts/local-rc/down.sh",
     "local-rc:reset": "bash scripts/local-rc/reset.sh",
     "local-rc:health": "bash scripts/local-rc/health.sh",
-    "local-rc:e2e": "bash scripts/local-rc/e2e.sh"
+    "local-rc:e2e": "bash scripts/local-rc/e2e.sh",
+    "local-rc:rehearse-reset": "bash scripts/local-rc/rehearse-reset.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

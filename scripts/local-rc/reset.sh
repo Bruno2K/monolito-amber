@@ -13,7 +13,7 @@ ensure_env
 echo "==> compose down + volumes"
 "${COMPOSE[@]}" --profile apps --profile jobs down -v --remove-orphans || "${COMPOSE[@]}" down -v --remove-orphans
 
-rm -rf .data/objects .data/local-rc
+rm -rf .data/local-rc
 
 echo "==> re-bootstrap"
 exec "${ROOT}/scripts/local-rc/bootstrap.sh"

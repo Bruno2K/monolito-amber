@@ -6,7 +6,7 @@
 | Security stubs | `pnpm test:security` | Fail closed if files missing or skipped |
 | Integration | `pnpm test:integration` | Testcontainers Postgres, or `TEST_DATABASE_URL` (includes M3.2 shell + M3.3 Phase/Discipline) |
 | Web E2E (mock API) | `pnpm --filter @amber/web test:e2e` | Playwright UI against `mock-api.mjs` (not Local RC evidence) |
-| **Web E2E Local RC** | `pnpm local-rc:e2e` | Playwright golden + negatives against **real** local API+Postgres |
+| **Web E2E Local RC** | `pnpm local-rc:e2e` | Playwright golden + negatives + axe against **real** local API+Postgres+MinIO |
 | OpenAPI | `pnpm openapi:generate && pnpm openapi:validate` | 3.1 + no override tokens |
 | Migrations | `pnpm prisma:validate` | Versioned SQL + audit grants |
 

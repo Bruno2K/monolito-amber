@@ -86,7 +86,7 @@ services:
       S3_SECRET_KEY: amberminio
       S3_BUCKET: amber-files
       S3_FORCE_PATH_STYLE: "true"
-      OBJECT_STORAGE_DIR: /data/objects
+      AMBER_REQUIRE_S3: "true"
       FILE_SIGNING_SECRET: ${FILE_SIGNING_SECRET:-dev-only-file-signing}
       SESSION_COOKIE_NAME: amber_session
       SESSION_COOKIE_SECURE: "false"
@@ -98,8 +98,6 @@ services:
       CORRELATION_HEADER: x-correlation-id
       OTEL_SERVICE_NAME: amber-api
       OTEL_EXPORTER_OTLP_ENDPOINT: ""
-    volumes:
-      - amber_objects:/data/objects
     depends_on:
       postgres:
         condition: service_healthy
@@ -139,4 +137,3 @@ services:
 volumes:
   amber_pg:
   amber_minio:
-  amber_objects:

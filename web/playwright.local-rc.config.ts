@@ -37,6 +37,13 @@ export default defineConfig({
             API_PORT: "3001",
             REDIS_URL: "",
             WEB_ORIGIN: WEB,
+            S3_ENDPOINT: process.env.S3_ENDPOINT ?? "http://127.0.0.1:9000",
+            S3_REGION: process.env.S3_REGION ?? "us-east-1",
+            S3_ACCESS_KEY: process.env.S3_ACCESS_KEY ?? "amberminio",
+            S3_SECRET_KEY: process.env.S3_SECRET_KEY ?? "amberminio",
+            S3_BUCKET: process.env.S3_BUCKET ?? "amber-files",
+            S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE ?? "true",
+            AMBER_REQUIRE_S3: process.env.AMBER_REQUIRE_S3 ?? "1",
           },
         },
         {

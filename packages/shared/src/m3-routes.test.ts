@@ -101,5 +101,7 @@ describe("M3 route collision audit", () => {
     expect(existing).toContain("/api/v1/projects/{projectId}/work-packages");
     expect(existing).toContain("/api/v1/projects/{projectId}/hub");
     expect(M3_PLANNED_API_ROUTES.every((row) => !row.path.includes("gate.override"))).toBe(true);
+    const disassociate = M3_5_API_ROUTES.find((row) => row.path.endsWith("/disassociate"));
+    expect(disassociate?.permission).toBe("work_package.update");
   });
 });
