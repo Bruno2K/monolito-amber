@@ -35,7 +35,8 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 
 ## Product UX evidence (M2)
 
-- [M2.6 — Governance Gates & Exceptions](./ux/m2.6-governance-gates-exceptions.md) — Figma frames, invariants, AuthZ/SoD, Exit Gate (PR open; no backend)
+- [M2.6 — Governance Gates & Exceptions](./ux/m2.6-governance-gates-exceptions.md) — Figma frames, invariants, AuthZ/SoD, Exit Gate (PR #20 open; no backend)
+- [M2.7 — Overview & Portfolio Health](./ux/m2.7-overview-portfolio-health.md) — Visão Geral + Portfolio derived/read-model UX (stacked on M2.6; PR open; no backend)
 
 ## Deferred after Platform Foundation (PF-1.0..1.7)
 

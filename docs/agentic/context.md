@@ -6,7 +6,9 @@ This repository is **PUBLIC** by design (portfolio). No secrets, credentials, or
 
 ## Current slice
 
-**M2.6 — Governance Gates & Exceptions Experience** (Issue #19) is **COMPLETE / Exit Gate PASS** in PR #20. Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
+**M2.7 — Overview & Portfolio Health Reconciliation** (Issue #21) is **COMPLETE / Exit Gate PASS** in PR #22. Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
+
+**Stacked on M2.6** branch `m2.6-governance-gates-exceptions-experience` @ `0dbf9b2`. **M2.6 is COMPLETE/PASS and PR #20 remains OPEN** — do not wait for merge; do not base on `main`.
 
 Platform Foundation **PF-1.0..1.7 is DONE on main** (`49588c3cc9ec0f6b43be5c35f1e2712d09522d17`).
 
@@ -41,12 +43,13 @@ Platform Foundation **PF-1.0..1.7 is DONE on main** (`49588c3cc9ec0f6b43be5c35f1
 - READY ≠ RELEASED; Formal Exception is the sole bypass and does not satisfy a requirement
 - RELEASED ≠ RELEASED_WITH_EXCEPTION; Exception is requirement-specific
 - Governance reads Documents/Coordination/Planning via adapters and does not mutate upstream
-- **M2.6** delivers Governance Gates & Exceptions **product UX in Figma** + evidence docs (COMPLETE/PASS; PR #20 OPEN; no backend changes)
+- **M2.6** delivers Governance Gates & Exceptions **product UX in Figma** + evidence docs (COMPLETE/PASS; PR #20 OPEN; no backend)
+- **M2.7** delivers Visão Geral + Portfolio Health as **derived/read-model** UX in Figma + evidence docs (COMPLETE/PASS; PR #22 OPEN; stacked on M2.6; no backend; no health SoT; actor-visible portfolio only)
 
 ## Forbidden (future phase — not activated)
 
-Gate Templates builder; BIM/IFC/BCF viewers; analytics; AI; K8s; microservices; CQRS; event sourcing; Kafka; invented permissions; second bypass (`gate.override` / forceRelease); treating global templates as grants; implicit project access from org-level bindings; auto-IMPACTED / auto-Issues; auto-resolving Issues from Tasks; auto-achieving Milestones; auto-releasing Gates; mutating Document/Issue/Task/Milestone from Governance.
+Gate Templates builder; BIM/IFC/BCF viewers; analytics warehouse; AI; K8s; microservices; CQRS; event sourcing; Kafka; invented permissions; second bypass (`gate.override` / forceRelease); treating global templates as grants; implicit project access from org-level bindings; auto-IMPACTED / auto-Issues; auto-resolving Issues from Tasks; auto-achieving Milestones; auto-releasing Gates; mutating Document/Issue/Task/Milestone from Governance; **manual health status SoT**; **org-wide portfolio leak**; dashboard builder / user-configured widgets; Messaging as health source.
 
-Also deferred (HUMAN_ACTIVATION_REQUIRED unless Governor activates): notifications worker, Redis/BullMQ jobs, PaaS vendor, malware vendor, LGPD process, RPO/RTO, Audit read UX productization, Next.js Governance app pages implementation.
+Also deferred (HUMAN_ACTIVATION_REQUIRED unless Governor activates): notifications worker, Redis/BullMQ jobs, PaaS vendor, malware vendor, LGPD process, RPO/RTO, Audit read UX productization, Next.js Overview/Portfolio app pages implementation.
 
-Escalate HUMAN_REQUIRED on approved-spec conflict, HIGH architecture/security beyond contract, destructive ops, a new product decision, or any request to expand M2.6 into backend/schema.
+Escalate HUMAN_REQUIRED on approved-spec conflict, HIGH architecture/security beyond contract, destructive ops, a new product decision, or any request to expand M2.7 into backend/schema/analytics SoT.
