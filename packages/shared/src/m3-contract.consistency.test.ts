@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS } from "./m3-requirements.js";
+import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS } from "./m3-requirements.js";
 import { OPERATIONS_PERMISSIONS } from "./permissions.js";
 import { DELIVERABLE_FIELDS, PHASE_FIELDS, WORK_PACKAGE_FIELDS } from "./operations.js";
 
@@ -60,5 +60,18 @@ describe("M3.1 contract consistency", () => {
     expect(sqlBlocks.join("\n")).not.toMatch(/ALTER TABLE .* RENAME COLUMN .*discipline/i);
     expect(plan).toMatch(/must not drop|leave|KEEP|forbidden/i);
     expect(plan).toContain("responsible_discipline_id");
+  });
+
+  it("embeds every M3.3 REQ id and keeps the Phase/Discipline artifacts", () => {
+    const matrix = read("docs/domain/m3.3-requirements-traceability.md");
+    for (const id of M3_3_REQUIREMENT_IDS) {
+      expect(matrix).toContain(id);
+    }
+    for (const rel of M3_3_ARTIFACT_PATHS) {
+      expect(existsSync(join(ROOT, rel)), rel).toBe(true);
+    }
+    expect(existsSync(join(ROOT, "prisma/migrations/20261001160000_m3_3_operations_phase_discipline/migration.sql"))).toBe(
+      true,
+    );
   });
 });

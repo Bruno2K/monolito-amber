@@ -46,7 +46,8 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 
 ## M3 — Project Operations (ACTIVE / LOCAL ONLY)
 
-- [M3.1 contract](./domain/m3-project-operations-contract.md) — Issue [#30](https://github.com/Bruno2K/monolito-amber/issues/30); no Ops CRUD UI; M3.2+ not started
+- [M3.1 contract](./domain/m3-project-operations-contract.md) — Issue [#30](https://github.com/Bruno2K/monolito-amber/issues/30)
+- [M3.3 Phase & Discipline](./development/m3-migration-plan.md) — Issue [#33](https://github.com/Bruno2K/monolito-amber/issues/33); LOCAL ONLY; Exit Gate not claimed here
 - [ADR-018](./architecture/decisions/ADR-018-operations-module-state-transitions.md) · [migration plan](./development/m3-migration-plan.md) · [OpenAPI plan](./api/m3-openapi-plan.md) · [route map](./architecture/m3-route-map.md) · [permission delta](./security/m3-permission-role-template-delta.md) · [seed design](./development/m3-seed-design.md) · [REQ matrix](./domain/m3.1-requirements-traceability.md) · [impact map](./architecture/m3-files-modules-impact-map.md)
 
 ## Deferred after Platform Foundation (PF-1.0..1.7)

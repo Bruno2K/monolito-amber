@@ -205,7 +205,126 @@ const server = http.createServer(async (req, res) => {
       ...project,
       membership: { id: `pm-${project.id}`, status: "ACTIVE" },
       roles: [{ templateKey: "PROJECT_COORDINATOR" }],
-      permissions: ["project.read"],
+      permissions: [
+        "project.read",
+        "phase.create",
+        "phase.update",
+        "phase.complete",
+      ],
+    });
+    return;
+  }
+
+  const disciplineMatch = /^\/api\/v1\/organizations\/([^/]+)\/disciplines$/.exec(path);
+  if (disciplineMatch && req.method === "GET") {
+    if (!session) {
+      problem(res, 401, "SESSION_EXPIRED", "Session has expired");
+      return;
+    }
+    if (disciplineMatch[1] !== session.orgId) {
+      problem(res, 403, "TENANCY_DENIED", "Path organizationId does not match session-bound Organization");
+      return;
+    }
+    json(res, 200, {
+      items: session.orgId === ORG_A
+        ? [
+            { id: "disc-arch", organizationId: ORG_A, code: "ARCH", name: "Architecture", active: true, sortOrder: 1 },
+            { id: "disc-str", organizationId: ORG_A, code: "STR", name: "Structure", active: true, sortOrder: 2 },
+          ]
+        : [{ id: "disc-b-arch", organizationId: ORG_B, code: "ARCH", name: "Architecture", active: true, sortOrder: 1 }],
+    });
+    return;
+  }
+
+  const phaseListMatch = /^\/api\/v1\/projects\/([^/]+)\/phases$/.exec(path);
+  if (phaseListMatch && req.method === "GET") {
+    if (!session) {
+      problem(res, 401, "SESSION_EXPIRED", "Session has expired");
+      return;
+    }
+    const project = projects.find((row) => row.id === phaseListMatch[1]);
+    if (!project || project.organizationId !== session.orgId) {
+      problem(res, 403, "TENANCY_DENIED", "Project is not bound to the authorized Organization");
+      return;
+    }
+    json(res, 200, {
+      items: project.id === PROJECT_A
+        ? [
+            {
+              id: "phase-brief",
+              organizationId: ORG_A,
+              projectId: PROJECT_A,
+              name: "Brief",
+              description: "",
+              sequence: 0,
+              plannedStartAt: null,
+              plannedEndAt: null,
+              actualStartAt: "2025-01-01T00:00:00.000Z",
+              actualEndAt: "2025-06-01T00:00:00.000Z",
+              status: "COMPLETED",
+              createdBy: USER,
+              version: 1,
+              archivedAt: null,
+              createdAt: "2025-01-01T00:00:00.000Z",
+              updatedAt: "2025-06-01T00:00:00.000Z",
+            },
+            {
+              id: "phase-concept",
+              organizationId: ORG_A,
+              projectId: PROJECT_A,
+              name: "Concept",
+              description: "",
+              sequence: 1,
+              plannedStartAt: "2026-01-01T00:00:00.000Z",
+              plannedEndAt: "2026-06-01T00:00:00.000Z",
+              actualStartAt: null,
+              actualEndAt: null,
+              status: "PLANNED",
+              createdBy: USER,
+              version: 1,
+              archivedAt: null,
+              createdAt: "2026-01-01T00:00:00.000Z",
+              updatedAt: "2026-01-01T00:00:00.000Z",
+            },
+          ]
+        : [],
+      nextCursor: null,
+    });
+    return;
+  }
+
+  const phaseOneMatch = /^\/api\/v1\/projects\/([^/]+)\/phases\/([^/]+)$/.exec(path);
+  if (phaseOneMatch && req.method === "GET") {
+    if (!session) {
+      problem(res, 401, "SESSION_EXPIRED", "Session has expired");
+      return;
+    }
+    const project = projects.find((row) => row.id === phaseOneMatch[1]);
+    if (!project || project.organizationId !== session.orgId) {
+      problem(res, 403, "TENANCY_DENIED", "Project is not bound to the authorized Organization");
+      return;
+    }
+    if (phaseOneMatch[1] !== PROJECT_A || !["phase-brief", "phase-concept"].includes(phaseOneMatch[2])) {
+      problem(res, 403, "TENANCY_DENIED", "Phase is not bound to the authorized Project");
+      return;
+    }
+    json(res, 200, {
+      id: phaseOneMatch[2],
+      organizationId: ORG_A,
+      projectId: PROJECT_A,
+      name: phaseOneMatch[2] === "phase-brief" ? "Brief" : "Concept",
+      description: "",
+      sequence: phaseOneMatch[2] === "phase-brief" ? 0 : 1,
+      plannedStartAt: null,
+      plannedEndAt: null,
+      actualStartAt: null,
+      actualEndAt: null,
+      status: phaseOneMatch[2] === "phase-brief" ? "COMPLETED" : "PLANNED",
+      createdBy: USER,
+      version: 1,
+      archivedAt: null,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
     });
     return;
   }

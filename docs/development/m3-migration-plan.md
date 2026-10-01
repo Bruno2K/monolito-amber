@@ -1,6 +1,6 @@
 # M3.1 migration plan (forward-only)
 
-**Status:** Design freeze for M3.1. **Do not apply** this migration in this WI. M3.3 applies Phase/Discipline; M3.4 Deliverable; M3.5 WorkPackage. Expand → migrate → contract (ADR-002). Additive only.
+**Status:** M3.3 applied Phase/Discipline (+ Team catalog tables). Deliverable = M3.4; WorkPackage = M3.5. Additive only.
 
 ## Goals
 
@@ -20,7 +20,7 @@
 | `document` / `coordination` / `planning` | **KEEP** existing string discipline columns | Never drop in M3 |
 | `org.permission_definitions` | Additive seed upsert of M3.1 codes (already supported by `prisma/seed.ts`) | This WI (catalog in code); seed on next `prisma:seed` |
 
-Prisma `datasource.schemas` gains `"operations"` when the first Operations migration lands — not in M3.1.
+Prisma `datasource.schemas` includes `"operations"` from M3.3 (`20261001160000_m3_3_operations_phase_discipline`).
 
 ## Historical Discipline identifiers
 
@@ -112,13 +112,13 @@ No DDL. `pnpm prisma:seed` upserts `PERMISSIONS` and additively inserts missing 
 
 ## Dry-run review checklist
 
-- [ ] `prisma migrate diff` against this plan is create-only for new schemas/tables/indexes
-- [ ] Existing discipline string columns remain
-- [ ] No `gate.override` / `forceRelease` in SQL (`scripts/validate-migrations.ts`)
-- [ ] `amber_app` still cannot UPDATE/DELETE `audit`
-- [ ] Partial unique indexes encode “non-archived” uniqueness
-- [ ] Rollback plan documented as restore, not DROP SCHEMA operations
+- [x] `prisma migrate diff` against this plan is create-only for new schemas/tables/indexes (M3.3: `operations.phases`, `org.disciplines`, `org.teams`, `org.team_memberships`)
+- [x] Existing discipline string columns remain
+- [x] No `gate.override` / `forceRelease` in SQL (`scripts/validate-migrations.ts`)
+- [x] `amber_app` still cannot UPDATE/DELETE `audit`
+- [x] Partial unique indexes encode “non-archived” uniqueness
+- [x] Rollback plan documented as restore, not DROP SCHEMA operations
 
 ## Rollback
 
-Forward-only. If a later WI’s migration fails before merge to production: do not apply. If applied in a disposable local DB: reset the database (`prisma migrate reset`) — seeds are designed to be resettable. Production cloud apply is **not authorized** in M3.1.
+Forward-only. If this WI’s migration fails before merge to production: do not apply. If applied in a disposable local DB: reset the database (`prisma migrate reset`) — seeds are designed to be resettable (`AMBER_SEED_M3=1 pnpm prisma:seed` after catalog seed). Production cloud apply is **not authorized** in M3. Operational rollback of an applied local migration is restore-from-backup, not `DROP SCHEMA operations`.

@@ -11,7 +11,7 @@
 - PF-1.4 adds `coordination` schema (`impact_analyses`, `issues`, comments/evidence/history) with tenant-binding triggers. Additive only.
 - PF-1.5 adds `planning` schema (`tasks`, `task_dependencies`, `milestones`) with tenant-binding triggers. Additive only.
 - PF-1.6 adds `governance` schema (`gates`, `gate_requirements`, `formal_exceptions`, `gate_release_decisions`, `gate_release_used_exceptions`) with tenant-binding triggers. Additive only. No `gate.override`. Seed additively refreshes org-owned PROJECT_COORDINATOR copies with `exception.request`.
-- M3.1 freezes a forward-only Operations migration **plan** ([m3-migration-plan.md](./m3-migration-plan.md)). No Operations DDL in this WI. Catalog seed will pick up additive `phase.*` / `deliverable.*` / `work_package.*` codes on the next `prisma:seed`. Historical Discipline identifier strings are not renamed or dropped.
+- M3.1 freezes a forward-only Operations migration **plan** ([m3-migration-plan.md](./m3-migration-plan.md)). M3.3 applies `operations.phases` plus `org.disciplines` / `org.teams` / `org.team_memberships` (`prisma/migrations/20261001160000_m3_3_operations_phase_discipline`). Historical Discipline identifier strings are not renamed or dropped. Local M3 dataset: `AMBER_SEED_M3=1 pnpm prisma:seed`.
 
 ```bash
 pnpm prisma:generate

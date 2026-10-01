@@ -1,6 +1,6 @@
 # M3.1 route map
 
-Product IA for M3. M3.2 mounts the authenticated shell and `/projects` context. Figma `fkE9SwcNlQG7m0HvcGQBw9` is reference evidence (M2 Portuguese prototype paths). Collision audit: `packages/shared/src/m3-routes.test.ts`.
+Product IA for M3. M3.2 mounts the authenticated shell and `/projects` context. M3.3 fills `/projects/:projectId/structure`. Figma `fkE9SwcNlQG7m0HvcGQBw9` is reference evidence (M2 Portuguese prototype paths). Collision audit: `packages/shared/src/m3-routes.test.ts`.
 
 ## Canonical product routes (M3)
 
@@ -38,7 +38,7 @@ Do **not** ship both `/visao-geral` and `/projects/:projectId/overview` as paral
 
 `/`, `/sign-in`, `/password/setup`, `/password/reset`, `/mfa/challenge`, `/mfa/enroll`, `/org-switch`, `/invite/accept`.
 
-Collision audit: `packages/shared/src/m3-routes.test.ts` asserts canonical paths are unique, M3.2 Next routes exist, Figma Portuguese prototype paths are absent, and planned Operations API paths are absent from current OpenAPI.
+Collision audit: `packages/shared/src/m3-routes.test.ts` asserts canonical paths are unique, M3.2 Next routes exist, Figma Portuguese prototype paths are absent, M3.3 Phase/Discipline API paths are present, and Deliverable/WorkPackage paths remain absent from current OpenAPI.
 
 ## API pairing
 

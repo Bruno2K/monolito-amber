@@ -1,6 +1,6 @@
 # M3.1 OpenAPI plan
 
-**Status:** Plan only. Nest decorators and `api/openapi/openapi.json` are **not** expanded in this WI (ADR-004 still requires generate-from-code when APIs land).
+**Status:** Phase/Discipline paths are generated from Nest in M3.3. Deliverable/WorkPackage remain plan-only until M3.4/M3.5.
 
 Prefix remains `/api/v1`. Errors remain RFC 7807 Problem Details with `correlationId`. Path `organizationId` / `projectId` are routing hints; session + membership is authoritative (F-04).
 
@@ -17,7 +17,7 @@ Especially KEEP:
 | GET | `/api/v1/catalog/permissions` | Closed catalog including M3.1 additive codes after seed |
 | GET | `/api/v1/catalog/role-templates` | Templates including additive grants |
 
-## ADD (M3.3–M3.5)
+## ADD (M3.3 implemented; M3.4–M3.5 still planned)
 
 Planned operations (collision-tested against today’s OpenAPI; none of these paths exist yet):
 

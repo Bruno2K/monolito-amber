@@ -6,7 +6,9 @@ import {
   EXISTING_FOUNDATION_UI_ROUTES,
   FIGMA_PROTOTYPE_ROUTE_MAP,
   M3_2_NEXT_APP_ROUTES,
+  M3_3_API_ROUTES,
   M3_CANONICAL_UI_ROUTES,
+  M3_LATER_API_ROUTES,
   M3_PLANNED_API_ROUTES,
   M4_RESERVED_UI_ROUTES,
 } from "./m3-routes.js";
@@ -60,14 +62,17 @@ describe("M3 route collision audit", () => {
     expect(existing).not.toContain("/projects/[projectId]/planner");
   });
 
-  it("does not collide planned Operations API paths with the current OpenAPI document", () => {
+  it("exposes M3.3 Phase/Discipline API paths in OpenAPI and keeps Deliverable/WorkPackage paths for later WIs", () => {
     const openapi = JSON.parse(readFileSync(join(ROOT, "api/openapi/openapi.json"), "utf8")) as {
       paths: Record<string, unknown>;
     };
     const existing = Object.keys(openapi.paths);
     const planned = M3_PLANNED_API_ROUTES.map((row) => `${row.method} ${row.path}`);
     expect(new Set(planned).size).toBe(planned.length);
-    for (const row of M3_PLANNED_API_ROUTES) {
+    for (const row of M3_3_API_ROUTES) {
+      expect(existing, row.path).toContain(row.path);
+    }
+    for (const row of M3_LATER_API_ROUTES) {
       expect(existing, row.path).not.toContain(row.path);
     }
     expect(existing).toContain("/api/v1/projects");

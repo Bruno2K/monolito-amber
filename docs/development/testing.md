@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | Unit | `pnpm test:unit` | Domain/policy helpers + web shell (nav, errors, context) |
 | Security stubs | `pnpm test:security` | Fail closed if files missing or skipped |
-| Integration | `pnpm test:integration` | Testcontainers Postgres, or `TEST_DATABASE_URL` (includes M3.2 session/org/project) |
+| Integration | `pnpm test:integration` | Testcontainers Postgres, or `TEST_DATABASE_URL` (includes M3.2 shell + M3.3 Phase/Discipline) |
 | Web E2E | `pnpm --filter @amber/web test:e2e` | Playwright golden path + a11y/viewports (local; not in the Foundation CI job) |
 | OpenAPI | `pnpm openapi:generate && pnpm openapi:validate` | 3.1 + no override tokens |
 | Migrations | `pnpm prisma:validate` | Versioned SQL + audit grants |
@@ -93,3 +93,12 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | Route collision (UI vs foundation pages; API vs OpenAPI) | `packages/shared/src/m3-routes.test.ts` |
 | Seed scenario completeness (2 orgs, roles, negatives, no PII) | `packages/shared/src/m3-seed-design.test.ts` |
 | Artifact + REQ matrix + migration hygiene | `packages/shared/src/m3-contract.consistency.test.ts` |
+
+### M3.3 Phase & Discipline evidence
+
+| Test | Where |
+| --- | --- |
+| State machine, dates, unique sequence | `packages/shared/src/operations.test.ts` |
+| Isolation, permission matrix, CAS, audit/outbox, seed | `api/test/integration/m33-phase-discipline.integration.test.ts` |
+| Security floors | `api/test/security/operations-phase.security.test.ts` |
+| Structure UI | `web/e2e/structure.spec.ts`, `web/lib/operations.test.ts` |

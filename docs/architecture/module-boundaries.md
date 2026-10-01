@@ -10,7 +10,7 @@ Exact module names from APPROVED 0.1, plus Operations (M3.1 / ADR-018). Feature 
 | Documents & Revisions | Document, Revision, current pointer, files | PF-1.3: lifecycle + file-trust. Writes outbox only |
 | Coordination | Impact Analysis, Issue, comments, evidence | PF-1.4: consume outbox; no UI; never mutates Revision |
 | Planning | Task, TaskDependency, Milestone | PF-1.5: lifecycle + FS deps + derived AT_RISK/MISSED. No UI |
-| Operations | Phase, Deliverable, WorkPackage | M3.1 contract (ADR-018). Schema/API/UI in M3.3–M3.5. Reads via `project.read`. No `gate.override` |
+| Operations | Phase, Deliverable, WorkPackage | M3.1 contract (ADR-018). M3.3: Phase schema/API/UI. Discipline/Team live in `org`. Reads via `project.read`. No `gate.override` |
 | Governance | Gate, requirement, Formal Exception, release evidence | PF-1.6: evaluate + explicit release + Exception lifecycle. Reads upstream via adapters. No `gate.override` |
 | Audit | Append-only audit events | Insert-only app role |
 | Notifications | Notification delivery | Worker later |

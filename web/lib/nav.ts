@@ -9,7 +9,8 @@ export type IconName =
   | "people"
   | "file"
   | "shield"
-  | "activity";
+  | "activity"
+  | "structure";
 
 export interface NavItemDef {
   id: string;
@@ -55,6 +56,14 @@ export const PROJECT_NAV: readonly NavItemDef[] = [
     href: "/projects/:projectId/overview",
     availability: "available",
     icon: "layout",
+  },
+  {
+    id: "structure",
+    label: "Estrutura",
+    group: "project",
+    href: "/projects/:projectId/structure",
+    availability: "available",
+    icon: "structure",
   },
   {
     id: "planning",

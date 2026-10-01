@@ -8,6 +8,7 @@ describe("shell navigation", () => {
     expect(isGlobalPath("/projects")).toBe(true);
     expect(matchNavItem("/projects/abc/overview", "abc")?.id).toBe("overview");
     expect(matchNavItem("/projects/abc/overview", "abc")?.group).toBe("project");
+    expect(matchNavItem("/projects/abc/structure", "abc")?.id).toBe("structure");
     expect(isGlobalPath("/projects/abc/overview")).toBe(false);
   });
 
@@ -31,5 +32,11 @@ describe("shell navigation", () => {
     expect(project[0]?.label).toBe("Projetos");
     expect(project.map((crumb) => crumb.label)).toContain("Aurora");
     expect(project.map((crumb) => crumb.label)).toContain("Entregas");
+    const structure = breadcrumbsFor({
+      pathname: "/projects/abc/structure",
+      projectId: "abc",
+      projectName: "Aurora",
+    });
+    expect(structure.map((crumb) => crumb.label)).toContain("Estrutura");
   });
 });

@@ -24,7 +24,7 @@ OpenTelemetry hooks and structured JSON logs run on `api` and `worker` from day 
 
 ## Persistence
 
-One PostgreSQL instance. Module namespaces: `identity`, `org`, `project`, `document`, `coordination`, `planning`, `governance`, `audit`, `jobs` (later `operations` per ADR-018, then `notification`). Versioned Prisma migrations only.
+One PostgreSQL instance. Module namespaces: `identity`, `org`, `project`, `document`, `coordination`, `planning`, `governance`, `operations`, `audit`, `jobs` (then `notification`). Versioned Prisma migrations only.
 
 ## Async
 

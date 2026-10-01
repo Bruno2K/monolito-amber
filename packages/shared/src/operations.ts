@@ -148,6 +148,7 @@ export const OPERATIONS_NO_MUTATION_ROLE_KEYS: readonly RoleTemplateKey[] = [
 export const OPERATIONS_AUDIT_EVENTS = [
   "PHASE_CREATED",
   "PHASE_UPDATED",
+  "PHASE_STATUS_CHANGED",
   "PHASE_ACTIVATED",
   "PHASE_COMPLETED",
   "PHASE_CANCELLED",
@@ -352,4 +353,63 @@ export function nextBlockedReason(
     return null;
   }
   return currentReason ?? null;
+}
+
+export function assertValidDateRange(
+  start: Date | null | undefined,
+  end: Date | null | undefined,
+  label: string,
+): void {
+  if (start && end && start.getTime() > end.getTime()) {
+    throw new OperationsStateError(`${label} start must be on or before end`);
+  }
+}
+
+/** Soft archive is the removal path. Hard-delete is never allowed. */
+export function hardDeletePhaseAllowed(): boolean {
+  return false;
+}
+
+export function archiveIsPhaseRemovalPath(): boolean {
+  return true;
+}
+
+export const PHASE_LIST_DEFAULT_LIMIT = 100;
+export const PHASE_LIST_MAX_LIMIT = 100;
+
+export function clampPhaseListLimit(limit: number | undefined): number {
+  if (limit == null || !Number.isFinite(limit)) {
+    return PHASE_LIST_DEFAULT_LIMIT;
+  }
+  const parsed = Math.trunc(limit);
+  if (parsed < 1) {
+    return 1;
+  }
+  return Math.min(parsed, PHASE_LIST_MAX_LIMIT);
+}
+
+export function encodePhaseCursor(sequence: number, id: string): string {
+  return Buffer.from(`${sequence}:${id}`, "utf8").toString("base64url");
+}
+
+export function decodePhaseCursor(cursor: string): { sequence: number; id: string } {
+  try {
+    const raw = Buffer.from(cursor, "base64url").toString("utf8");
+    const sep = raw.indexOf(":");
+    if (sep <= 0) {
+      throw new Error("invalid");
+    }
+    const sequence = Number(raw.slice(0, sep));
+    const id = raw.slice(sep + 1);
+    if (!Number.isInteger(sequence) || !id) {
+      throw new Error("invalid");
+    }
+    return { sequence, id };
+  } catch {
+    throw new OperationsStateError("Invalid list cursor");
+  }
+}
+
+export function historicalDisciplineIdentifierPreserved(): boolean {
+  return true;
 }

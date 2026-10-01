@@ -11,7 +11,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["identity", "org", "project", "document", "coordination", "planning", "governance", "audit", "jobs"]
+  schemas  = ["identity", "org", "project", "document", "coordination", "planning", "governance", "operations", "audit", "jobs"]
 }
 
 // ---------------------------------------------------------------------------
@@ -210,6 +210,8 @@ model Organization {
   roles       RoleDefinition[]
   projects    Project[]
   invitations Invitation[]
+  disciplines Discipline[]
+  teams       Team[]
 
   @@map("organizations")
   @@schema("org")
@@ -230,6 +232,7 @@ model OrganizationMembership {
   user               User                 @relation(fields: [userId], references: [id])
   roleBindings       RoleBinding[]
   projectMemberships ProjectMembership[]
+  teamMemberships    TeamMembership[]
 
   @@unique([organizationId, userId])
   @@map("organization_memberships")
@@ -301,6 +304,60 @@ model RoleBinding {
   @@schema("org")
 }
 
+/// Organization-owned Discipline catalog. Not Project access. Not an assignee.
+/// Historical Document/Issue/Task identifier strings are preserved separately.
+model Discipline {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String   @map("organization_id") @db.Uuid
+  code           String
+  name           String
+  active         Boolean  @default(true)
+  sortOrder      Int?     @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+  @@map("disciplines")
+  @@schema("org")
+}
+
+/// Organization-owned Team. TeamMembership ≠ ProjectMembership.
+model Team {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  name           String
+  version        Int       @default(1)
+  archivedAt     DateTime? @map("archived_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  memberships  TeamMembership[]
+
+  @@index([organizationId])
+  @@map("teams")
+  @@schema("org")
+}
+
+model TeamMembership {
+  id                       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId                   String   @map("team_id") @db.Uuid
+  organizationMembershipId String   @map("organization_membership_id") @db.Uuid
+  status                   String
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  team                   Team                   @relation(fields: [teamId], references: [id])
+  organizationMembership OrganizationMembership @relation(fields: [organizationMembershipId], references: [id])
+
+  @@unique([teamId, organizationMembershipId])
+  @@index([organizationMembershipId])
+  @@map("team_memberships")
+  @@schema("org")
+}
+
 // ---------------------------------------------------------------------------
 // project — membership + contextual RBAC (no product Document/Gate UX)
 // ---------------------------------------------------------------------------
@@ -327,7 +384,9 @@ model Project {
   formalExceptions FormalException[]
   gateReleaseDecisions GateReleaseDecision[]
   gateReleaseUsedExceptions GateReleaseUsedException[]
+  phases         Phase[]
 
+  @@unique([id, organizationId])
   @@index([organizationId])
   @@map("projects")
   @@schema("project")
@@ -369,6 +428,39 @@ model ProjectRoleAssignment {
   @@unique([projectMembershipId, roleId])
   @@map("project_role_assignments")
   @@schema("project")
+}
+
+// ---------------------------------------------------------------------------
+// operations — Phase (M3.3). Deliverable / WorkPackage land in M3.4 / M3.5.
+// Does not move Project / Task / Document / Issue / Gate ownership.
+// ---------------------------------------------------------------------------
+
+/// Project-scoped delivery phase. Dates do not transit status. Overlap allowed.
+/// Sequence is unique among non-archived Phases of the same Project (SQL partial unique).
+model Phase {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId String    @map("organization_id") @db.Uuid
+  projectId      String    @map("project_id") @db.Uuid
+  name           String
+  description    String    @default("")
+  sequence       Int
+  plannedStartAt DateTime? @map("planned_start_at")
+  plannedEndAt   DateTime? @map("planned_end_at")
+  actualStartAt  DateTime? @map("actual_start_at")
+  actualEndAt    DateTime? @map("actual_end_at")
+  status         String
+  createdBy      String    @map("created_by") @db.Uuid
+  version        Int       @default(1)
+  archivedAt     DateTime? @map("archived_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId, projectId])
+  @@index([projectId, sequence])
+  @@map("phases")
+  @@schema("operations")
 }
 
 // ---------------------------------------------------------------------------
