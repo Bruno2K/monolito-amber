@@ -2,19 +2,17 @@
 
 ## Active Work Item
 
-**M2.10 — Final UX/UI Audit & Exit Gate** is **CORRECTION LOOP 1 / READY FOR INDEPENDENT REVIEWER RE-REVIEW** (**NOT PASS**) on PR [#28](https://github.com/Bruno2K/monolito-amber/pull/28) (`m2.10-final-ux-ui-audit`), stacked on `m2.9-prototype-state-coverage` @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf`.
+**M2.10 — Final UX/UI Audit & Exit Gate** is **PASS / COMPLETE** on PR [#28](https://github.com/Bruno2K/monolito-amber/pull/28) (`m2.10-final-ux-ui-audit`), stacked on `m2.9-prototype-state-coverage` @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf`. **M2 Exit Gate is PASS; M2 is COMPLETE.**
 
-CORRECTION LOOP 1 docs/evidence landed (R-01 / R-02 FIXED in Figma). This revision does not embed its own commit SHA.
-
-PR tip validated in the independent reviewer report attached to the PR (pending — awaiting Independent Reviewer re-review).
+Correction Loop 1 cleared R-01 and R-02. Independent Reviewer re-review **PASS** on `2aad14db522ba0a6f491aa423fd06abe0739e62f`. This post-review synchronization does not embed its own commit SHA.
 
 - Evidence pack: [`docs/ux/m2.10-final-ux-ui-audit.md`](../ux/m2.10-final-ux-ui-audit.md)
 - Evidence folder: [`docs/ux/evidence/m2.10/`](../ux/evidence/m2.10/) + [`rc1/`](../ux/evidence/m2.10/rc1/)
-- Classification: M2.1–M2.9 **ATTENDIDO**; M2.10 **PARCIAL** pending Reviewer
+- Classification: M2.1–M2.10 **ATTENDIDO**
 - Findings: F-01/F-02/F-03 **FIXED**; R-01/R-02 **FIXED**; F-04 **OPEN OPTIONAL**; zero residual BLOCKER / IMPORTANT / MINOR
 - Product metrics: **86** frames M2.2–M2.9 · **257** NAVIGATE · all zeros · under34 **0**. Inventory chrome **257/86**. Documentary frames `321:15725` / `321:15738` / `321:15755` excluded
 - Zero backend / schema / API / Prisma / domain / AuthZ catalog delta
-- M2.6–M2.9 remain **PASS / COMPLETE** and OPEN; **M3 is not started**
+- M2.6–M2.10 are **PASS / COMPLETE**; **M3 is NEXT / not started**
 
 ## Review history (labeled — not current status)
 
@@ -25,7 +23,9 @@ PR tip validated in the independent reviewer report attached to the PR (pending 
 | M2.10 phase 1 | Scaffold + inventory |
 | M2.10 Engineer pass | Figma fixes + PNGs landed |
 | M2.10 Reviewer RC1 | REQUEST_CHANGES on `1c9b67ce…` — R-01 / R-02 |
-| M2.10 CORRECTION LOOP 1 | R-01/R-02 FIXED. **Do not self-PASS** |
+| M2.10 CORRECTION LOOP 1 | R-01/R-02 FIXED |
+| M2.10 Reviewer CL1 | **PASS** on `2aad14db…`; zero residual BLOCKER / IMPORTANT / MINOR |
+| M2 Governor | M2.10 PASS / COMPLETE; M2 Exit Gate PASS |
 
 ## Stack
 
@@ -35,9 +35,9 @@ PR tip validated in the independent reviewer report attached to the PR (pending 
 | #22 | M2.7 | OPEN — PASS / COMPLETE |
 | #24 | M2.8 | OPEN — PASS / COMPLETE |
 | #26 | M2.9 | OPEN — PASS / COMPLETE |
-| #28 | M2.10 | OPEN — CORRECTION LOOP 1 / READY FOR RE-REVIEW (NOT PASS) |
+| #28 | M2.10 | OPEN at gate close — PASS / COMPLETE |
 
-Do **not** merge any of the above. Do **not** start M3.
+Integrate only bottom-up after cumulative validation. Do **not** start M3.
 
 ## Figma
 

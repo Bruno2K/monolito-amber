@@ -1,7 +1,7 @@
 # M2.10 — Correction Loop 1 (trimmed)
 
-**Status:** R-01 + R-02 **FIXED**. Zero residual BLOCKER / IMPORTANT / MINOR for those findings.  
-**F-04** remains **OPEN OPTIONAL** (OK).  
+**Status:** R-01 + R-02 **FIXED**. Zero residual BLOCKER / IMPORTANT / MINOR for those findings.
+**F-04** remains **OPEN OPTIONAL** (OK).
 **Engineer does not claim Exit Gate PASS.** Ready for Independent Reviewer re-review only.
 
 Source: Independent Reviewer REQUEST_CHANGES on tip `1c9b67ce8ffa9b7b0892d71d9d798fd662819da3` ([PR comment](https://github.com/Bruno2K/monolito-amber/pull/28#issuecomment-5925030296)). Figma fixes already in `fkE9SwcNlQG7m0HvcGQBw9` page `04 — Telas`. This file is docs/evidence sync only.
