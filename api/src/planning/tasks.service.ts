@@ -4,13 +4,21 @@ import {
   OUTBOX_EVENT_TYPES,
   PlanningStateError,
   assertAcyclicDependency,
+  assertEstimatedMinutes,
   assertFinishToStartType,
+  assertTaskProgressPercent,
   assertTaskTransition,
   isTaskLate,
   isTaskPriority,
   isTaskStatus,
+  linkAuditPayload,
   prerequisitesBlockStart,
   redactSecrets,
+  resolveTaskDeliveryRefs,
+  taskCompleteCascadesToDeliverable,
+  taskCompleteCascadesToIssue,
+  taskCompleteCascadesToMilestone,
+  taskCompleteCascadesToWorkPackage,
   taskStatusRequiresBlockedReason,
   taskStatusRequiresCompletePermission,
   type PermissionCode,
@@ -35,10 +43,30 @@ export class TasksService {
     private readonly idempotency: IdempotencyService,
   ) {}
 
-  async list(session: RequestSession, projectId: string) {
+  async list(
+    session: RequestSession,
+    projectId: string,
+    query: { phaseId?: string; deliverableId?: string; workPackageId?: string } = {},
+  ) {
     const bound = await this.access.requireProject(session, "project.read", projectId);
+    const where: {
+      projectId: string;
+      organizationId: string;
+      phaseId?: string;
+      deliverableId?: string;
+      workPackageId?: string;
+    } = { projectId: bound.project.id, organizationId: bound.organizationId };
+    if (query.phaseId && UUID_RE.test(query.phaseId)) {
+      where.phaseId = query.phaseId;
+    }
+    if (query.deliverableId && UUID_RE.test(query.deliverableId)) {
+      where.deliverableId = query.deliverableId;
+    }
+    if (query.workPackageId && UUID_RE.test(query.workPackageId)) {
+      where.workPackageId = query.workPackageId;
+    }
     const rows = await this.prisma.task.findMany({
-      where: { projectId: bound.project.id, organizationId: bound.organizationId },
+      where,
       orderBy: { createdAt: "asc" },
     });
     return rows.map((row) => this.toDto(row));
@@ -61,6 +89,12 @@ export class TasksService {
       dueDate?: string;
       issueId?: string;
       milestoneId?: string;
+      phaseId?: string;
+      deliverableId?: string;
+      workPackageId?: string;
+      plannedStartAt?: string;
+      estimatedMinutes?: number;
+      progressPercent?: number;
       organizationId?: string;
       projectId?: string;
     },
@@ -90,6 +124,13 @@ export class TasksService {
       bound.project.id,
       input.milestoneId,
     );
+    const refs = await this.resolveDeliveryRefs(bound.organizationId, bound.project.id, {
+      phaseId: input.phaseId,
+      deliverableId: input.deliverableId,
+      workPackageId: input.workPackageId,
+    });
+    assertTaskProgressPercent(input.progressPercent);
+    assertEstimatedMinutes(input.estimatedMinutes);
     const created = await this.prisma.$transaction(async (tx) => {
       const task = await tx.task.create({
         data: {
@@ -97,12 +138,18 @@ export class TasksService {
           projectId: bound.project.id,
           issueId,
           milestoneId,
+          phaseId: refs.phaseId,
+          deliverableId: refs.deliverableId,
+          workPackageId: refs.workPackageId,
           title,
           description: input.description?.trim() ?? "",
           status: "TODO",
           priority: this.parseOptionalPriority(input.priority),
           responsibleDisciplineId: input.responsibleDisciplineId?.trim() || null,
           dueDate: this.parseDate(input.dueDate, "Task due date"),
+          plannedStartAt: this.parseDate(input.plannedStartAt, "Task planned start"),
+          estimatedMinutes: input.estimatedMinutes ?? null,
+          progressPercent: input.progressPercent ?? null,
           createdByUserId: session.userId,
         },
       });
@@ -118,6 +165,11 @@ export class TasksService {
           payload: redactSecrets({
             issueId: task.issueId,
             milestoneId: task.milestoneId,
+            ...linkAuditPayload({
+              phaseId: task.phaseId,
+              deliverableId: task.deliverableId,
+              workPackageId: task.workPackageId,
+            }),
             priority: task.priority,
           }),
         },
@@ -154,6 +206,12 @@ export class TasksService {
       dueDate?: string | null;
       issueId?: string | null;
       milestoneId?: string | null;
+      phaseId?: string | null;
+      deliverableId?: string | null;
+      workPackageId?: string | null;
+      plannedStartAt?: string | null;
+      estimatedMinutes?: number | null;
+      progressPercent?: number | null;
       assigneeUserId?: string;
       status?: string;
       organizationId?: string;
@@ -177,6 +235,25 @@ export class TasksService {
       input.milestoneId !== undefined
         ? await this.resolveOptionalMilestone(bound.organizationId, bound.project.id, input.milestoneId)
         : bound.task.milestoneId;
+    const refs = await this.resolveDeliveryRefs(
+      bound.organizationId,
+      bound.project.id,
+      {
+        phaseId: input.phaseId !== undefined ? input.phaseId : bound.task.phaseId,
+        deliverableId: input.deliverableId !== undefined ? input.deliverableId : bound.task.deliverableId,
+        workPackageId: input.workPackageId !== undefined ? input.workPackageId : bound.task.workPackageId,
+      },
+    );
+    if (input.progressPercent !== undefined) {
+      assertTaskProgressPercent(input.progressPercent);
+    }
+    if (input.estimatedMinutes !== undefined) {
+      assertEstimatedMinutes(input.estimatedMinutes);
+    }
+    const refsChanged =
+      refs.phaseId !== bound.task.phaseId ||
+      refs.deliverableId !== bound.task.deliverableId ||
+      refs.workPackageId !== bound.task.workPackageId;
     const next = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.task.update({
         where: { id: bound.task.id },
@@ -189,8 +266,17 @@ export class TasksService {
               ? input.responsibleDisciplineId?.trim() || null
               : bound.task.responsibleDisciplineId,
           dueDate: input.dueDate !== undefined ? this.parseDate(input.dueDate, "Task due date") : bound.task.dueDate,
+          plannedStartAt:
+            input.plannedStartAt !== undefined
+              ? this.parseDate(input.plannedStartAt, "Task planned start")
+              : bound.task.plannedStartAt,
+          estimatedMinutes: input.estimatedMinutes !== undefined ? input.estimatedMinutes : bound.task.estimatedMinutes,
+          progressPercent: input.progressPercent !== undefined ? input.progressPercent : bound.task.progressPercent,
           issueId,
           milestoneId,
+          phaseId: refs.phaseId,
+          deliverableId: refs.deliverableId,
+          workPackageId: refs.workPackageId,
           version: bound.task.version + 1,
         },
       });
@@ -205,6 +291,28 @@ export class TasksService {
             resourceId: updated.id,
             correlationId: currentCorrelationId(),
             payload: redactSecrets({ from: bound.task.dueDate, to: updated.dueDate }),
+          },
+          tx,
+        );
+      }
+      if (refsChanged) {
+        await this.audit.insert(
+          {
+            organizationId: updated.organizationId,
+            projectId: updated.projectId,
+            actorUserId: session.userId,
+            eventType: "TASK_DELIVERY_REFS_UPDATED",
+            resourceType: "task",
+            resourceId: updated.id,
+            correlationId: currentCorrelationId(),
+            payload: redactSecrets(
+              linkAuditPayload({
+                taskId: updated.id,
+                phaseId: updated.phaseId,
+                deliverableId: updated.deliverableId,
+                workPackageId: updated.workPackageId,
+              }),
+            ),
           },
           tx,
         );
@@ -375,6 +483,10 @@ export class TasksService {
               milestoneId: sourceMilestoneId,
               autoResolvedIssue: false,
               autoAchievedMilestone: false,
+              autoCompletedWorkPackage: taskCompleteCascadesToWorkPackage(),
+              autoCompletedDeliverable: taskCompleteCascadesToDeliverable(),
+              autoCompletedMilestone: taskCompleteCascadesToMilestone(),
+              autoResolvedIssueCascade: taskCompleteCascadesToIssue(),
             }),
           },
           tx,
@@ -538,6 +650,55 @@ export class TasksService {
     return { ...bound, task };
   }
 
+  private async resolveDeliveryRefs(
+    organizationId: string,
+    projectId: string,
+    input: { phaseId?: string | null; deliverableId?: string | null; workPackageId?: string | null },
+  ) {
+    const load = async (
+      table: "phase" | "deliverable" | "workPackage",
+      id: string | null | undefined,
+    ) => {
+      if (id == null || id === "") {
+        return null;
+      }
+      if (!UUID_RE.test(id)) {
+        throw new DenyByDefaultError(`Client ${table}Id is not authoritative`);
+      }
+      if (table === "phase") {
+        const row = await this.prisma.phase.findUnique({ where: { id } });
+        return row ? { organizationId: row.organizationId, projectId: row.projectId, phaseId: row.id } : null;
+      }
+      if (table === "deliverable") {
+        const row = await this.prisma.deliverable.findUnique({ where: { id } });
+        return row
+          ? {
+              organizationId: row.organizationId,
+              projectId: row.projectId,
+              phaseId: row.phaseId,
+              deliverableId: row.id,
+            }
+          : null;
+      }
+      const row = await this.prisma.workPackage.findUnique({ where: { id } });
+      return row
+        ? {
+            organizationId: row.organizationId,
+            projectId: row.projectId,
+            phaseId: row.phaseId,
+            deliverableId: row.deliverableId,
+          }
+        : null;
+    };
+    const workPackage = await load("workPackage", input.workPackageId);
+    const deliverable = await load("deliverable", input.deliverableId);
+    const phase = await load("phase", input.phaseId);
+    return resolveTaskDeliveryRefs(
+      { organizationId, projectId, phaseId: input.phaseId, deliverableId: input.deliverableId, workPackageId: input.workPackageId },
+      { phase, deliverable, workPackage },
+    );
+  }
+
   private async resolveOptionalIssue(
     organizationId: string,
     projectId: string,
@@ -635,6 +796,9 @@ export class TasksService {
     projectId: string;
     issueId: string | null;
     milestoneId: string | null;
+    phaseId: string | null;
+    deliverableId: string | null;
+    workPackageId: string | null;
     title: string;
     description: string;
     status: string;
@@ -642,6 +806,9 @@ export class TasksService {
     responsibleDisciplineId: string | null;
     assigneeUserId: string | null;
     dueDate: Date | null;
+    plannedStartAt: Date | null;
+    estimatedMinutes: number | null;
+    progressPercent: number | null;
     startedAt: Date | null;
     completedAt: Date | null;
     blockedReason: string | null;
@@ -656,6 +823,9 @@ export class TasksService {
       projectId: row.projectId,
       issueId: row.issueId,
       milestoneId: row.milestoneId,
+      phaseId: row.phaseId,
+      deliverableId: row.deliverableId,
+      workPackageId: row.workPackageId,
       title: row.title,
       description: row.description,
       status: row.status,
@@ -664,6 +834,9 @@ export class TasksService {
       responsibleDisciplineId: row.responsibleDisciplineId,
       assigneeUserId: row.assigneeUserId,
       dueDate: row.dueDate,
+      plannedStartAt: row.plannedStartAt,
+      estimatedMinutes: row.estimatedMinutes,
+      progressPercent: row.progressPercent,
       startedAt: row.startedAt,
       completedAt: row.completedAt,
       blockedReason: row.blockedReason,

@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { StateScreen } from "../shell/StateScreen";
+import { TraceabilityContextPanel } from "../operations/TraceabilityContextPanel";
 import { api } from "../../lib/api";
 import { classifyProblem } from "../../lib/errors";
 import {
@@ -13,6 +14,10 @@ import {
   formatPhaseDate,
   newIdempotencyKey,
   workPackageStatusLabel,
+  workPackagesDeepLink,
+  deliverablesDeepLink,
+  withReturnPath,
+  safeReturnTo,
   type DeliverableListResponse,
   type DeliverableRow,
   type DisciplineListResponse,
@@ -57,6 +62,7 @@ export function WorkPackagesView({ projectId }: { projectId: string }) {
   const project = state.currentProject;
   const permissions = project?.permissions ?? [];
   const selectedId = searchParams.get("inspect");
+  const returnTo = safeReturnTo(searchParams.get("returnTo"), projectId);
 
   const [loading, setLoading] = useState(true);
   const [errorKind, setErrorKind] = useState<"error" | "no-permission" | null>(null);
@@ -705,6 +711,19 @@ export function WorkPackagesView({ projectId }: { projectId: string }) {
                       ? ` — motivo: ${selected.blockedReason}`
                       : ""}
                     . A UI nunca substitui a autorização.
+                    {selected.deliverableId ? (
+                      <>
+                        {" "}
+                        <a
+                          href={withReturnPath(
+                            deliverablesDeepLink(projectId, selected.deliverableId),
+                            workPackagesDeepLink(projectId, selected.id),
+                          )}
+                        >
+                          Abrir entrega
+                        </a>
+                      </>
+                    ) : null}
                   </p>
                 ) : null}
                 <div className="inspector-actions">
@@ -762,6 +781,11 @@ export function WorkPackagesView({ projectId }: { projectId: string }) {
                   <button type="button" className="text-button" onClick={() => openItem(null)}>
                     Fechar
                   </button>
+                  {returnTo ? (
+                    <a className="text-button" href={returnTo}>
+                      Voltar
+                    </a>
+                  ) : null}
                 </div>
               </form>
               {selected && canUpdateWorkPackage(permissions) && selected.status === "ACTIVE" ? (
@@ -774,6 +798,14 @@ export function WorkPackagesView({ projectId }: { projectId: string }) {
                     Bloquear
                   </button>
                 </form>
+              ) : null}
+              {selected ? (
+                <TraceabilityContextPanel
+                  projectId={projectId}
+                  resource="work-package"
+                  resourceId={selected.id}
+                  permissions={permissions}
+                />
               ) : null}
             </aside>
           </div>

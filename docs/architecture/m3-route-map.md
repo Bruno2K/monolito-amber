@@ -11,7 +11,7 @@ Product IA for M3. M3.2 mounts the authenticated shell and `/projects` context. 
 | `/projects/:projectId/structure` | Phase + Discipline context | `project.read`; mutations `phase.*` / catalogs | M3.3 |
 | `/projects/:projectId/deliverables` | Entregas list | `project.read`; mutations `deliverable.*` | M3.4 |
 | `/projects/:projectId/work-packages` | WorkPackage list | `project.read`; mutations `work_package.*` | M3.5 |
-| inspector / deep-link query on deliverables and work-packages | Detail without colliding sibling routes | re-authorize at destination | M3.4–M3.5 |
+| inspector / deep-link query on deliverables and work-packages | Detail without colliding sibling routes; M3.7 context sections + `returnTo` | re-authorize at destination | M3.4–M3.7 |
 
 Deep links re-authorize. Inaccessible resources are omitted without hidden counts.
 
@@ -43,4 +43,4 @@ Collision audit: `packages/shared/src/m3-routes.test.ts` asserts canonical paths
 
 ## API pairing
 
-UI `/projects` → KEEP `GET /api/v1/projects`. Nested product pages pair with `/api/v1/projects/{projectId}/phases|deliverables|work-packages` and the M3.6 derived hub `GET /api/v1/projects/{projectId}/hub` (see [OpenAPI plan](../api/m3-openapi-plan.md)).
+UI `/projects` → KEEP `GET /api/v1/projects`. Nested product pages pair with `/api/v1/projects/{projectId}/phases|deliverables|work-packages`, the M3.6 derived hub `GET /api/v1/projects/{projectId}/hub`, and M3.7 context `GET …/deliverables/{id}/context` + `GET …/work-packages/{id}/context` (see [OpenAPI plan](../api/m3-openapi-plan.md)).

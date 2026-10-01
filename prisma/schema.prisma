@@ -391,6 +391,7 @@ model Project {
   phases         Phase[]
   deliverables   Deliverable[]
   workPackages   WorkPackage[]
+  deliverableDocuments DeliverableDocument[]
 
   @@unique([id, organizationId])
   @@index([organizationId])
@@ -466,6 +467,8 @@ model Phase {
   project      Project       @relation(fields: [projectId], references: [id])
   deliverables Deliverable[]
   workPackages WorkPackage[]
+  tasks        Task[]
+  milestones   Milestone[]
 
   @@index([organizationId, projectId])
   @@index([projectId, sequence])
@@ -502,6 +505,9 @@ model Deliverable {
   ownerProjectMembership ProjectMembership?  @relation(fields: [ownerProjectMembershipId], references: [id])
   ownerTeam              Team?               @relation(fields: [ownerTeamId], references: [id])
   workPackages           WorkPackage[]
+  tasks                  Task[]
+  milestones             Milestone[]
+  documentLinks          DeliverableDocument[]
 
   @@index([organizationId, projectId])
   @@index([phaseId])
@@ -542,6 +548,7 @@ model WorkPackage {
   discipline             Discipline?         @relation(fields: [disciplineId], references: [id])
   ownerProjectMembership ProjectMembership?  @relation(fields: [ownerProjectMembershipId], references: [id])
   ownerTeam              Team?               @relation(fields: [ownerTeamId], references: [id])
+  tasks                  Task[]
 
   @@index([organizationId, projectId])
   @@index([phaseId])
@@ -550,6 +557,28 @@ model WorkPackage {
   @@index([ownerProjectMembershipId])
   @@index([ownerTeamId])
   @@map("work_packages")
+  @@schema("operations")
+}
+
+/// M3.7 additive Document↔Deliverable evidence join. Context only — does not
+/// change Document/Revision identity, status, or published bytes.
+model DeliverableDocument {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId  String   @map("organization_id") @db.Uuid
+  projectId       String   @map("project_id") @db.Uuid
+  deliverableId   String   @map("deliverable_id") @db.Uuid
+  documentId      String   @map("document_id") @db.Uuid
+  createdByUserId String   @map("created_by_user_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  project     Project     @relation(fields: [projectId], references: [id])
+  deliverable Deliverable @relation(fields: [deliverableId], references: [id])
+  document    Document    @relation(fields: [documentId], references: [id])
+
+  @@unique([deliverableId, documentId])
+  @@index([organizationId, projectId])
+  @@index([documentId])
+  @@map("deliverable_documents")
   @@schema("operations")
 }
 
@@ -587,6 +616,7 @@ model Document {
   currentRevision Revision?  @relation("DocumentCurrentRevision", fields: [currentRevisionId], references: [id])
   revisions       Revision[] @relation("DocumentRevisions")
   objects         StoredObject[]
+  deliverableLinks DeliverableDocument[]
 
   @@unique([projectId, code])
   @@index([organizationId, projectId])
@@ -803,6 +833,9 @@ model Task {
   projectId               String    @map("project_id") @db.Uuid
   issueId                 String?   @map("issue_id") @db.Uuid
   milestoneId             String?   @map("milestone_id") @db.Uuid
+  phaseId                 String?   @map("phase_id") @db.Uuid
+  deliverableId           String?   @map("deliverable_id") @db.Uuid
+  workPackageId           String?   @map("work_package_id") @db.Uuid
   title                   String
   description             String    @default("")
   status                  String    @default("TODO")
@@ -810,6 +843,9 @@ model Task {
   responsibleDisciplineId String?   @map("responsible_discipline_id")
   assigneeUserId          String?   @map("assignee_user_id") @db.Uuid
   dueDate                 DateTime? @map("due_date")
+  plannedStartAt          DateTime? @map("planned_start_at")
+  estimatedMinutes        Int?      @map("estimated_minutes")
+  progressPercent         Int?      @map("progress_percent")
   startedAt               DateTime? @map("started_at")
   completedAt             DateTime? @map("completed_at")
   blockedReason           String?   @map("blocked_reason")
@@ -821,12 +857,18 @@ model Task {
   project            Project           @relation(fields: [projectId], references: [id])
   issue              Issue?            @relation(fields: [issueId], references: [id])
   milestone          Milestone?        @relation(fields: [milestoneId], references: [id])
+  phase              Phase?            @relation(fields: [phaseId], references: [id])
+  deliverable        Deliverable?      @relation(fields: [deliverableId], references: [id])
+  workPackage        WorkPackage?      @relation(fields: [workPackageId], references: [id])
   predecessorOf      TaskDependency[]  @relation("TaskAsPredecessor")
   successorOf        TaskDependency[]  @relation("TaskAsSuccessor")
 
   @@index([organizationId, projectId])
   @@index([issueId])
   @@index([milestoneId])
+  @@index([phaseId])
+  @@index([deliverableId])
+  @@index([workPackageId])
   @@map("tasks")
   @@schema("planning")
 }
@@ -862,6 +904,8 @@ model Milestone {
   /// Stored explicit state only: PLANNED | ACHIEVED | CANCELLED.
   status           String    @default("PLANNED")
   targetDate       DateTime? @map("target_date")
+  phaseId          String?   @map("phase_id") @db.Uuid
+  deliverableId    String?   @map("deliverable_id") @db.Uuid
   achievedByUserId String?   @map("achieved_by_user_id") @db.Uuid
   achievedAt       DateTime? @map("achieved_at")
   cancelledByUserId String?  @map("cancelled_by_user_id") @db.Uuid
@@ -870,10 +914,14 @@ model Milestone {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  project Project @relation(fields: [projectId], references: [id])
-  tasks   Task[]
+  project     Project      @relation(fields: [projectId], references: [id])
+  phase       Phase?       @relation(fields: [phaseId], references: [id])
+  deliverable Deliverable? @relation(fields: [deliverableId], references: [id])
+  tasks       Task[]
 
   @@index([organizationId, projectId])
+  @@index([phaseId])
+  @@index([deliverableId])
   @@map("milestones")
   @@schema("planning")
 }

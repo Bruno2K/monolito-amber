@@ -63,6 +63,8 @@ export const OUTBOX_EVENT_TYPES = {
   WorkPackageArchived: "WorkPackageArchived",
   WorkPackageAssociated: "WorkPackageAssociated",
   WorkPackageDisassociated: "WorkPackageDisassociated",
+  DocumentDeliverableLinked: "DocumentDeliverableLinked",
+  DocumentDeliverableUnlinked: "DocumentDeliverableUnlinked",
 } as const;
 
 /**

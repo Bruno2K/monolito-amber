@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { StateScreen } from "../shell/StateScreen";
+import { TraceabilityContextPanel } from "../operations/TraceabilityContextPanel";
 import { api } from "../../lib/api";
 import { classifyProblem } from "../../lib/errors";
 import {
@@ -15,11 +16,14 @@ import {
   canCompleteWorkPackage,
   canDisassociateWorkPackage,
   deliverableStatusLabel,
+  deliverablesDeepLink,
   formatPhaseDate,
   formatProgress,
   newIdempotencyKey,
   workPackageStatusLabel,
   workPackagesDeepLink,
+  withReturnPath,
+  safeReturnTo,
   type DeliverableListResponse,
   type DeliverableRow,
   type DisciplineListResponse,
@@ -68,6 +72,7 @@ export function DeliverablesView({ projectId }: { projectId: string }) {
   const project = state.currentProject;
   const permissions = project?.permissions ?? [];
   const selectedId = searchParams.get("inspect");
+  const returnTo = safeReturnTo(searchParams.get("returnTo"), projectId);
 
   const [loading, setLoading] = useState(true);
   const [errorKind, setErrorKind] = useState<"error" | "no-permission" | null>(null);
@@ -624,6 +629,11 @@ export function DeliverablesView({ projectId }: { projectId: string }) {
                   <button type="button" className="text-button" onClick={() => openItem(null)}>
                     Fechar
                   </button>
+                  {returnTo ? (
+                    <a className="text-button" href={returnTo}>
+                      Voltar
+                    </a>
+                  ) : null}
                 </div>
               </form>
               {selected ? (
@@ -643,7 +653,7 @@ export function DeliverablesView({ projectId }: { projectId: string }) {
                     <ul className="linked-wp-list">
                       {linkedPackages.map((row) => (
                         <li key={row.id}>
-                          <a href={workPackagesDeepLink(projectId, row.id)}>
+                          <a href={withReturnPath(workPackagesDeepLink(projectId, row.id), deliverablesDeepLink(projectId, selected.id))}>
                             {row.code ? `${row.code} · ` : ""}
                             {row.title}
                           </a>
@@ -742,6 +752,14 @@ export function DeliverablesView({ projectId }: { projectId: string }) {
                     </form>
                   ) : null}
                 </section>
+              ) : null}
+              {selected ? (
+                <TraceabilityContextPanel
+                  projectId={projectId}
+                  resource="deliverable"
+                  resourceId={selected.id}
+                  permissions={permissions}
+                />
               ) : null}
             </aside>
           </div>

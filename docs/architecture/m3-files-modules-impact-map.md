@@ -67,6 +67,7 @@ M3.1 **lands** contract artifacts, additive catalog/template deltas, and CI test
 | OpenAPI generated paths for deliverables | M3.4 |
 | OpenAPI generated paths for work-packages | M3.5 |
 | `GET /api/v1/projects/{projectId}/hub` + Visão Geral hub UI | M3.6 |
+| Task/Milestone delivery refs + `operations.deliverable_documents` + inspector context | M3.7 |
 | `web/app/projects/[projectId]/work-packages` | M3.5 |
 | M3.8 seed writer / E2E | M3.8 LOCAL RC |
 

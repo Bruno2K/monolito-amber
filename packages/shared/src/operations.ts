@@ -179,6 +179,11 @@ export const OPERATIONS_AUDIT_EVENTS = [
   "WORK_PACKAGE_DISASSOCIATED",
 ] as const;
 
+export const TRACEABILITY_OPERATIONS_AUDIT_EVENTS = [
+  "DOCUMENT_DELIVERABLE_LINKED",
+  "DOCUMENT_DELIVERABLE_UNLINKED",
+] as const;
+
 export function isPhaseStatus(value: string): value is PhaseStatus {
   return (PHASE_STATUSES as readonly string[]).includes(value);
 }

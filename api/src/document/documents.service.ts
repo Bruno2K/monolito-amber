@@ -36,6 +36,7 @@ import { IdempotencyService } from "../foundation/idempotency.service";
 import { OutboxProcessor } from "../foundation/outbox.processor";
 import { currentCorrelationId } from "../observability/request-context";
 import { PrismaService } from "../prisma/prisma.service";
+import { TraceabilityService } from "../operations/traceability.service";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -49,6 +50,7 @@ export class DocumentsService {
     private readonly foundation: FoundationService,
     private readonly idempotency: IdempotencyService,
     private readonly outbox: OutboxProcessor,
+    private readonly traceability: TraceabilityService,
   ) {}
 
   async create(
@@ -94,7 +96,14 @@ export class DocumentsService {
 
   async get(session: RequestSession, projectId: string, documentId: string) {
     const bound = await this.requireDocument(session, "document.read", projectId, documentId);
-    return this.toDocumentDto(bound.document);
+    const dto = this.toDocumentDto(bound.document);
+    const deliveryContext = await this.traceability.deliveryContextForDocument(
+      session,
+      bound.document.organizationId,
+      bound.document.projectId,
+      bound.document.id,
+    );
+    return deliveryContext === undefined ? dto : { ...dto, deliveryContext };
   }
 
   async archive(session: RequestSession, projectId: string, documentId: string) {

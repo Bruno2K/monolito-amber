@@ -5,7 +5,9 @@ import {
   PlanningStateError,
   deriveMilestoneStatus,
   isTaskLate,
+  linkAuditPayload,
   redactSecrets,
+  resolveMilestoneDeliveryRefs,
   type MilestoneRecordedStatus,
   type PermissionCode,
   type TaskStatus,
@@ -64,6 +66,8 @@ export class MilestonesService {
       title: string;
       description?: string;
       targetDate?: string;
+      phaseId?: string;
+      deliverableId?: string;
       organizationId?: string;
       projectId?: string;
     },
@@ -82,6 +86,10 @@ export class MilestonesService {
     if (!title) {
       throw new PlanningStateError("Milestone title is required");
     }
+    const refs = await this.resolveDeliveryRefs(bound.organizationId, bound.project.id, {
+      phaseId: input.phaseId,
+      deliverableId: input.deliverableId,
+    });
     const created = await this.prisma.$transaction(async (tx) => {
       const milestone = await tx.milestone.create({
         data: {
@@ -91,6 +99,8 @@ export class MilestonesService {
           description: input.description?.trim() ?? "",
           status: "PLANNED",
           targetDate: this.parseDate(input.targetDate),
+          phaseId: refs.phaseId,
+          deliverableId: refs.deliverableId,
         },
       });
       await this.audit.insert(
@@ -131,6 +141,8 @@ export class MilestonesService {
       title?: string;
       description?: string;
       targetDate?: string | null;
+      phaseId?: string | null;
+      deliverableId?: string | null;
       status?: string;
       organizationId?: string;
       projectId?: string;
@@ -148,6 +160,12 @@ export class MilestonesService {
     if (input.expectedVersion != null) {
       this.foundation.cas({ version: bound.milestone.version }, input.expectedVersion);
     }
+    const refs = await this.resolveDeliveryRefs(bound.organizationId, bound.project.id, {
+      phaseId: input.phaseId !== undefined ? input.phaseId : bound.milestone.phaseId,
+      deliverableId: input.deliverableId !== undefined ? input.deliverableId : bound.milestone.deliverableId,
+    });
+    const refsChanged =
+      refs.phaseId !== bound.milestone.phaseId || refs.deliverableId !== bound.milestone.deliverableId;
     const next = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.milestone.update({
         where: { id: bound.milestone.id },
@@ -156,6 +174,8 @@ export class MilestonesService {
           description: input.description !== undefined ? input.description : bound.milestone.description,
           targetDate:
             input.targetDate !== undefined ? this.parseDate(input.targetDate) : bound.milestone.targetDate,
+          phaseId: refs.phaseId,
+          deliverableId: refs.deliverableId,
           version: bound.milestone.version + 1,
         },
       });
@@ -170,6 +190,27 @@ export class MilestonesService {
             resourceId: updated.id,
             correlationId: currentCorrelationId(),
             payload: redactSecrets({ from: bound.milestone.targetDate, to: updated.targetDate }),
+          },
+          tx,
+        );
+      }
+      if (refsChanged) {
+        await this.audit.insert(
+          {
+            organizationId: updated.organizationId,
+            projectId: updated.projectId,
+            actorUserId: session.userId,
+            eventType: "MILESTONE_DELIVERY_REFS_UPDATED",
+            resourceType: "milestone",
+            resourceId: updated.id,
+            correlationId: currentCorrelationId(),
+            payload: redactSecrets(
+              linkAuditPayload({
+                milestoneId: updated.id,
+                phaseId: updated.phaseId,
+                deliverableId: updated.deliverableId,
+              }),
+            ),
           },
           tx,
         );
@@ -314,6 +355,40 @@ export class MilestonesService {
     return { ...bound, milestone };
   }
 
+  private async resolveDeliveryRefs(
+    organizationId: string,
+    projectId: string,
+    input: { phaseId?: string | null; deliverableId?: string | null },
+  ) {
+    const load = async (table: "phase" | "deliverable", id: string | null | undefined) => {
+      if (id == null || id === "") {
+        return null;
+      }
+      if (!UUID_RE.test(id)) {
+        throw new DenyByDefaultError(`Client ${table}Id is not authoritative`);
+      }
+      if (table === "phase") {
+        const row = await this.prisma.phase.findUnique({ where: { id } });
+        return row ? { organizationId: row.organizationId, projectId: row.projectId, phaseId: row.id } : null;
+      }
+      const row = await this.prisma.deliverable.findUnique({ where: { id } });
+      return row
+        ? {
+            organizationId: row.organizationId,
+            projectId: row.projectId,
+            phaseId: row.phaseId,
+            deliverableId: row.id,
+          }
+        : null;
+    };
+    const deliverable = await load("deliverable", input.deliverableId);
+    const phase = await load("phase", input.phaseId);
+    return resolveMilestoneDeliveryRefs(
+      { organizationId, projectId, phaseId: input.phaseId, deliverableId: input.deliverableId },
+      { phase, deliverable },
+    );
+  }
+
   private parseDate(value: string | null | undefined): Date | null {
     if (value == null || value === "") {
       return null;
@@ -334,6 +409,8 @@ export class MilestonesService {
       description: string;
       status: string;
       targetDate: Date | null;
+      phaseId: string | null;
+      deliverableId: string | null;
       achievedByUserId: string | null;
       achievedAt: Date | null;
       cancelledByUserId: string | null;
@@ -355,6 +432,8 @@ export class MilestonesService {
       projectId: row.projectId,
       title: row.title,
       description: row.description,
+      phaseId: row.phaseId,
+      deliverableId: row.deliverableId,
       recordedStatus,
       status: deriveMilestoneStatus({
         recordedStatus,
