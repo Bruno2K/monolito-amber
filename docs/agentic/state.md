@@ -1,51 +1,42 @@
 # State
 
-Operational snapshot — update when the Work Item, branch, or exit-gate status changes.
+Operational snapshot — update when the Work Item, branch, milestone, or exit-gate status changes.
 
 | Field | Value |
 | --- | --- |
-| Work Item | M2.10 — Final UX/UI Audit & Exit Gate |
-| Status | **PASS / COMPLETE — M2 EXIT GATE PASS** |
-| Issue | https://github.com/Bruno2K/monolito-amber/issues/27 |
-| Branch | `m2.10-final-ux-ui-audit` |
-| PR | https://github.com/Bruno2K/monolito-amber/pull/28 (OPEN at gate close; integration separately authorized) |
-| Repo | `Bruno2K/monolito-amber` |
-| Base | `m2.9-prototype-state-coverage` @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf` |
-| Reviewed technical tip | `2aad14db522ba0a6f491aa423fd06abe0739e62f` — Independent Reviewer PASS |
-| This docs revision | Post-review PASS synchronization; does not embed its own SHA |
-| Prior WI | M2.9 — Prototype & State Coverage — **PASS / COMPLETE**; PR #26 OPEN (do not merge) |
-| Stack at gate close | #20 · #22 · #24 · #26 · #28 OPEN; integration authorized separately after audit |
-| Next WI | M3 **NEXT / not started** |
-| Exit Gate | **PASS — M2 COMPLETE** |
-| Merge | Integrate bottom-up only after final cumulative validation; preserve stack ancestry |
-| Metrics | product frames M2.2–M2.9 **86**; NAVIGATE **257**; broken / orphans / same-node / whole-frame / overlapping multi-dest = **0**. under34 **18→0**. Inventory chrome **257/86**. Documentary frames `321:15725` / `321:15738` / `321:15755` excluded. |
-| Engineer residuals | F-01/F-02/F-03 **FIXED**; R-01/R-02 **FIXED**; F-04 **OPEN OPTIONAL**; zero residual BLOCKER/IMPORTANT/MINOR |
-| Backend | Zero delta |
+| Milestone | M2 — Product Experience Foundation |
+| Status | **COMPLETE — EXIT GATE PASS — INTEGRATED** |
+| Default branch | `main` |
+| Main integration tip | `4e410b11c8712873ace558b931ea141762ee15bb` |
+| Final WI | M2.10 — Final UX/UI Audit & Exit Gate — **PASS / COMPLETE** |
+| Final reviewed branch tip | `09c79789660c3221d102d8d37b4a78d168a785da` |
+| Final PR | https://github.com/Bruno2K/monolito-amber/pull/28 — **MERGED** |
+| Next milestone | M3 **NEXT / not started** |
+| Active Work Item | None |
+| Metrics | 86 product frames; 257 NAVIGATE; broken / orphans / same-node / whole-frame / overlapping multi-dest = 0; under34 = 0 |
+| Residuals | F-04 **OPTIONAL** only; zero BLOCKER / IMPORTANT / MINOR |
+| Backend delta | Zero — M2.6–M2.10 integration is docs/PNG evidence only |
 
-## Stacking note
+## Integration record
 
-**PR base MUST be** `m2.9-prototype-state-coverage` @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf`, **NOT** `main`. Do not wait for merge of #20/#22/#24/#26/#28. Do not start M3. Do not merge, squash, destructively rebase, or retarget the stack.
+The stack was integrated bottom-up with merge commits, preserving ancestry:
 
-## Review history (labeled — not current status)
+| PR | WI | Merge commit | Status |
+| --- | --- | --- | --- |
+| #20 | M2.6 | `23aeadeec53ffb5713d5d680015adf9bc59e9b3d` | MERGED |
+| #22 | M2.7 | `58453e63234aebb427e7fe748a4e2f69ceb8e066` | MERGED |
+| #24 | M2.8 | `130d9602ce103c685ee7467be60434fbde21bd6e` | MERGED |
+| #26 | M2.9 | `64223fa361bf2600f9e1a1799278e3ddc3e056e5` | MERGED |
+| #28 | M2.10 | `4e410b11c8712873ace558b931ea141762ee15bb` | MERGED |
 
-| Step | Result |
-| --- | --- |
-| M2.9 RC2 | Independent Reviewer **PASS** on tip `ee02fdf8ffed4626d042a38b7a74ebb9b97db354` (technical `0758675d…`) |
-| M2.9 Governor | Accepted M2.9 Exit Gate → **PASS / COMPLETE** (PR #26 remains OPEN) |
-| M2.9 DOC SYNC RC3 | Document-only sync at `3a3526fefb41095cc97a20c93a13c1d016f76ccf` |
-| M2.10 phase 1 | Scaffold + inventory. No Figma edits. |
-| M2.10 Engineer pass | Figma fixes landed. F-01 MINOR / F-02 IMPORTANT / F-03 MINOR FIXED. F-04 OPEN OPTIONAL. |
-| M2.10 Reviewer RC1 | REQUEST_CHANGES on `1c9b67ce8ffa9b7b0892d71d9d798fd662819da3` — R-01 / R-02 |
-| M2.10 CORRECTION LOOP 1 | R-01 FIXED (under34 18→0); R-02 FIXED (Inventory 257/86) |
-| M2.10 Reviewer CL1 | PASS on `2aad14db…`; zero residual BLOCKER / IMPORTANT / MINOR |
-| M2 Governor | M2.10 PASS / COMPLETE; M2 Exit Gate PASS; M3 NEXT / not started |
+## Final audit record
 
-## In-scope (this revision)
+- M2.10 Independent Reviewer CL1 PASS on technical tip `2aad14db…` after R-01/R-02 were cleared.
+- Post-review synchronization audit found and corrected repository/Figma status drift.
+- Final independent re-review PASS on `09c79789660c3221d102d8d37b4a78d168a785da`.
+- Final branch CI SUCCESS: run `36822378274`.
+- Figma `fkE9SwcNlQG7m0HvcGQBw9`, page `04 — Telas`, remains the canonical M2 design evidence.
 
-1. Post-review PASS synchronization across the audit pack and operational docs
-2. Record R-01 / R-02 CLEARED; F-04 remains OPEN OPTIONAL
-3. Preserve M3 as NEXT / not started while stack integration is performed separately
+## Current boundary
 
-## Out of scope
-
-Backend schema/API/Prisma/domain/AuthZ catalog; starting M3; Bruno2K/amber.
+M2 is integrated and closed. Do not infer production implementation from this design milestone. Do not start or mark M3 ACTIVE until Bruno explicitly defines and activates it.
