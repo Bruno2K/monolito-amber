@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   EXISTING_FOUNDATION_UI_ROUTES,
   FIGMA_PROTOTYPE_ROUTE_MAP,
+  M3_2_NEXT_APP_ROUTES,
   M3_CANONICAL_UI_ROUTES,
   M3_PLANNED_API_ROUTES,
   M4_RESERVED_UI_ROUTES,
@@ -24,7 +25,8 @@ function listNextAppRoutes(appDir: string, prefix = ""): string[] {
     const full = join(appDir, name);
     const st = statSync(full);
     if (st.isDirectory()) {
-      routes.push(...listNextAppRoutes(full, `${prefix}/${name}`));
+      const nextPrefix = name.startsWith("(") && name.endsWith(")") ? prefix : `${prefix}/${name}`;
+      routes.push(...listNextAppRoutes(full, nextPrefix));
     } else if (name === "page.tsx" || name === "page.ts") {
       routes.push(prefix || "/");
     }
@@ -32,17 +34,19 @@ function listNextAppRoutes(appDir: string, prefix = ""): string[] {
   return routes;
 }
 
-describe("M3.1 route collision audit", () => {
-  it("keeps canonical UI routes unique and does not collide with foundation pages", () => {
+describe("M3 route collision audit", () => {
+  it("keeps canonical UI routes unique and implements the M3.2 shell without colliding with foundation pages", () => {
     const paths = M3_CANONICAL_UI_ROUTES.map((row) => row.path);
     expect(new Set(paths).size).toBe(paths.length);
     const existing = listNextAppRoutes(join(ROOT, "web/app"));
-    expect(existing.sort()).toEqual([...EXISTING_FOUNDATION_UI_ROUTES].sort());
-    for (const planned of paths) {
-      const staticHead = planned.split("/:")[0] || planned;
-      expect(existing).not.toContain(staticHead);
+    for (const foundation of EXISTING_FOUNDATION_UI_ROUTES) {
+      expect(existing, foundation).toContain(foundation);
     }
-    expect(existsSync(join(ROOT, "web/app/projects"))).toBe(false);
+    for (const implemented of M3_2_NEXT_APP_ROUTES) {
+      expect(existing, implemented).toContain(implemented);
+    }
+    expect(existsSync(join(ROOT, "web/app/projects"))).toBe(true);
+    expect(existsSync(join(ROOT, "web/app/projects/[projectId]/overview/page.tsx"))).toBe(true);
   });
 
   it("reserves planner for M4 and does not treat Figma prototype Portuguese paths as product routes", () => {
@@ -51,6 +55,9 @@ describe("M3.1 route collision audit", () => {
     expect(FIGMA_PROTOTYPE_ROUTE_MAP.find((row) => row.figmaPath === "/entregas")?.productPath).toBe(
       "/projects/:projectId/deliverables",
     );
+    const existing = listNextAppRoutes(join(ROOT, "web/app"));
+    expect(existing.some((route) => route.includes("planejamento") || route.includes("visao-geral"))).toBe(false);
+    expect(existing).not.toContain("/projects/[projectId]/planner");
   });
 
   it("does not collide planned Operations API paths with the current OpenAPI document", () => {

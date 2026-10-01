@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Banner, Button, ErrorText, Field } from "../../../components/ui";
+import { Button, ErrorText, Field, IdentityFrame } from "../../../components/ui";
 import { api } from "../../../lib/api";
 
 export default function InviteAcceptPage() {
@@ -15,11 +15,11 @@ export default function InviteAcceptPage() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError("");
-    const { status } = await api("/api/v1/invitations/accept", {
+    const result = await api("/api/v1/invitations/accept", {
       method: "POST",
       body: JSON.stringify({ token, displayName, password }),
     });
-    if (status >= 400) {
+    if (!result.ok) {
       setError("Invitation is invalid or expired");
       return;
     }
@@ -27,12 +27,24 @@ export default function InviteAcceptPage() {
   }
 
   return (
-    <>
-      <Banner>Invite accept — not a product screen</Banner>
-      <h1>Accept invitation</h1>
+    <IdentityFrame title="Accept invitation" banner="Invite accept — not a product screen">
       <form onSubmit={onSubmit}>
-        <Field id="token" label="Invitation token" autoComplete="off" required value={token} onChange={(e) => setToken(e.target.value)} />
-        <Field id="name" label="Display name" autoComplete="name" required value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+        <Field
+          id="token"
+          label="Invitation token"
+          autoComplete="off"
+          required
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+        />
+        <Field
+          id="name"
+          label="Display name"
+          autoComplete="name"
+          required
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+        />
         <Field
           id="password"
           label="Password"
@@ -47,6 +59,6 @@ export default function InviteAcceptPage() {
         <ErrorText>{error}</ErrorText>
         <Button>Accept and continue</Button>
       </form>
-    </>
+    </IdentityFrame>
   );
 }

@@ -1,27 +1,28 @@
 import type { Metadata } from "next";
+import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const robotoMono = Roboto_Mono({
+  subsets: ["latin"],
+  variable: "--font-roboto-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Amber — Identity & Organizations",
-  description: "Modular Monolith identity shell for Amber coordination and governance",
+  title: "Amber",
+  description: "Amber — BIM coordination and governance",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
-        <main>
-          <nav aria-label="Identity shell">
-            <a href="/">Shell</a>
-            <a href="/sign-in">Sign in</a>
-            <a href="/invite/accept">Accept invite</a>
-            <a href="/password/reset">Reset password</a>
-            <a href="/mfa/enroll">Enroll MFA</a>
-            <a href="/org-switch">Org switcher</a>
-          </nav>
-          {children}
-        </main>
-      </body>
+    <html lang="pt-BR" className={`${inter.variable} ${robotoMono.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Banner, Button, ErrorText, Field } from "../../../components/ui";
+import { Button, ErrorText, Field, IdentityFrame } from "../../../components/ui";
 import { api } from "../../../lib/api";
 
 export default function PasswordResetPage() {
@@ -21,11 +21,11 @@ export default function PasswordResetPage() {
   async function consumeReset(event: FormEvent) {
     event.preventDefault();
     setError("");
-    const { status } = await api("/api/v1/auth/password/reset", {
+    const result = await api("/api/v1/auth/password/reset", {
       method: "POST",
       body: JSON.stringify({ token, password }),
     });
-    if (status >= 400) {
+    if (!result.ok) {
       setError("Reset token is invalid or expired");
       return;
     }
@@ -33,9 +33,7 @@ export default function PasswordResetPage() {
   }
 
   return (
-    <>
-      <Banner>Password reset — not a product screen</Banner>
-      <h1>Reset password</h1>
+    <IdentityFrame title="Reset password" banner="Password reset — not a product screen">
       <form onSubmit={requestReset}>
         <Field id="email" label="Email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <Button>Send reset</Button>
@@ -56,6 +54,6 @@ export default function PasswordResetPage() {
       </form>
       <ErrorText>{error}</ErrorText>
       {message ? <p>{message}</p> : null}
-    </>
+    </IdentityFrame>
   );
 }

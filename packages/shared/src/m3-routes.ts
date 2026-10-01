@@ -1,6 +1,7 @@
 /**
- * M3.1 canonical UI and planned API routes. Product pages are not implemented
- * in this WI. Planner remains reserved for M4.
+ * M3 canonical UI and planned API routes.
+ * M3.2 implements the authenticated shell + `/projects` context.
+ * Planner remains reserved for M4.
  */
 
 export type RouteLifecycle = "keep" | "extend" | "add" | "reserved-later" | "prototype-only";
@@ -9,7 +10,7 @@ export interface UiRoutePlan {
   path: string;
   lifecycle: RouteLifecycle;
   purpose: string;
-  implementedIn: "m3.1-plan" | "foundation" | "m3.2+" | "m4" | "m5+" | "figma-prototype";
+  implementedIn: "m3.1-plan" | "foundation" | "m3.2+" | "m3.2" | "m4" | "m5+" | "figma-prototype";
 }
 
 export interface ApiRoutePlan {
@@ -26,27 +27,35 @@ export const M3_CANONICAL_UI_ROUTES: readonly UiRoutePlan[] = [
     path: "/projects",
     lifecycle: "add",
     purpose: "Visible Projects for the session-bound Organization",
-    implementedIn: "m3.2+",
+    implementedIn: "m3.2",
   },
   {
     path: "/projects/:projectId/overview",
     lifecycle: "add",
     purpose: "Visão Geral / Project Hub (M3.6 consumes; M3.2 mounts shell)",
-    implementedIn: "m3.2+",
+    implementedIn: "m3.2",
   },
   {
     path: "/projects/:projectId/structure",
     lifecycle: "add",
     purpose: "Phase and Discipline context",
-    implementedIn: "m3.2+",
+    implementedIn: "m3.2",
   },
   {
     path: "/projects/:projectId/deliverables",
     lifecycle: "add",
     purpose: "Entregas list; detail via inspector/deep-link",
-    implementedIn: "m3.2+",
+    implementedIn: "m3.2",
   },
 ];
+
+export const M3_2_NEXT_APP_ROUTES = [
+  "/projects",
+  "/projects/[projectId]",
+  "/projects/[projectId]/overview",
+  "/projects/[projectId]/structure",
+  "/projects/[projectId]/deliverables",
+] as const;
 
 export const M3_DETAIL_UI_PATTERN = "/projects/:projectId/deliverables?inspect=:deliverableId";
 
