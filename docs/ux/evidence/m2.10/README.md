@@ -1,6 +1,6 @@
 # M2.10 evidence
 
-Engineer Figma pass captures. **Not** Exit Gate PASS evidence — Independent Reviewer decides.
+Final audit captures reviewed after Correction Loop 1. Together with the audit pack and live Figma metrics, they support the accepted **M2.10 PASS / COMPLETE** and **M2 Exit Gate PASS**. Historical pre-PASS wording remains only inside the labeled `rc1/` record.
 
 File `fkE9SwcNlQG7m0HvcGQBw9` · page `04 — Telas` · fonts Inter + Roboto Mono · 1440×900 + ~1180 narrow.
 
