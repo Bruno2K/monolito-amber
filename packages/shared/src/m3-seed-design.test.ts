@@ -10,6 +10,7 @@ import {
   M3_SEED_PROJECT_MEMBERSHIPS,
   M3_SEED_PROJECTS,
   M3_SEED_RESET_POLICY,
+  M3_SEED_TEAM_MEMBERSHIPS,
   M3_SEED_USERS,
   M3_SEED_WORK_PACKAGES,
 } from "./m3-seed-design.js";
@@ -32,14 +33,17 @@ describe("M3.1 seed scenario completeness", () => {
         "viewer",
         "external collaborator",
         "unauthorized user",
+        "team member without project access",
       ]),
     );
+    expect(M3_SEED_PROJECT_MEMBERSHIPS.some((row) => row.userKey === "team-only-a")).toBe(false);
     const orgStatuses = new Set(M3_SEED_ORG_MEMBERSHIPS.map((row) => row.status));
     const projectStatuses = new Set(M3_SEED_PROJECT_MEMBERSHIPS.map((row) => row.status));
     expect(orgStatuses).toEqual(new Set(["ACTIVE", "SUSPENDED", "REMOVED"]));
     expect(projectStatuses).toEqual(new Set(["ACTIVE", "SUSPENDED", "REMOVED"]));
     expect(M3_SEED_USERS.some((row) => row.key === "unauthorized")).toBe(true);
     expect(M3_SEED_ORG_MEMBERSHIPS.some((row) => row.userKey === "unauthorized")).toBe(false);
+    expect(M3_SEED_TEAM_MEMBERSHIPS.some((row) => row.userKey === "team-only-a")).toBe(true);
   });
 
   it("covers representative Phase, Deliverable, and WorkPackage states plus ownership XOR variants", () => {

@@ -1,5 +1,16 @@
-# Local foundation stack. Redis is optional until the first justified job ships.
-# Malware scan vendor remains OPEN (implementation choice); fail-closed policy is closed (F-08).
+# Local foundation / RC stack.
+# Default: Postgres + MinIO only. Redis stays on profile `jobs` (OFF unless a job ships).
+# Web (Next.js) + API (Nest) are profile `apps` — or run on the host (see runbook).
+#
+# Service names and host ports:
+#   postgres     5432
+#   minio        9000 (S3 API) / 9001 (console)
+#   minio-init   (oneshot; creates S3_BUCKET)
+#   api          3001   (profile: apps)
+#   web          3000   (profile: apps)
+#   redis        6379   (profile: jobs — not part of Local RC)
+#
+# LOCAL ONLY. No public URL, no cloud credentials.
 
 services:
   postgres:
@@ -30,7 +41,94 @@ services:
     volumes:
       - amber_minio:/data
 
-  # Enable when notifications/email/scan jobs ship (0.6). Not required for PF-1.0 runtime.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    restart: on-failure
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        i=0
+        until mc alias set local http://minio:9000 amberminio amberminio; do
+          i=$$((i+1))
+          if [ "$$i" -gt 30 ]; then
+            echo "minio-init: MinIO never became ready" >&2
+            exit 1
+          fi
+          sleep 1
+        done
+        mc mb --ignore-existing local/amber-files
+        echo "minio-init: bucket amber-files ready"
+
+  api:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-dev}
+        BUILD_ID: ${BUILD_ID:-local}
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: "3001"
+      API_PORT: "3001"
+      DATABASE_URL: postgresql://amber:amber@postgres:5432/amber
+      APP_DATABASE_URL: postgresql://amber_app:amber_app_dev@postgres:5432/amber
+      REDIS_URL: ""
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: amberminio
+      S3_SECRET_KEY: amberminio
+      S3_BUCKET: amber-files
+      S3_FORCE_PATH_STYLE: "true"
+      OBJECT_STORAGE_DIR: /data/objects
+      FILE_SIGNING_SECRET: ${FILE_SIGNING_SECRET:-dev-only-file-signing}
+      SESSION_COOKIE_NAME: amber_session
+      SESSION_COOKIE_SECURE: "false"
+      SESSION_SECRET: ${SESSION_SECRET:-dev-only-session-secret}
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:-dev-only-mfa-key-not-for-prod}
+      WEB_ORIGIN: http://localhost:3000
+      GIT_SHA: ${GIT_SHA:-dev}
+      BUILD_ID: ${BUILD_ID:-local}
+      CORRELATION_HEADER: x-correlation-id
+      OTEL_SERVICE_NAME: amber-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: ""
+    volumes:
+      - amber_objects:/data/objects
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  web:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      WEB_PORT: "3000"
+      API_INTERNAL_URL: http://api:3001
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Enable when notifications/email/scan jobs ship (0.6). Not required for PF-1.0 or M3 Local RC.
   redis:
     image: redis:7-alpine
     ports:
@@ -41,3 +139,4 @@ services:
 volumes:
   amber_pg:
   amber_minio:
+  amber_objects:

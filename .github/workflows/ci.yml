@@ -45,3 +45,65 @@ jobs:
           pnpm openapi:validate
       - name: Migration validate
         run: pnpm prisma:validate
+
+  local-rc:
+    name: Local RC (real API + Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: amber
+          POSTGRES_PASSWORD: amber
+          POSTGRES_DB: amber
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U amber -d amber"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://amber:amber@127.0.0.1:5432/amber
+      APP_DATABASE_URL: postgresql://amber:amber@127.0.0.1:5432/amber
+      SESSION_SECRET: dev-only-session-secret
+      MFA_ENCRYPTION_KEY: dev-only-mfa-key-not-for-prod
+      SESSION_COOKIE_SECURE: "false"
+      WEB_ORIGIN: http://127.0.0.1:3000
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:3001
+      API_INTERNAL_URL: http://127.0.0.1:3001
+      GIT_SHA: ${{ github.sha }}
+      BUILD_ID: local-rc-ci
+      AMBER_SEED_M3: "1"
+      REDIS_URL: ""
+      LOG_LEVEL: info
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm prisma:generate
+      - name: Migrate + M3 seed
+        run: |
+          pnpm prisma:migrate
+          AMBER_SEED_M3=1 pnpm prisma:seed
+      - name: Build API
+        run: pnpm --filter @amber/shared build && pnpm --filter @amber/api build
+      - name: Install Playwright Chromium
+        run: pnpm --filter @amber/web exec playwright install --with-deps chromium
+      - name: Playwright Local RC (real stack)
+        run: pnpm --filter @amber/web test:e2e:local-rc
+      - name: Upload evidence PNGs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m3-8-local-rc-evidence
+          path: docs/development/m3.8-evidence
+          if-no-files-found: warn
+

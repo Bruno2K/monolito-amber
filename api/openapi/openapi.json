@@ -7,10 +7,25 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": "API is up"
+            "description": "API process is up"
           }
         },
-        "summary": "Liveness/readiness for the foundation API",
+        "summary": "Liveness for the foundation API (includes commit SHA / build identity)",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/v1/ready": {
+      "get": {
+        "operationId": "HealthController_getReady",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "API can serve traffic"
+          }
+        },
+        "summary": "Readiness: process is up and Postgres is reachable (skipped when SKIP_DB=1)",
         "tags": [
           "health"
         ]

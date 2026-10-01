@@ -30,7 +30,15 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
   await app.listen(port, "0.0.0.0");
-  logger.info({ port, bind: "0.0.0.0" }, "amber-api listening");
+  logger.info(
+    {
+      port,
+      bind: "0.0.0.0",
+      commit: process.env.GIT_SHA ?? process.env.GITHUB_SHA ?? "dev",
+      build: process.env.BUILD_ID ?? "local",
+    },
+    "amber-api listening",
+  );
 }
 
 bootstrap().catch((error) => {

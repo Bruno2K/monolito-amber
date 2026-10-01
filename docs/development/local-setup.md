@@ -1,6 +1,6 @@
 # Local setup
 
-Requires Node 22+ and pnpm 10. PostgreSQL 16 is required for migrations/seed. Docker Compose is the documented path for Postgres + MinIO; Redis uses profile `jobs`.
+Requires Node 22+ and pnpm 10. PostgreSQL 16 is required for migrations/seed. Docker Compose is the documented path for Postgres + MinIO; Redis uses profile `jobs` (off by default). For the M3 Local RC pack (real API + seed + Playwright), follow [m3.8-local-rc-runbook.md](./m3.8-local-rc-runbook.md).
 
 ```bash
 cp .env.example .env
@@ -12,11 +12,14 @@ pnpm install
 pnpm prisma:generate
 pnpm prisma:migrate
 pnpm prisma:seed
+# M3 synthetic dataset (Local RC / homologation):
+AMBER_SEED_M3=1 pnpm prisma:seed
 pnpm --filter @amber/api start:dev   # 0.0.0.0:3001
 pnpm --filter @amber/web dev         # 0.0.0.0:3000
-pnpm --filter @amber/worker start    # idle unless REDIS_URL is set
+# Worker is idle unless REDIS_URL is set. Local RC does not start Redis.
 ```
 
-Health check: `curl -s http://127.0.0.1:3001/api/v1/health`
+Health: `curl -s http://127.0.0.1:3001/api/v1/health`  
+Readiness: `curl -s http://127.0.0.1:3001/api/v1/ready`
 
-See [testing](./testing.md) and [migrations](./migrations.md). Exact agent commands: [harness](../agentic/harness.md).
+See [testing](./testing.md) and [migrations](./migrations.md). Exact agent commands: [harness](../agentic/harness.md). Compose service names/ports are listed in the runbook.

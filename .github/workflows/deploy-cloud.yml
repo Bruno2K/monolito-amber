@@ -1,0 +1,19 @@
+# Cloud deploy (DISABLED)
+
+# LOCAL ONLY — M3.8. Do not enable, add credentials, or point at Vercel/Railway
+# without a new explicit Bruno authorization. This workflow never deploys.
+
+name: Cloud deploy (DISABLED)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  disabled:
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloud deploy is frozen
+        run: |
+          echo "Cloud deploy is not authorized. Use docs/development/m3.8-local-rc-runbook.md"
+          exit 1

@@ -40,16 +40,19 @@ pnpm openapi:validate
 pnpm prisma:validate
 
 # --- local smoke ---
-# API health (start, curl, stop)
-SKIP_DB=1 PORT=3001 node api/dist/main.js &
+# API health + ready (start, curl, stop)
+SKIP_DB=1 PORT=3001 GIT_SHA="$(git rev-parse HEAD)" node api/dist/main.js &
 API_PID=$!
 sleep 2
 curl -sf http://127.0.0.1:3001/api/v1/health
+curl -sf http://127.0.0.1:3001/api/v1/ready
 kill $API_PID
 ```
 
+M3 Local RC (real Postgres + seed + Playwright): [m3.8-local-rc-runbook.md](../development/m3.8-local-rc-runbook.md).
+
 `pnpm --filter @amber/web build` is included in `pnpm build`.
 
-CI job name: **Foundation & Security Gates**. Checks: lint, typecheck, unit, security, no-gate-override, integration, build, OpenAPI generate/validate, Prisma validate.
+CI jobs: **Foundation & Security Gates** (lint, typecheck, unit, security, no-gate-override, integration, build, OpenAPI, Prisma validate) and **Local RC (real API + Postgres)** (migrate + M3 seed + Playwright local-rc).
 
 Suites in this repository cover PF-1.0 through PF-1.6 plus M3.1 contract tests: identity/tenancy/MFA, ProjectMembership / contextual RBAC, Document/Revision, Coordination/Impact, Planning Task/Milestone, Governance Gate/Exception (Tests A–I), and Operations catalog/state/route/seed consistency. The security-gate test fails closed if those files are missing or skipped.

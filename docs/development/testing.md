@@ -5,7 +5,8 @@
 | Unit | `pnpm test:unit` | Domain/policy helpers + web shell (nav, errors, context) |
 | Security stubs | `pnpm test:security` | Fail closed if files missing or skipped |
 | Integration | `pnpm test:integration` | Testcontainers Postgres, or `TEST_DATABASE_URL` (includes M3.2 shell + M3.3 Phase/Discipline) |
-| Web E2E | `pnpm --filter @amber/web test:e2e` | Playwright golden path + a11y/viewports (local; not in the Foundation CI job) |
+| Web E2E (mock API) | `pnpm --filter @amber/web test:e2e` | Playwright UI against `mock-api.mjs` (not Local RC evidence) |
+| **Web E2E Local RC** | `pnpm local-rc:e2e` | Playwright golden + negatives against **real** local API+Postgres |
 | OpenAPI | `pnpm openapi:generate && pnpm openapi:validate` | 3.1 + no override tokens |
 | Migrations | `pnpm prisma:validate` | Versioned SQL + audit grants |
 
@@ -119,3 +120,21 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | Isolation, permission, CAS, idempotency, delivery-guard, audit/outbox | `api/test/integration/m35-work-package.integration.test.ts` |
 | Security floors | `api/test/security/operations-work-package.security.test.ts` |
 | Pacotes UI + Entregas inspector | `web/e2e/work-packages.spec.ts`, `web/e2e/deliverables.spec.ts` |
+
+### M3.6 Hub / M3.7 traceability
+
+| Test | Where |
+| --- | --- |
+| Hub read model | `api/test/integration/m36-project-hub.integration.test.ts`, `web/e2e/overview.spec.ts` |
+| Cross-domain context | `api/test/integration/m37-traceability.integration.test.ts`, inspectors in Entregas/Pacotes E2E |
+
+### M3.8 Local RC (real persistence)
+
+| Test | Where |
+| --- | --- |
+| Happy path (sign-in → org → project → Phase → Deliverable → WP → Hub → context → logout) | `web/e2e/local-rc/golden-path.spec.ts` |
+| Negatives matrix | `web/e2e/local-rc/negatives.spec.ts` |
+| Viewport / a11y evidence | `docs/development/m3.8-evidence/` |
+| REQ map | `docs/domain/m3.8-requirements-traceability.md` |
+| Bootstrap | `docs/development/m3.8-local-rc-runbook.md` |
+
