@@ -2,18 +2,16 @@
 
 ## Active Work Item
 
-**M2.9 — Prototype & State Coverage** is in **CORRECTION LOOP** on PR [#26](https://github.com/Bruno2K/monolito-amber/pull/26) (`m2.9-prototype-state-coverage`), stacked on `m2.8-activity-experience` @ `762ab787943eba83e8185967094b9f3f91b7cae3`.
+**M2.9 — Prototype & State Coverage** is in **CORRECTION LOOP (RC2)** on PR [#26](https://github.com/Bruno2K/monolito-amber/pull/26) (`m2.9-prototype-state-coverage`), stacked on `m2.8-activity-experience` @ `762ab787943eba83e8185967094b9f3f91b7cae3`.
 
-Prior independent Reviewer PASS is **not sustained**. Pack head `917e95a983b7796b341d72c8e19b326cdd3a2101` received **REQUEST_CHANGES** (not Exit Gate PASS). This loop head: `8932a3a1868b4451edbbc99092b5601c38ac5a12`.
+Independent Amber Reviewer returned **REQUEST_CHANGES** on audited head `917e95a983b7796b341d72c8e19b326cdd3a2101`: docs SHA not synced; Wiring clip on `304:16367`; **15** overlapping multi-dest hotspots under the audit definition (same-node multi-dest and whole-frame already 0).
 
-## What this reviewer-response changed
+## What RC2 changed
 
-- Docs SHA synced (removed TBD / “CloudAgent will update”)
-- Wiring footer `304:16608` unclipped (parent `304:16606` h 50→56); `cross-surface-wiring.png` regenerated
-- Overlapping different-dest hotspots **15 → 0** (parent NAVIGATE cleared; M2.4 ProtoNav `311:15769` spaced; Lista/Event no longer cover ProtoNav)
-- Engineer-measured after fix: 256 NAVIGATE · 0 broken · 0 orphans · 0 same-node multi-dest · 0 whole-frame · 0 overlapping different-dest
-- Residual MINOR: Shell ⌕ `clipsContent` (~4px) — glyphs readable; Shell M2.1 preserved
-- Status remains **CORRECTION LOOP**
+- Removed NAVIGATE from large parent regions that overlapped child controls with different destinations; fixed stacked ProtoNav on M2.4 Inbox; added visible ProtoNav Gates Lista (`316:15715`) and Privacy (`316:15718`)
+- Post-fix: **257** NAVIGATE · 0 broken · 0 orphans · **0** same-node multi-dest · **0** whole-frame · **0** overlapping multi-dest
+- Wiring footer `304:16606`/`304:16608`: auto-layout hug + `clipsContent=false` → **0** actionable clip on all 8 M2.9 frames; 8 PNGs regenerated
+- Docs status **CORRECTION LOOP**; previous audited head noted as `917e95a…`; head SHA synced in follow-up commit on PR #26
 
 ## Stack
 
@@ -22,9 +20,9 @@ Prior independent Reviewer PASS is **not sustained**. Pack head `917e95a983b7796
 | #20 | M2.6 | OPEN |
 | #22 | M2.7 | OPEN |
 | #24 | M2.8 | OPEN |
-| #26 | M2.9 | OPEN — CORRECTION LOOP |
+| #26 | M2.9 | OPEN — CORRECTION LOOP (RC2) |
 
-Do **not** merge any of the above. Do **not** start M2.10.
+Do **not** merge any of the above. Do **not** start M2.10. Do **not** declare Exit Gate PASS.
 
 ## Figma
 

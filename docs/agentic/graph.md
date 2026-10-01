@@ -7,8 +7,8 @@ PF-1.7 DONE (main)
             └─ M2.7 PR #22 OPEN
                  └─ M2.8 PR #24 OPEN @ 762ab787…
                       └─ M2.9 PR #26 OPEN @ branch m2.9-prototype-state-coverage
-                           pack 917e95a… → Reviewer REQUEST_CHANGES
-                           this loop head 8932a3a1868b4451edbbc99092b5601c38ac5a12
+                           RC1 head 917e95a… → Reviewer REQUEST_CHANGES
+                           RC2 CORRECTION LOOP (head 917e95a983b7796b341d72c8e19b326cdd3a2101 until SHA sync)
                            Exit: CORRECTION LOOP (not PASS)
                            Next: M2.10 NEXT only (do not start)
 ```
@@ -19,9 +19,8 @@ PF-1.7 DONE (main)
 | --- | --- | --- |
 | M2.8 @ 762ab787… | M2.9 branch | mandatory PR base (not main) |
 | Issue #25 | PR #26 | Closes #25 when merged later — leave OPEN now |
-| Audit e5cbc6e… | Pack 917e95a… | first correction on #26 |
-| Reviewer REQUEST_CHANGES | This loop | SHA sync + Wiring clip + overlapping dests |
-| Correction | Amber Reviewer | independent reproduce; Engineer ≠ PASS |
+| Audit 917e95a… | RC2 pack | Figma + docs only |
+| RC2 | Amber Reviewer | independent reproduce; Engineer ≠ PASS |
 
 ## Do not
 
