@@ -1,14 +1,26 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { expect, type APIRequestContext, type Page, type TestInfo } from "@playwright/test";
-import { M3_SEED_PASSWORD, M3_SEED_USERS } from "../../../packages/shared/src/m3-seed-design.ts";
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const EVIDENCE_DIR = path.resolve(HERE, "../../../docs/development/m3.8-evidence");
+/** Well-known local synthetic (packages/shared M3_SEED_PASSWORD). Not a production secret. */
+export const SEED_PASSWORD = process.env.AMBER_E2E_PASSWORD ?? "correct-horse-12";
+
+export const EVIDENCE_DIR = path.resolve(process.cwd(), "../docs/development/m3.8-evidence");
 
 export const WEB = process.env.AMBER_WEB_URL ?? "http://127.0.0.1:3000";
-export const SEED_PASSWORD = process.env.AMBER_E2E_PASSWORD ?? M3_SEED_PASSWORD;
+
+const EMAILS: Record<string, string> = {
+  "coord-a": "coordinator.a@amber.test",
+  "coord-b": "coordinator.b@amber.test",
+  "discipline-a": "discipline.a@amber.test",
+  "contributor-a": "contributor.a@amber.test",
+  "viewer-a": "viewer.a@amber.test",
+  "external-a": "external.a@amber.test",
+  "suspended-a": "suspended.a@amber.test",
+  "removed-a": "removed.a@amber.test",
+  unauthorized: "unauthorized@amber.test",
+  "team-only-a": "team.only.a@amber.test",
+};
 
 export function seedUuid(key: string): string {
   const digest = createHash("sha256").update(`amber.m3.seed.${key}`).digest("hex");
@@ -27,11 +39,11 @@ export const IDS = {
 };
 
 export function emailFor(key: string): string {
-  const row = M3_SEED_USERS.find((user) => user.key === key);
-  if (!row) {
+  const email = EMAILS[key];
+  if (!email) {
     throw new Error(`unknown seed user ${key}`);
   }
-  return row.email;
+  return email;
 }
 
 export async function signIn(page: Page, userKey: string): Promise<void> {

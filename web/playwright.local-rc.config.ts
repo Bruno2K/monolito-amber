@@ -1,9 +1,7 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(HERE, "..");
+const ROOT = path.resolve(process.cwd(), "..");
 const WEB = process.env.AMBER_WEB_URL ?? "http://127.0.0.1:3000";
 const API = process.env.API_INTERNAL_URL ?? "http://127.0.0.1:3001";
 const external = process.env.AMBER_E2E_EXTERNAL_STACK === "1";
@@ -30,6 +28,7 @@ export default defineConfig({
           cwd: path.join(ROOT, "api"),
           url: `${API}/api/v1/ready`,
           reuseExistingServer: !process.env.CI,
+          timeout: 180_000,
           stdout: "pipe",
           stderr: "pipe",
           env: {
@@ -45,6 +44,7 @@ export default defineConfig({
           cwd: path.join(ROOT, "web"),
           url: WEB,
           reuseExistingServer: !process.env.CI,
+          timeout: 180_000,
           stdout: "pipe",
           stderr: "pipe",
           env: {
