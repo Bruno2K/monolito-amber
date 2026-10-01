@@ -187,6 +187,19 @@ export const M3_8_ARTIFACT_PATHS = [
   "docs/development/m3.8-evidence/README.md",
 ] as const;
 
+export const M3_RC1_REQUIREMENT_IDS = [
+  "RC1-01",
+  "RC1-02",
+  "RC1-03",
+  "RC1-04",
+  "RC1-05",
+  "RC1-06",
+  "RC1-07",
+  "RC1-08",
+] as const;
+
+export type M3Rc1RequirementId = (typeof M3_RC1_REQUIREMENT_IDS)[number];
+
 export const M3_RC1_ARTIFACT_PATHS = [
   "docs/domain/m3.2-requirements-traceability.md",
   "docs/development/m3-windows-local-rc.md",
@@ -194,6 +207,15 @@ export const M3_RC1_ARTIFACT_PATHS = [
   "docs/development/m3-rc1-evidence/manual-focus-review.md",
   "docs/development/m3-rc1-evidence/minio-live-adapter.md",
   "docs/development/m3-rc1-evidence/reset-rehearsal.txt",
+] as const;
+
+export const M3_9_ARTIFACT_PATHS = [
+  "docs/domain/m3.9-requirements-traceability.md",
+  "docs/development/m3.9-evidence/INDEX.md",
+  "docs/development/m3.9-evidence/EXIT-REPORT.md",
+  "docs/development/m3.9-evidence/audit-lenses.md",
+  "docs/development/m3.9-evidence/adversarial-scenarios.md",
+  "docs/development/m3.9-evidence/findings.md",
 ] as const;
 
 export const M3_1_ARTIFACT_PATHS = [

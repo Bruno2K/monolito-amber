@@ -22,6 +22,7 @@ const REQUIRED = [
   "operations-deliverable.security.test.ts",
   "operations-work-package.security.test.ts",
   "operations-hub.security.test.ts",
+  "m39-adversarial.security.test.ts",
 ];
 
 const SKIP_RE = /\.skip\s*\(|describe\.skip|it\.skip|xit\s*\(|xdescribe\s*\(/;

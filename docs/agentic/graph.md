@@ -20,9 +20,13 @@ PF-1.7 DONE
                                                               reviewed tip 6683bba56299bb28f34029eab8c72dee63bf6aca
                                                               main @ 6104276754607334c53c6864135d29c539db813e
                                                               Bruno homologated LOCAL RC 2026-10-01
-                                                              ├─ M3.8 Exit Gate frozen (not claimed)
-                                                              ├─ M3.9 / shared staging frozen
-                                                              └─ M3 COMPLETE / M4 / cloud frozen
+                                                              docs residual #49
+                                                              main @ d01dfc9e202c60f027c242d187f6cf2e31c701bf
+                                                                   └─ M3.9 ACTIVE — branch m3-9-exit-gate-audit / Issue #50
+                                                                        ├─ Feature freeze (audit + finding corrections only)
+                                                                        ├─ Shared staging HUMAN_REQUIRED unless credentials already exist
+                                                                        ├─ Engineer recommendation only (no self-declared Exit Gate)
+                                                                        └─ M4 not started
 ```
 
 ## Integration edges
@@ -36,9 +40,13 @@ PF-1.7 DONE
 | PR #26 integrated | PR #28 retargeted to `main` | merge commit `4e410b11…` |
 | `main` @ `4972176…` (M2 COMPLETE) | M3.1 … M3.8 pack | M3.8 merge `fd10166f…` |
 | `main` @ `fd10166f…` | RC1 PR #47 | squash-merge `61042767…` — homologated |
+| `main` @ `61042767…` | docs residual #49 | `d01dfc9e…` |
+| `main` @ `d01dfc9e…` | M3.9 branch `m3-9-exit-gate-audit` | in review — Engineer must not merge |
 
 ## Current boundary
 
 - M2 integration is closed.
-- RC1 is **MERGED** and Bruno homologated LOCAL RC. No active RC1 branch.
-- M3.8 Exit Gate / M3.9 / M3 COMPLETE / M4 / cloud remain frozen.
+- RC1 is **MERGED** and Bruno homologated LOCAL RC.
+- M3.9 is the only active Work Item (LOCAL ONLY / feature freeze).
+- Shared staging remains HUMAN_REQUIRED without existing credentials.
+- M4 remains not started.
