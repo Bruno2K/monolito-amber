@@ -5,18 +5,19 @@ Operational snapshot — update when the Work Item, branch, milestone, or exit-g
 | Field | Value |
 | --- | --- |
 | Milestone | M3 — Project Operations |
-| Status | **ACTIVE / LOCAL ONLY** (M2 remains **COMPLETE — EXIT GATE PASS — INTEGRATED**) |
+| Status | **ACTIVE / LOCAL ONLY** — Exit Gate **FAIL — ACCEPTED** (M2 remains **COMPLETE — EXIT GATE PASS — INTEGRATED**) |
 | Default branch | `main` |
-| Main integration tip | `d01dfc9e202c60f027c242d187f6cf2e31c701bf` (docs residual after RC1 homologation) |
+| Main integration tip | `762c3f3ba85ff899623cf4c3682e6bddad062bab` (M3.9 audit #50 / #51 squash-merged) |
 | Homologated Local RC tip | `6104276754607334c53c6864135d29c539db813e` |
-| Active Work Item | **M3.9 — Final Product, Security & UX Audit / Exit Gate** |
-| Active branch | `m3-9-exit-gate-audit` |
-| Issue | [#50](https://github.com/Bruno2K/monolito-amber/issues/50) |
+| Active Work Item | none (team **cold**) |
+| Active branch | none (no M3.9 implementation branch) |
+| Closed M3.9 | [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / [#51](https://github.com/Bruno2K/monolito-amber/pull/51) **MERGED**; reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Reviewer **PASS (audit WI only)** |
+| M3.9 Exit Gate | **FAIL — ACCEPTED** |
 | M3.8 Exit Gate | **not claimed** — frozen |
-| Authorization | Bruno 2026-10-01 via Altair — "Go ahead with 3.9". Feature freeze. LOCAL ONLY preferred. |
-| Residuals (OPEN) | F-08 / F-10 / RPO-RTO / PaaS; Windows PS1 host-pending (supported path = Docker Desktop + WSL2 + bash) |
-| Forbidden claims | Engineer self-declaring Exit Gate / M3 completion / M4; inventing cloud secrets |
+| Authorization | Bruno 2026-10-01 via Altair — docs-only disposition sync. **LOCAL ONLY.** Do not chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA / Vercel / Railway / public URL. |
+| Residuals (OPEN) | F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (supported path = Docker Desktop + WSL2 + bash) |
+| Forbidden claims | Exit Gate PASS; M3 COMPLETE; M4; inventing cloud secrets or a public URL |
 
 ## Current boundary
 
-M3.1–M3.8 pack and RC1 are on `main`. Bruno homologated LOCAL RC. M3.9 is the only active Work Item: audit + corrections from findings (max 3 loops). Shared staging is HUMAN_REQUIRED unless existing credentials already allow it. Do not start M4. Engineer drafts a recommendation only; Governor decides after Reviewer.
+M3.1–M3.8 pack, RC1, and the M3.9 audit WI are on `main`. Bruno homologated LOCAL RC. The M3.9 Exit Gate result is **FAIL — ACCEPTED** (shared staging / PaaS SHA unproven). Team is cold. This is **not** M3 COMPLETE and **not** M4. Do not chase staging.
