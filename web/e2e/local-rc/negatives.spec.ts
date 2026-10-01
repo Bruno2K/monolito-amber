@@ -32,11 +32,8 @@ test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
     await expect(page.getByRole("link", { name: "Alpha Tower" })).toHaveCount(0);
 
     await page.goto(`/projects/${IDS.projectA1}/overview`);
-    await expect(
-      page.getByRole("heading", {
-        name: /Switch organization|Organization necessária|Acesso negado|Contexto inativo/,
-      }),
-    ).toBeVisible();
+    await expectOrgSwitch(page);
+    await expect(page.getByRole("heading", { name: "Organization necessária" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Alpha Tower" })).toHaveCount(0);
     await capture(page, testInfo, "negative-revoked");
   });
@@ -115,6 +112,7 @@ test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
     await signInToOrg(page, "coord-a", "Amber Demo Alpha");
     await page.goto(`/projects/${IDS.projectA1}/deliverables?inspect=${IDS.delArch001}`);
     await expect(page.getByRole("heading", { name: "Entregas" })).toBeVisible();
+    await expect(page.getByRole("dialog")).toBeVisible();
     await logoutToSignIn(page);
     await page.goto(`/projects/${IDS.projectA1}/overview`);
     await expectUnauthenticatedSurface(page);

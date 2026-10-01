@@ -59,12 +59,21 @@ export async function expectUnauthenticatedSurface(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { name: /Sign in|Sessão necessária|Sessão encerrada/ })).toBeVisible();
 }
 
+export async function closeInspectorIfOpen(page: Page): Promise<void> {
+  const close = page.getByRole("button", { name: "Fechar", exact: true });
+  if (await close.isVisible().catch(() => false)) {
+    await close.click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  }
+}
+
 export async function signIn(page: Page, userKey: string): Promise<void> {
   await page.goto("/sign-in");
   await expectSignIn(page);
   await page.getByLabel("Email").fill(emailFor(userKey));
   await page.getByLabel("Password").fill(SEED_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
+  await expectOrgSwitch(page);
 }
 
 export async function selectOrg(page: Page, orgName: string): Promise<void> {
@@ -72,7 +81,8 @@ export async function selectOrg(page: Page, orgName: string): Promise<void> {
   const row = page.locator("li").filter({ hasText: orgName });
   await expect(row).toBeVisible();
   await row.getByRole("button", { name: "Switch" }).click();
-  await expect(page.getByRole("heading", { name: "Todos os Projetos" })).toBeVisible();
+  await page.waitForURL(/\/projects\/?$/);
+  await expect(page.getByRole("heading", { name: /Todos os Projetos|Nenhum projeto/ })).toBeVisible();
 }
 
 export async function signInToOrg(page: Page, userKey: string, orgName: string): Promise<void> {
@@ -81,7 +91,8 @@ export async function signInToOrg(page: Page, userKey: string, orgName: string):
 }
 
 export async function logoutToSignIn(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Sair" }).click();
+  await closeInspectorIfOpen(page);
+  await page.getByRole("button", { name: "Sair" }).click({ force: true });
   await expectSignIn(page);
 }
 

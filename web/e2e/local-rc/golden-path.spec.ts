@@ -60,7 +60,7 @@ test.describe("M3.8 local RC golden path (real API + Postgres)", () => {
     await page.getByRole("dialog").getByLabel("Código").fill(`DEL-RC-${tag.toUpperCase()}`);
     await page.getByRole("dialog").getByLabel("Título").fill(`RC pack ${tag}`);
     await page.getByRole("dialog").getByLabel("Fase").selectOption({ label: "Concept" });
-    await page.getByRole("dialog").getByLabel("Disciplina").selectOption({ label: /ARCH/ });
+    await page.getByRole("dialog").locator("#deliverable-discipline").selectOption({ label: "ARCH Architecture" });
     await page.getByRole("dialog").getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("dialog").getByText(`RC pack ${tag}`)).toBeVisible();
     await page.getByRole("button", { name: "Iniciar" }).click();
