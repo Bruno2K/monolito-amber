@@ -10,6 +10,7 @@ import {
   M3_4_API_ROUTES,
   M3_5_API_ROUTES,
   M3_5_NEXT_APP_ROUTES,
+  M3_6_API_ROUTES,
   M3_CANONICAL_UI_ROUTES,
   M3_LATER_API_ROUTES,
   M3_PLANNED_API_ROUTES,
@@ -68,7 +69,7 @@ describe("M3 route collision audit", () => {
     expect(existing).not.toContain("/projects/[projectId]/planner");
   });
 
-  it("exposes M3.3–M3.5 Phase/Discipline/Deliverable/WorkPackage API paths in OpenAPI", () => {
+  it("exposes M3.3–M3.6 Phase/Discipline/Deliverable/WorkPackage/Hub API paths in OpenAPI", () => {
     const openapi = JSON.parse(readFileSync(join(ROOT, "api/openapi/openapi.json"), "utf8")) as {
       paths: Record<string, unknown>;
     };
@@ -84,6 +85,9 @@ describe("M3 route collision audit", () => {
     for (const row of M3_5_API_ROUTES) {
       expect(existing, row.path).toContain(row.path);
     }
+    for (const row of M3_6_API_ROUTES) {
+      expect(existing, row.path).toContain(row.path);
+    }
     for (const row of M3_LATER_API_ROUTES) {
       expect(existing, row.path).not.toContain(row.path);
     }
@@ -91,6 +95,7 @@ describe("M3 route collision audit", () => {
     expect(existing).toContain("/api/v1/projects/{projectId}");
     expect(existing).toContain("/api/v1/projects/{projectId}/deliverables");
     expect(existing).toContain("/api/v1/projects/{projectId}/work-packages");
+    expect(existing).toContain("/api/v1/projects/{projectId}/hub");
     expect(M3_PLANNED_API_ROUTES.every((row) => !row.path.includes("gate.override"))).toBe(true);
   });
 });

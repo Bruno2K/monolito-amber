@@ -1,11 +1,16 @@
-export default function OverviewPage() {
+import { Suspense } from "react";
+import { OverviewView } from "../../../../components/overview/OverviewView";
+import { StateScreen } from "../../../../components/shell/StateScreen";
+
+export default async function OverviewPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
   return (
-    <section className="placeholder-page" data-surface="overview">
-      <h1>Visão Geral</h1>
-      <p>
-        Contexto de Projeto autorizado. O hub operacional (saúde, entregas, gates) será preenchido em um marco
-        posterior — esta página não promete capacidade de Operations.
-      </p>
-    </section>
+    <Suspense fallback={<StateScreen kind="loading" />}>
+      <OverviewView projectId={projectId} />
+    </Suspense>
   );
 }

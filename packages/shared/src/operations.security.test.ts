@@ -37,6 +37,12 @@ describe("M3.1 operations catalog security floors", () => {
     expect(PERMISSIONS).toContain("project.read");
   });
 
+  it("does not invent a hub mutation permission or OVERDUE status", () => {
+    expect(isPermissionCode("hub.write")).toBe(false);
+    expect(isPermissionCode("hub.update")).toBe(false);
+    expect(isForbiddenPermission("gate.override")).toBe(true);
+  });
+
   it("extends Project Coordinator with full Operations management and Discipline Coordinator within Deliverable/WP scope", () => {
     const coordinator = roleTemplateByKey("PROJECT_COORDINATOR").permissions;
     const discipline = roleTemplateByKey("DISCIPLINE_COORDINATOR").permissions;

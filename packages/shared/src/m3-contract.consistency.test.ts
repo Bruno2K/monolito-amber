@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS, M3_4_ARTIFACT_PATHS, M3_4_REQUIREMENT_IDS, M3_5_ARTIFACT_PATHS, M3_5_REQUIREMENT_IDS } from "./m3-requirements.js";
+import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS, M3_4_ARTIFACT_PATHS, M3_4_REQUIREMENT_IDS, M3_5_ARTIFACT_PATHS, M3_5_REQUIREMENT_IDS, M3_6_ARTIFACT_PATHS, M3_6_REQUIREMENT_IDS } from "./m3-requirements.js";
 import { OPERATIONS_PERMISSIONS } from "./permissions.js";
 import { DELIVERABLE_FIELDS, PHASE_FIELDS, WORK_PACKAGE_FIELDS } from "./operations.js";
 
@@ -110,5 +110,21 @@ describe("M3.1 contract consistency", () => {
     expect(additive).not.toMatch(/forceRelease|force_release/);
     const original = read("prisma/migrations/20261001170000_m3_4_operations_deliverable/migration.sql");
     expect(original).toMatch(/CREATE TABLE "operations"\."work_packages"/);
+  });
+
+  it("embeds every M3.6 REQ id and keeps the hub as a read model without new tables", () => {
+    const matrix = read("docs/domain/m3.6-requirements-traceability.md");
+    for (const id of M3_6_REQUIREMENT_IDS) {
+      expect(matrix).toContain(id);
+    }
+    for (const rel of M3_6_ARTIFACT_PATHS) {
+      expect(existsSync(join(ROOT, rel)), rel).toBe(true);
+    }
+    expect(matrix).toMatch(/no `?gate\.override/i);
+    expect(matrix).not.toMatch(/gate\.override permission is granted/i);
+    const baseline = read("docs/development/m3.6-performance-baseline.md");
+    expect(baseline).toMatch(/query count/i);
+    expect(baseline).toMatch(/N\+1/i);
+    expect(baseline).not.toMatch(/99th percentile/);
   });
 });

@@ -10,7 +10,7 @@ export interface UiRoutePlan {
   path: string;
   lifecycle: RouteLifecycle;
   purpose: string;
-  implementedIn: "m3.1-plan" | "foundation" | "m3.2+" | "m3.2" | "m3.3" | "m3.4" | "m3.5" | "m4" | "m5+" | "figma-prototype";
+  implementedIn: "m3.1-plan" | "foundation" | "m3.2+" | "m3.2" | "m3.3" | "m3.4" | "m3.5" | "m3.6" | "m4" | "m5+" | "figma-prototype";
 }
 
 export interface ApiRoutePlan {
@@ -20,7 +20,7 @@ export interface ApiRoutePlan {
   permission: string;
   idempotency: boolean;
   purpose: string;
-  implementedIn?: "m3.3" | "m3.4" | "m3.5";
+  implementedIn?: "m3.3" | "m3.4" | "m3.5" | "m3.6";
 }
 
 export const M3_CANONICAL_UI_ROUTES: readonly UiRoutePlan[] = [
@@ -33,8 +33,8 @@ export const M3_CANONICAL_UI_ROUTES: readonly UiRoutePlan[] = [
   {
     path: "/projects/:projectId/overview",
     lifecycle: "add",
-    purpose: "Visão Geral / Project Hub (M3.6 consumes; M3.2 mounts shell)",
-    implementedIn: "m3.2",
+    purpose: "Visão Geral / Project Hub (M3.6 derived read model inside the M3.2 shell)",
+    implementedIn: "m3.6",
   },
   {
     path: "/projects/:projectId/structure",
@@ -466,13 +466,28 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     purpose: "Explicit disassociation from a Deliverable (required before delivering with CANCELLED WPs)",
     implementedIn: "m3.5",
   },
+  {
+    method: "GET",
+    path: "/api/v1/projects/{projectId}/hub",
+    lifecycle: "add",
+    permission: "project.read",
+    idempotency: false,
+    purpose:
+      "Authorized derived Project Hub: Phase/Deliverable/WorkPackage/ownership signals with origin+derivation. Read-only; not a second source of truth.",
+    implementedIn: "m3.6",
+  },
 ];
 
 export const M3_3_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn === "m3.3");
 export const M3_4_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn === "m3.4");
 export const M3_5_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn === "m3.5");
+export const M3_6_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn === "m3.6");
 export const M3_LATER_API_ROUTES = M3_PLANNED_API_ROUTES.filter(
-  (row) => row.implementedIn !== "m3.3" && row.implementedIn !== "m3.4" && row.implementedIn !== "m3.5",
+  (row) =>
+    row.implementedIn !== "m3.3" &&
+    row.implementedIn !== "m3.4" &&
+    row.implementedIn !== "m3.5" &&
+    row.implementedIn !== "m3.6",
 );
 
 export const EXISTING_API_PATHS_TO_KEEP = [

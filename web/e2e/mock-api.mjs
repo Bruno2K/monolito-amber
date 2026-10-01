@@ -125,7 +125,7 @@ const phasesA = [
     plannedEndAt: "2026-06-01T00:00:00.000Z",
     actualStartAt: null,
     actualEndAt: null,
-    status: "PLANNED",
+    status: "ACTIVE",
     createdBy: USER,
     version: 1,
     archivedAt: null,
@@ -151,6 +151,27 @@ const workPackages = [
     plannedStartAt: null,
     dueAt: null,
     status: "PLANNED",
+    version: 1,
+    archivedAt: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  },
+  {
+    id: "wp-blocked",
+    organizationId: ORG_A,
+    projectId: PROJECT_A,
+    phaseId: "phase-concept",
+    deliverableId: "del-arch-001",
+    disciplineId: "disc-arch",
+    code: "WP-HUB-BLOCK",
+    title: "Blocked package",
+    description: "Pacote bloqueado para o hub",
+    blockedReason: "Waiting for survey",
+    ownerProjectMembershipId: null,
+    ownerTeamId: null,
+    plannedStartAt: null,
+    dueAt: "2026-09-01T00:00:00.000Z",
+    status: "BLOCKED",
     version: 1,
     archivedAt: null,
     createdAt: "2026-01-01T00:00:00.000Z",
@@ -384,9 +405,9 @@ const server = http.createServer(async (req, res) => {
               sequence: 1,
               plannedStartAt: "2026-01-01T00:00:00.000Z",
               plannedEndAt: "2026-06-01T00:00:00.000Z",
-              actualStartAt: null,
+              actualStartAt: "2026-01-01T00:00:00.000Z",
               actualEndAt: null,
-              status: "PLANNED",
+              status: "ACTIVE",
               createdBy: USER,
               version: 1,
               archivedAt: null,
@@ -426,7 +447,7 @@ const server = http.createServer(async (req, res) => {
       plannedEndAt: null,
       actualStartAt: null,
       actualEndAt: null,
-      status: phaseOneMatch[2] === "phase-brief" ? "COMPLETED" : "PLANNED",
+      status: phaseOneMatch[2] === "phase-brief" ? "COMPLETED" : "ACTIVE",
       createdBy: USER,
       version: 1,
       archivedAt: null,
@@ -724,6 +745,190 @@ const server = http.createServer(async (req, res) => {
       json(res, 200, row);
       return;
     }
+  }
+
+  const hubMatch = /^\/api\/v1\/projects\/([^/]+)\/hub$/.exec(path);
+  if (hubMatch) {
+    const project = requireProject(session, hubMatch[1], res);
+    if (!project) {
+      return;
+    }
+    if (req.method !== "GET") {
+      problem(res, 405, "METHOD_NOT_ALLOWED", "Hub is read-only");
+      return;
+    }
+    const now = Date.now();
+    const projectDeliverables = deliverables.filter((row) => row.projectId === project.id && !row.archivedAt);
+    const projectPackages = workPackages.filter((row) => row.projectId === project.id && !row.archivedAt);
+    const counts = {
+      PLANNED: 0,
+      IN_PROGRESS: 0,
+      IN_REVIEW: 0,
+      APPROVED: 0,
+      DELIVERED: 0,
+      CANCELLED: 0,
+    };
+    for (const row of projectDeliverables) {
+      if (row.status in counts) {
+        counts[row.status] += 1;
+      }
+    }
+    const overdue = projectDeliverables.filter(
+      (row) => row.dueAt && new Date(row.dueAt).getTime() < now && !["DELIVERED", "CANCELLED"].includes(row.status),
+    );
+    const blocked = projectPackages.filter((row) => row.status === "BLOCKED");
+    const late = projectPackages.filter(
+      (row) => row.dueAt && new Date(row.dueAt).getTime() < now && !["DONE", "CANCELLED"].includes(row.status),
+    );
+    const gaps = [...projectDeliverables, ...projectPackages]
+      .filter((row) => !row.ownerProjectMembershipId && !row.ownerTeamId)
+      .map((row) => ({
+        id: row.id,
+        kind: row.code?.startsWith("WP") || row.title?.includes("package") || row.title?.includes("programme") || row.title?.includes("Pacote")
+          ? "WORK_PACKAGE"
+          : "DELIVERABLE",
+        code: row.code ?? null,
+        title: row.title,
+        status: row.status,
+        dueAt: row.dueAt,
+        href: {
+          ui: row.code?.startsWith("WP")
+            ? `/projects/${project.id}/work-packages?inspect=${row.id}`
+            : `/projects/${project.id}/deliverables?inspect=${row.id}`,
+          api: `/api/v1/projects/${project.id}/${row.code?.startsWith("WP") ? "work-packages" : "deliverables"}/${row.id}`,
+        },
+      }));
+    const hrefFor = (row, kind) => ({
+      ui:
+        kind === "DELIVERABLE"
+          ? `/projects/${project.id}/deliverables?inspect=${row.id}`
+          : `/projects/${project.id}/work-packages?inspect=${row.id}`,
+      api: `/api/v1/projects/${project.id}/${kind === "DELIVERABLE" ? "deliverables" : "work-packages"}/${row.id}`,
+    });
+    const activePhase = phasesA.find((row) => row.projectId === project.id && row.status === "ACTIVE");
+    json(res, 200, {
+      generatedAt: new Date().toISOString(),
+      stale: false,
+      freshness: {
+        generatedAt: new Date().toISOString(),
+        sourceMaxUpdatedAt: new Date().toISOString(),
+        lagMs: 0,
+        stale: false,
+        servedFromCache: false,
+      },
+      project: { id: project.id, name: project.name, archivedAt: null, organizationId: project.organizationId },
+      currentPhase: {
+        origin: "operations.phases",
+        derivation: "Non-archived Phase rows with stored status ACTIVE, lowest sequence.",
+        value: activePhase
+          ? {
+              id: activePhase.id,
+              name: activePhase.name,
+              sequence: activePhase.sequence,
+              status: activePhase.status,
+              plannedStartAt: activePhase.plannedStartAt,
+              plannedEndAt: activePhase.plannedEndAt,
+              href: {
+                ui: `/projects/${project.id}/structure?phase=${activePhase.id}`,
+                api: `/api/v1/projects/${project.id}/phases/${activePhase.id}`,
+              },
+            }
+          : null,
+        activePhaseCount: activePhase ? 1 : 0,
+      },
+      deliverableCountsByStatus: {
+        origin: "operations.deliverables.status",
+        derivation: "COUNT of non-archived Deliverables grouped by stored status.",
+        counts,
+      },
+      overdueDeliverables: {
+        origin: "operations.deliverables.dueAt",
+        derivation: "dueAt < now signal",
+        items: overdue.map((row) => ({
+          id: row.id,
+          kind: "DELIVERABLE",
+          code: row.code,
+          title: row.title,
+          status: row.status,
+          dueAt: row.dueAt,
+          href: hrefFor(row, "DELIVERABLE"),
+        })),
+        nextCursor: null,
+        returned: overdue.length,
+      },
+      blockedWorkPackages: {
+        origin: "operations.work_packages.status",
+        derivation: "Stored BLOCKED",
+        items: blocked.map((row) => ({
+          id: row.id,
+          kind: "WORK_PACKAGE",
+          code: row.code,
+          title: row.title,
+          status: row.status,
+          dueAt: row.dueAt,
+          blockedReason: row.blockedReason,
+          href: hrefFor(row, "WORK_PACKAGE"),
+        })),
+        nextCursor: null,
+        returned: blocked.length,
+      },
+      lateWorkPackages: {
+        origin: "operations.work_packages.dueAt",
+        derivation: "dueAt signal",
+        items: late.map((row) => ({
+          id: row.id,
+          kind: "WORK_PACKAGE",
+          code: row.code,
+          title: row.title,
+          status: row.status,
+          dueAt: row.dueAt,
+          href: hrefFor(row, "WORK_PACKAGE"),
+        })),
+        nextCursor: null,
+        returned: late.length,
+      },
+      ownerGaps: {
+        origin: "operations ownership XOR",
+        derivation: "Zero owners",
+        items: gaps,
+        nextCursor: null,
+        returned: gaps.length,
+      },
+      upcomingMilestones: {
+        origin: "planning.milestones",
+        derivation: "Existing upcoming PLANNED milestones",
+        items: [],
+        nextCursor: null,
+        returned: 0,
+      },
+      relatedSources: {
+        origin: "document|coordination|planning|governance",
+        derivation: "Authorized summaries only",
+        sources: {
+          issues: {
+            origin: "coordination.issues",
+            derivation: "open issues",
+            permission: "project.read",
+            count: 0,
+            api: `/api/v1/projects/${project.id}/issues`,
+          },
+          tasks: {
+            origin: "planning.tasks",
+            derivation: "open tasks",
+            permission: "project.read",
+            count: 0,
+            api: `/api/v1/projects/${project.id}/tasks`,
+          },
+        },
+      },
+      lastMaterialActivity: null,
+      links: {
+        structure: `/projects/${project.id}/structure`,
+        deliverables: `/projects/${project.id}/deliverables`,
+        workPackages: `/projects/${project.id}/work-packages`,
+      },
+    });
+    return;
   }
 
   problem(res, 404, "NOT_FOUND", "Not found");
