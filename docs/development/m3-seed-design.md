@@ -1,6 +1,6 @@
 # M3.1 test-data / seed design
 
-Deterministic, synthetic, **no real PII**. Idempotent or resettable on a disposable database. Writer implementation is M3.8 local bootstrap; the contract is executable now in `packages/shared/src/m3-seed-design.ts`.
+Deterministic, synthetic, **no real PII**. Idempotent or resettable on a disposable database. Writer for Phase/Discipline/Team/memberships is `prisma/m3-seed.ts` (opt-in `AMBER_SEED_M3=1`). Deliverable/WorkPackage rows wait for M3.4/M3.5 tables.
 
 ## Inventory
 
@@ -21,7 +21,7 @@ Emails use `@amber.test` only (`coordinator.a@amber.test`, …). Display names a
 
 ## Reset
 
-- Local: `pnpm prisma migrate reset` then seed catalog + this dataset.
+- Local: `pnpm prisma migrate reset` then `pnpm prisma:seed` (catalog) and `AMBER_SEED_M3=1 pnpm prisma:seed` (this dataset). Default catalog seed stays user-empty so integration tests can bootstrap the first User.
 - Keys are stable slugs (`org-a`, `project-a1`, `del-a1-planned-user`) so re-runs upsert.
 - Cloud/shared staging seed is **not** authorized in M3.1 (LOCAL ONLY).
 

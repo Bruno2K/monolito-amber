@@ -81,6 +81,14 @@ export function Icon({ name }: { name: IconName }) {
           <path d="M8 2.5 13 4.5v4.2c0 2.6-2 4.5-5 5.3-3-.8-5-2.7-5-5.3V4.5L8 2.5z" {...stroke} />
         </Svg>
       );
+    case "structure":
+      return (
+        <Svg>
+          <rect x="2.5" y="3" width="11" height="3" rx="0.8" {...stroke} />
+          <rect x="2.5" y="7" width="11" height="3" rx="0.8" {...stroke} />
+          <rect x="2.5" y="11" width="11" height="2.5" rx="0.8" {...stroke} />
+        </Svg>
+      );
     case "activity":
       return (
         <Svg>

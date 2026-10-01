@@ -10,7 +10,7 @@ export interface UiRoutePlan {
   path: string;
   lifecycle: RouteLifecycle;
   purpose: string;
-  implementedIn: "m3.1-plan" | "foundation" | "m3.2+" | "m3.2" | "m4" | "m5+" | "figma-prototype";
+  implementedIn: "m3.1-plan" | "foundation" | "m3.2+" | "m3.2" | "m3.3" | "m4" | "m5+" | "figma-prototype";
 }
 
 export interface ApiRoutePlan {
@@ -20,6 +20,7 @@ export interface ApiRoutePlan {
   permission: string;
   idempotency: boolean;
   purpose: string;
+  implementedIn?: "m3.3" | "m3.4" | "m3.5";
 }
 
 export const M3_CANONICAL_UI_ROUTES: readonly UiRoutePlan[] = [
@@ -39,7 +40,7 @@ export const M3_CANONICAL_UI_ROUTES: readonly UiRoutePlan[] = [
     path: "/projects/:projectId/structure",
     lifecycle: "add",
     purpose: "Phase and Discipline context",
-    implementedIn: "m3.2",
+    implementedIn: "m3.3",
   },
   {
     path: "/projects/:projectId/deliverables",
@@ -112,6 +113,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "organization.manage_catalogs|project.read",
     idempotency: false,
     purpose: "List Organization-owned Discipline catalog (manage vs read by caller grants)",
+    implementedIn: "m3.3",
   },
   {
     method: "POST",
@@ -120,6 +122,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "organization.manage_catalogs",
     idempotency: true,
     purpose: "Create Discipline; code unique case-insensitive per Organization",
+    implementedIn: "m3.3",
   },
   {
     method: "PATCH",
@@ -128,6 +131,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "organization.manage_catalogs",
     idempotency: false,
     purpose: "Update name/active/sortOrder; do not destroy historical identifiers",
+    implementedIn: "m3.3",
   },
   {
     method: "GET",
@@ -136,6 +140,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "project.read",
     idempotency: false,
     purpose: "List Phases of an authorized Project",
+    implementedIn: "m3.3",
   },
   {
     method: "POST",
@@ -144,6 +149,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "phase.create",
     idempotency: true,
     purpose: "Create Phase",
+    implementedIn: "m3.3",
   },
   {
     method: "GET",
@@ -152,6 +158,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "project.read",
     idempotency: false,
     purpose: "Read Phase",
+    implementedIn: "m3.3",
   },
   {
     method: "PATCH",
@@ -160,6 +167,25 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "phase.update",
     idempotency: false,
     purpose: "Update Phase fields / activate / cancel (CAS version)",
+    implementedIn: "m3.3",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/phases/reorder",
+    lifecycle: "add",
+    permission: "phase.update",
+    idempotency: true,
+    purpose: "Reorder Phases with version/CAS; sequence unique in the active set",
+    implementedIn: "m3.3",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/phases/{phaseId}/activate",
+    lifecycle: "add",
+    permission: "phase.update",
+    idempotency: true,
+    purpose: "Explicit PLANNED → ACTIVE",
+    implementedIn: "m3.3",
   },
   {
     method: "POST",
@@ -168,6 +194,25 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "phase.complete",
     idempotency: true,
     purpose: "Explicit COMPLETED",
+    implementedIn: "m3.3",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/phases/{phaseId}/cancel",
+    lifecycle: "add",
+    permission: "phase.update",
+    idempotency: true,
+    purpose: "Explicit CANCELLED from PLANNED or ACTIVE",
+    implementedIn: "m3.3",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/phases/{phaseId}/archive",
+    lifecycle: "add",
+    permission: "phase.update",
+    idempotency: true,
+    purpose: "Soft-archive a Phase (removal path when referenced; never hard-delete)",
+    implementedIn: "m3.3",
   },
   {
     method: "GET",
@@ -176,6 +221,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "project.read",
     idempotency: false,
     purpose: "List Deliverables",
+    implementedIn: "m3.4",
   },
   {
     method: "POST",
@@ -184,6 +230,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "deliverable.create",
     idempotency: true,
     purpose: "Create Deliverable with required phaseId + disciplineId",
+    implementedIn: "m3.4",
   },
   {
     method: "GET",
@@ -192,6 +239,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "project.read",
     idempotency: false,
     purpose: "Read Deliverable",
+    implementedIn: "m3.4",
   },
   {
     method: "PATCH",
@@ -200,6 +248,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "deliverable.update",
     idempotency: false,
     purpose: "Update Deliverable fields / non-approve/deliver transitions",
+    implementedIn: "m3.4",
   },
   {
     method: "POST",
@@ -208,6 +257,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "deliverable.assign",
     idempotency: true,
     purpose: "Set ownership XOR (user | Team | none)",
+    implementedIn: "m3.4",
   },
   {
     method: "POST",
@@ -216,6 +266,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "deliverable.approve",
     idempotency: true,
     purpose: "Explicit APPROVED",
+    implementedIn: "m3.4",
   },
   {
     method: "POST",
@@ -224,6 +275,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "deliverable.deliver",
     idempotency: true,
     purpose: "DELIVERED only when all still-linked WorkPackages are DONE",
+    implementedIn: "m3.4",
   },
   {
     method: "GET",
@@ -232,6 +284,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "project.read",
     idempotency: false,
     purpose: "List WorkPackages",
+    implementedIn: "m3.5",
   },
   {
     method: "POST",
@@ -240,6 +293,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "work_package.create",
     idempotency: true,
     purpose: "Create WorkPackage with required phaseId",
+    implementedIn: "m3.5",
   },
   {
     method: "GET",
@@ -248,6 +302,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "project.read",
     idempotency: false,
     purpose: "Read WorkPackage",
+    implementedIn: "m3.5",
   },
   {
     method: "PATCH",
@@ -256,6 +311,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "work_package.update",
     idempotency: false,
     purpose: "Update fields / activate / block / cancel",
+    implementedIn: "m3.5",
   },
   {
     method: "POST",
@@ -264,6 +320,7 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "work_package.complete",
     idempotency: true,
     purpose: "Mark DONE; incidental Task links do not block",
+    implementedIn: "m3.5",
   },
   {
     method: "POST",
@@ -272,8 +329,12 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     permission: "deliverable.update",
     idempotency: true,
     purpose: "Explicit disassociation from a Deliverable (required before delivering with CANCELLED WPs)",
+    implementedIn: "m3.5",
   },
 ];
+
+export const M3_3_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn === "m3.3");
+export const M3_LATER_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn !== "m3.3");
 
 export const EXISTING_API_PATHS_TO_KEEP = [
   "/api/v1/projects",

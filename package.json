@@ -39,7 +39,8 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@prisma/client": "^6.16.1"
+    "@prisma/client": "^6.16.1",
+    "argon2": "^0.45.1"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

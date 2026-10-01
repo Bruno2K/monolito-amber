@@ -61,9 +61,10 @@ M3.1 **lands** contract artifacts, additive catalog/template deltas, and CI test
 | Path | WI |
 | --- | --- |
 | `prisma/migrations/<ts>_m3_operations_*` | M3.3–M3.5 |
-| `api/src/operations/**` | M3.3–M3.5 |
-| `web/app/projects/**` | M3.2+ |
-| OpenAPI generated paths for phases/deliverables/work-packages | M3.3–M3.5 |
+| `api/src/operations/**` | M3.3 Phase/Discipline; M3.4–M3.5 Deliverable/WP |
+| `web/app/projects/[projectId]/structure` | M3.3 |
+| OpenAPI generated paths for phases/disciplines | M3.3 |
+| OpenAPI generated paths for deliverables/work-packages | M3.4–M3.5 |
 | M3.8 seed writer / E2E | M3.8 LOCAL RC |
 
 ## Runtime processes

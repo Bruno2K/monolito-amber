@@ -18,6 +18,7 @@ export function buildOpenApiDocument(app: INestApplication) {
     .addTag("planning")
     .addTag("gates")
     .addTag("exceptions")
+    .addTag("operations")
     .addTag("catalog")
     .addTag("files")
     .build();

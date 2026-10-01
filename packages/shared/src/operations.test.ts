@@ -16,10 +16,16 @@ import {
   assertUniqueAmongNonArchived,
   assertUniquePhaseSequence,
   assertUserOwnerRequiresActiveProjectMembership,
+  assertValidDateRange,
   assertWorkPackageTransition,
+  archiveIsPhaseRemovalPath,
   cancelledLinkedWorkPackageBlocksDelivery,
+  decodePhaseCursor,
   deliverableStatusRequiresApprovePermission,
   deliverableStatusRequiresDeliverPermission,
+  encodePhaseCursor,
+  hardDeletePhaseAllowed,
+  historicalDisciplineIdentifierPreserved,
   incidentalTasksBlockWorkPackageDone,
   leavingBlockedClearsReason,
   nextBlockedReason,
@@ -50,6 +56,9 @@ describe("Phase state machine", () => {
   it("does not let dates transit status and allows overlap", () => {
     expect(phaseDatesTransitStatus()).toBe(false);
     expect(phasesMayOverlap()).toBe(true);
+    expect(hardDeletePhaseAllowed()).toBe(false);
+    expect(archiveIsPhaseRemovalPath()).toBe(true);
+    expect(historicalDisciplineIdentifierPreserved()).toBe(true);
   });
 
   it("requires unique sequence among non-archived Phases", () => {
@@ -60,6 +69,19 @@ describe("Phase state machine", () => {
     expect(() => assertUniquePhaseSequence(existing, 1)).toThrow(/unique/);
     expect(() => assertUniquePhaseSequence(existing, 2)).not.toThrow();
     expect(() => assertUniquePhaseSequence(existing, 3)).not.toThrow();
+  });
+
+  it("rejects inverted date ranges without transiting status", () => {
+    expect(() =>
+      assertValidDateRange(new Date("2026-02-01"), new Date("2026-01-01"), "Planned"),
+    ).toThrow(OperationsStateError);
+    expect(() => assertValidDateRange(new Date("2026-01-01"), new Date("2026-02-01"), "Planned")).not.toThrow();
+    expect(() => assertValidDateRange(null, new Date("2026-02-01"), "Planned")).not.toThrow();
+  });
+
+  it("encodes a deterministic Phase list cursor", () => {
+    const encoded = encodePhaseCursor(2, "phase-1");
+    expect(decodePhaseCursor(encoded)).toEqual({ sequence: 2, id: "phase-1" });
   });
 });
 

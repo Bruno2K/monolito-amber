@@ -1,8 +1,16 @@
-export default function StructurePlaceholderPage() {
+import { Suspense } from "react";
+import { StructureView } from "../../../../components/structure/StructureView";
+import { StateScreen } from "../../../../components/shell/StateScreen";
+
+export default async function StructurePage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
   return (
-    <section className="placeholder-page" data-surface="structure">
-      <h1>Estrutura</h1>
-      <p>Phase e Discipline serão entregues em um marco posterior. Nenhum CRUD de Operations está disponível.</p>
-    </section>
+    <Suspense fallback={<StateScreen kind="loading" />}>
+      <StructureView projectId={projectId} />
+    </Suspense>
   );
 }

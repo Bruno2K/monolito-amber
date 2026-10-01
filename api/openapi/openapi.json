@@ -3378,6 +3378,460 @@
           "exceptions"
         ]
       }
+    },
+    "/api/v1/projects/{projectId}/phases": {
+      "get": {
+        "operationId": "PhasesController_list",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List Phases of an authorized Project (deterministic order, omit archived by default)",
+        "tags": [
+          "operations"
+        ]
+      },
+      "post": {
+        "operationId": "PhasesController_create",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a Phase in PLANNED. Dates never transit status.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/phases/reorder": {
+      "post": {
+        "operationId": "PhasesController_reorder",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Reorder Phases with compare-and-swap versions",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/phases/{phaseId}": {
+      "get": {
+        "operationId": "PhasesController_get",
+        "parameters": [
+          {
+            "name": "phaseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Read one Phase. Cross-tenant and cross-project ids are denied without leakage.",
+        "tags": [
+          "operations"
+        ]
+      },
+      "patch": {
+        "operationId": "PhasesController_update",
+        "parameters": [
+          {
+            "name": "phaseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update Phase fields. Status uses dedicated endpoints. CAS expectedVersion is required.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/phases/{phaseId}/activate": {
+      "post": {
+        "operationId": "PhasesController_activate",
+        "parameters": [
+          {
+            "name": "phaseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit PLANNED → ACTIVE. Dates never auto-activate.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/phases/{phaseId}/complete": {
+      "post": {
+        "operationId": "PhasesController_complete",
+        "parameters": [
+          {
+            "name": "phaseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit ACTIVE → COMPLETED. Completing by date mutation is rejected.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/phases/{phaseId}/cancel": {
+      "post": {
+        "operationId": "PhasesController_cancel",
+        "parameters": [
+          {
+            "name": "phaseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit CANCELLED from PLANNED or ACTIVE",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/phases/{phaseId}/archive": {
+      "post": {
+        "operationId": "PhasesController_archive",
+        "parameters": [
+          {
+            "name": "phaseId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Soft-archive a Phase. Hard-delete is forbidden, including when referenced.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organizationId}/disciplines": {
+      "get": {
+        "operationId": "DisciplinesController_list",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List visible Organization Disciplines. Requires organization.manage_catalogs or project.read in the session Organization.",
+        "tags": [
+          "operations"
+        ]
+      },
+      "post": {
+        "operationId": "DisciplinesController_create",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a Discipline. Code is unique case-insensitive per Organization.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organizationId}/disciplines/{disciplineId}": {
+      "patch": {
+        "operationId": "DisciplinesController_update",
+        "parameters": [
+          {
+            "name": "disciplineId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update Discipline name/active/sortOrder. Code cannot be renamed.",
+        "tags": [
+          "operations"
+        ]
+      }
     }
   },
   "info": {
@@ -3421,6 +3875,10 @@
     },
     {
       "name": "exceptions",
+      "description": ""
+    },
+    {
+      "name": "operations",
       "description": ""
     },
     {

@@ -35,6 +35,14 @@ export const OUTBOX_EVENT_TYPES = {
   GateReleasedWithException: "GateReleasedWithException",
   ExceptionApproved: "ExceptionApproved",
   ExceptionRevoked: "ExceptionRevoked",
+  PhaseCreated: "PhaseCreated",
+  PhaseUpdated: "PhaseUpdated",
+  PhaseActivated: "PhaseActivated",
+  PhaseCompleted: "PhaseCompleted",
+  PhaseCancelled: "PhaseCancelled",
+  PhaseArchived: "PhaseArchived",
+  DisciplineCreated: "DisciplineCreated",
+  DisciplineUpdated: "DisciplineUpdated",
 } as const;
 
 /**
