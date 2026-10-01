@@ -24,6 +24,10 @@ File `fkE9SwcNlQG7m0HvcGQBw9` · page `04 — Telas` · fonts Inter + Roboto Mon
 
 Base URL: `https://www.figma.com/design/fkE9SwcNlQG7m0HvcGQBw9?node-id=<fragment>`.
 
+## CORRECTION LOOP 1
+
+See [`rc1/`](./rc1/) — 11 PNGs + [`rc1/REPORT.md`](./rc1/REPORT.md). R-01 under34 18→0; R-02 Inventory chrome 257/86.
+
 ## Prior product-frame PNGs (do not relocate)
 
 - [`../m2.6/`](../m2.6/)
