@@ -31,14 +31,15 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [api](./api/conventions.md) — REST `/api/v1`, OpenAPI 3.1, Problem Details
 - [development](./development/local-setup.md) — local, tests, migrations
 - [agentic](./agentic/context.md) — agent operating context, harness, loop, roles
-- [ux](./ux/m2.6-governance-gates-exceptions.md) — product UX evidence (M2)
+- [ux](./ux/m2.10-final-ux-ui-audit.md) — product UX evidence (M2 COMPLETE; Exit Gate PASS)
 
 ## Product UX evidence (M2)
 
 - [M2.6 — Governance Gates & Exceptions](./ux/m2.6-governance-gates-exceptions.md) — Figma frames, invariants, AuthZ/SoD; **PASS / COMPLETE** (PR #20 OPEN; do not merge; no backend)
 - [M2.7 — Overview & Portfolio Health](./ux/m2.7-overview-portfolio-health.md) — Visão Geral + Portfolio derived/read-model UX (stacked on M2.6; **PASS / COMPLETE**; PR #22 OPEN; do not merge; no backend)
 - [M2.8 — Activity Experience](./ux/m2.8-activity-experience.md) — Project Atividade read-only material timeline UX (stacked on M2.7; **PASS / COMPLETE**; PR #24 OPEN; do not merge; no backend; not chat / not Audit / not Messaging)
-- [M2.9 — Prototype & State Coverage](./ux/m2.9-prototype-state-coverage.md) — Integrated prototype + state/AuthZ/a11y coverage across M2.1–M2.8 (stacked on M2.8 @ 762ab787…; PR [#26](https://github.com/Bruno2K/monolito-amber/pull/26) OPEN; **PASS / COMPLETE**; NAVIGATE 257 / zeros on broken·orphans·same-node·whole-frame·overlapping multi-dest·text overlap·actionable clip; transversal only; no backend; do not merge; M2.10 NEXT / not started; RC2 technical content `0758675d…`; tip that received Reviewer PASS RC2 `ee02fdf8…`; PR tip validated in the independent reviewer report attached to the PR; this index line is document-only final synchronization)
+- [M2.9 — Prototype & State Coverage](./ux/m2.9-prototype-state-coverage.md) — Integrated prototype + state/AuthZ/a11y coverage across M2.1–M2.8 (stacked on M2.8 @ 762ab787…; PR [#26](https://github.com/Bruno2K/monolito-amber/pull/26) OPEN; **PASS / COMPLETE**; NAVIGATE 257 / zeros; transversal only; no backend; do not merge; RC2 technical `0758675d…`; Reviewer PASS RC2 tip `ee02fdf8…`; PR tip validated in the independent reviewer report attached to the PR)
+- [M2.10 — Final UX/UI Audit & Exit Gate](./ux/m2.10-final-ux-ui-audit.md) — Adversarial audit of M2.1–M2.9 (stacked on M2.9 @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf`; PR [#28](https://github.com/Bruno2K/monolito-amber/pull/28); **PASS / COMPLETE**; M2 Exit Gate **PASS**; Reviewer PASS after CL1 on `2aad14db…`; R-01/R-02 CLEARED; F-04 OPEN OPTIONAL; 86 / 257 / zeros; under34 18→0; Inventory chrome 257/86; documentary `321:15725`/`321:15738`/`321:15755` excluded; no backend; M3 NEXT / not started)
 
 ## Deferred after Platform Foundation (PF-1.0..1.7)
 
