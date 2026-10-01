@@ -6,9 +6,9 @@ This repository is **PUBLIC** by design (portfolio). No secrets, credentials, or
 
 ## Current slice
 
-**M2.7 — Overview & Portfolio Health Reconciliation** (Issue #21) is **COMPLETE / Exit Gate PASS** in PR #22. Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
+**M2.8 — Activity Experience** (Issue #23). Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
 
-**Stacked on M2.6** branch `m2.6-governance-gates-exceptions-experience` @ `0dbf9b2`. **M2.6 is COMPLETE/PASS and PR #20 remains OPEN** — do not wait for merge; do not base on `main`.
+**Stacked on M2.7** branch `m2.7-overview-portfolio-health` @ `85852e6`. **M2.7 and M2.6 are COMPLETE/PASS; PRs #22 and #20 remain OPEN** — do not wait for merge; do not base on `main`.
 
 Platform Foundation **PF-1.0..1.7 is DONE on main** (`49588c3cc9ec0f6b43be5c35f1e2712d09522d17`).
 
@@ -45,11 +45,12 @@ Platform Foundation **PF-1.0..1.7 is DONE on main** (`49588c3cc9ec0f6b43be5c35f1
 - Governance reads Documents/Coordination/Planning via adapters and does not mutate upstream
 - **M2.6** delivers Governance Gates & Exceptions **product UX in Figma** + evidence docs (COMPLETE/PASS; PR #20 OPEN; no backend)
 - **M2.7** delivers Visão Geral + Portfolio Health as **derived/read-model** UX in Figma + evidence docs (COMPLETE/PASS; PR #22 OPEN; stacked on M2.6; no backend; no health SoT; actor-visible portfolio only)
+- **M2.8** delivers Project **Atividade** as **read-only material operational timeline** UX in Figma + evidence docs (stacked on M2.7; not chat; Messaging/Calendar private excluded; not Audit backdoor; project.read + per-item AuthZ)
 
 ## Forbidden (future phase — not activated)
 
-Gate Templates builder; BIM/IFC/BCF viewers; analytics warehouse; AI; K8s; microservices; CQRS; event sourcing; Kafka; invented permissions; second bypass (`gate.override` / forceRelease); treating global templates as grants; implicit project access from org-level bindings; auto-IMPACTED / auto-Issues; auto-resolving Issues from Tasks; auto-achieving Milestones; auto-releasing Gates; mutating Document/Issue/Task/Milestone from Governance; **manual health status SoT**; **org-wide portfolio leak**; dashboard builder / user-configured widgets; Messaging as health source.
+Gate Templates builder; BIM/IFC/BCF viewers; analytics warehouse; AI; K8s; microservices; CQRS; event sourcing; Kafka; invented permissions; second bypass (`gate.override` / forceRelease); treating global templates as grants; implicit project access from org-level bindings; auto-IMPACTED / auto-Issues; auto-resolving Issues from Tasks; auto-achieving Milestones; auto-releasing Gates; mutating Document/Issue/Task/Milestone from Governance; **manual health status SoT**; **org-wide portfolio leak**; dashboard builder / user-configured widgets; Messaging as health source; **Activity-as-chat**; **Messaging/Calendar private content in Activity**; **Audit-only dump into Activity**; Activity as Audit or Messaging backdoor.
 
-Also deferred (HUMAN_ACTIVATION_REQUIRED unless Governor activates): notifications worker, Redis/BullMQ jobs, PaaS vendor, malware vendor, LGPD process, RPO/RTO, Audit read UX productization, Next.js Overview/Portfolio app pages implementation.
+Also deferred (HUMAN_ACTIVATION_REQUIRED unless Governor activates): notifications worker, Redis/BullMQ jobs, PaaS vendor, malware vendor, LGPD process, RPO/RTO, Audit read UX productization, Next.js Activity app pages implementation, activity event store productization.
 
-Escalate HUMAN_REQUIRED on approved-spec conflict, HIGH architecture/security beyond contract, destructive ops, a new product decision, or any request to expand M2.7 into backend/schema/analytics SoT.
+Escalate HUMAN_REQUIRED on approved-spec conflict, HIGH architecture/security beyond contract, destructive ops, a new product decision, or any request to expand M2.8 into backend/schema/event store/Audit UX/Messaging.
