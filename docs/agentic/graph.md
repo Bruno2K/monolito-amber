@@ -15,11 +15,14 @@ PF-1.7 DONE
                                           └─ M3.1–M3.7 MERGED
                                                └─ M3.8 Local RC pack PR #45 MERGED
                                                     main @ fd10166f4ff5288e14d2796be8950da5a02ca1b9
-                                                    prior LOCAL RC READY claim REVOKED by audit
-                                                         └─ RC1 corrections (this WI) — branch m3-local-rc-audit-corrections / Issue #46
-                                                              ├─ M3.8 Exit Gate not claimed
+                                                    prior LOCAL RC READY claim REVOKED by audit (historical)
+                                                         └─ RC1 #46 / #47 MERGED → homologated
+                                                              reviewed tip 6683bba56299bb28f34029eab8c72dee63bf6aca
+                                                              main @ 6104276754607334c53c6864135d29c539db813e
+                                                              Bruno homologated LOCAL RC 2026-10-01
+                                                              ├─ M3.8 Exit Gate frozen (not claimed)
                                                               ├─ M3.9 / shared staging frozen
-                                                              └─ M3 COMPLETE / M4 forbidden
+                                                              └─ M3 COMPLETE / M4 / cloud frozen
 ```
 
 ## Integration edges
@@ -32,11 +35,10 @@ PF-1.7 DONE
 | PR #24 integrated | PR #26 retargeted to `main` | merge commit `64223fa3…` |
 | PR #26 integrated | PR #28 retargeted to `main` | merge commit `4e410b11…` |
 | `main` @ `4972176…` (M2 COMPLETE) | M3.1 … M3.8 pack | M3.8 merge `fd10166f…` |
-| `main` @ `fd10166f…` | RC1 branch `m3-local-rc-audit-corrections` | in review — Engineer must not merge |
+| `main` @ `fd10166f…` | RC1 PR #47 | squash-merge `61042767…` — homologated |
 
 ## Current boundary
 
 - M2 integration is closed.
-- M3.1–M3.8 pack are on `main`; READY/homologated language is revoked.
-- RC1 is the only active Work Item (LOCAL ONLY).
-- M3.9 / M3 COMPLETE / M4 remain frozen.
+- RC1 is **MERGED** and Bruno homologated LOCAL RC. No active RC1 branch.
+- M3.8 Exit Gate / M3.9 / M3 COMPLETE / M4 / cloud remain frozen.

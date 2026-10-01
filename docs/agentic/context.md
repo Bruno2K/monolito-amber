@@ -4,23 +4,25 @@
 
 **M2 — Product Experience Foundation is COMPLETE, Exit Gate PASS, and integrated into `main` at `4972176442bdb2631ea1f1710a86191109e79dab`.**
 
-**M3 — Project Operations is ACTIVE / LOCAL ONLY.** Active Work Item: **M3 — Local RC Audit Corrections RC1** (Issue [#46](https://github.com/Bruno2K/monolito-amber/issues/46)). Branch `m3-local-rc-audit-corrections`. M3.1–M3.8 pack are merged on `main` @ `fd10166f4ff5288e14d2796be8950da5a02ca1b9`. The prior LOCAL RC READY / homologated claim is **revoked by independent audit**.
+**M3 — Project Operations is ACTIVE / LOCAL ONLY.** No active product Work Item. RC1 (Issue [#46](https://github.com/Bruno2K/monolito-amber/issues/46) / PR [#47](https://github.com/Bruno2K/monolito-amber/pull/47)) is **MERGED** and **Bruno homologated LOCAL RC** on 2026-10-01 ("Everything seems fine here."). Homologated merge SHA `6104276754607334c53c6864135d29c539db813e`. Reviewed tip `6683bba56299bb28f34029eab8c72dee63bf6aca`.
 
-Authorization (Bruno 2026-10-01 via Altair): local execution of RC1-01…08. **Forbidden:** Vercel/Railway/cloud credentials/deploy/domain; claiming the M3.8 Exit Gate; claiming Bruno homologated; M3.9; M3 COMPLETE; M4.
+Authorization remains LOCAL ONLY. **Forbidden:** Vercel/Railway/cloud credentials/deploy/domain; claiming the M3.8 Exit Gate; M3.9; M3 COMPLETE; M4. Homologation of LOCAL RC is recorded and allowed.
 
-Engineer delivers a candidate PR with truthful evidence. Governor owns scope. Independent Reviewer inspects the full diff and raw evidence. Do **not** self-PASS LOCAL RC READY.
+Historical: independent audit revoked an earlier READY / homologated claim on `main` @ `fd10166f4ff5288e14d2796be8950da5a02ca1b9`. RC1 restored truthful evidence and closed that gap. That revocation is not current status.
 
-## RC1 in progress
+Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; Windows PS1 host-pending (supported path = Docker Desktop + WSL2 + bash). Do not claim the Windows native host was executed.
 
-- Objective: close RC1-01…08 (M3.2 matrix, disassociate AuthZ, axe + focus, Windows path, MinIO live adapter, reset rehearsal, docs sync, reviewer index).
+## RC1 (MERGED → homologated)
+
+- Objective (closed): RC1-01…08 (M3.2 matrix, disassociate AuthZ, axe + focus, Windows path, MinIO live adapter, reset rehearsal, docs sync, reviewer index).
 - Canonical Notion: https://app.notion.com/p/3ec678e54c8d818e8c8fd4fc619059a8
 - Pack: https://app.notion.com/p/3ec678e54c8d81c49efeccb527b3e2bd
 - Evidence index: `docs/development/m3-rc1-evidence/INDEX.md`
 - Runbook: `docs/development/m3.8-local-rc-runbook.md`
 
-## M3.8 (merged on main; READY revoked)
+## M3.8 (merged on main)
 
-M3.8 delivered the localhost pack (compose, env, migrate+seed, health, Playwright against real API+DB). Audit found eight IMPORTANT gaps. This RC1 restores evidence. Canonical: https://app.notion.com/p/3ec678e54c8d8136be51cc5a7b7720a6
+M3.8 delivered the localhost pack (compose, env, migrate+seed, health, Playwright against real API+DB). Audit found eight IMPORTANT gaps. RC1 restored evidence; Bruno then homologated LOCAL RC. Canonical: https://app.notion.com/p/3ec678e54c8d8136be51cc5a7b7720a6
 
 ## M3.1 (merged)
 
