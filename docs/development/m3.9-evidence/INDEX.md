@@ -43,14 +43,16 @@ Do not regenerate claims from mocks. Real-stack evidence already on `main`:
 
 ## Candidate-tip CI (this branch)
 
-Filled after Foundation + Local RC succeed on the same tip:
+Same-tip Foundation + Local RC SUCCESS on the audit tip (no jobs skipped):
 
 | Job | URL | Status | Tip SHA |
 | --- | --- | --- | --- |
-| Foundation & Security Gates | *pending first green run* | — | — |
-| Local RC (real API + Postgres + MinIO) | *pending first green run* | — | — |
+| Foundation & Security Gates | https://github.com/Bruno2K/monolito-amber/actions/runs/36934868385/job/110612647764 | success | `862a15671f27398cd1ac048dce5bc126f0f4704b` |
+| Local RC (real API + Postgres + MinIO) | https://github.com/Bruno2K/monolito-amber/actions/runs/36934868385/job/110612648098 | success | `862a15671f27398cd1ac048dce5bc126f0f4704b` |
 
-Workflow: https://github.com/Bruno2K/monolito-amber/actions
+Workflow: https://github.com/Bruno2K/monolito-amber/actions/runs/36934868385
+
+A later docs-only commit on this branch only records that run. The green evidence tip remains `862a15671f27398cd1ac048dce5bc126f0f4704b`.
 
 Required commands (QG-1):
 
