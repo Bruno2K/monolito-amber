@@ -87,3 +87,107 @@ export function newIdempotencyKey(): string {
   }
   return `idem-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
+
+export const DELIVERABLE_STATUSES = [
+  "PLANNED",
+  "IN_PROGRESS",
+  "IN_REVIEW",
+  "APPROVED",
+  "DELIVERED",
+  "CANCELLED",
+] as const;
+export type DeliverableStatus = (typeof DELIVERABLE_STATUSES)[number];
+
+export interface DeliverableRow {
+  id: string;
+  organizationId: string;
+  projectId: string;
+  phaseId: string;
+  disciplineId: string;
+  code: string;
+  title: string;
+  description: string;
+  ownerProjectMembershipId: string | null;
+  ownerTeamId: string | null;
+  plannedStartAt: string | null;
+  dueAt: string | null;
+  status: DeliverableStatus | string;
+  progressPercent: number | null;
+  version: number;
+  archivedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DeliverableListResponse {
+  items: DeliverableRow[];
+  nextCursor: string | null;
+}
+
+export interface TeamRow {
+  id: string;
+  organizationId: string;
+  name: string;
+}
+
+export interface TeamListResponse {
+  items: TeamRow[];
+}
+
+export interface ProjectMemberRow {
+  id: string;
+  status: string;
+  email?: string;
+  displayName?: string;
+}
+
+export function deliverableStatusLabel(status: string): string {
+  switch (status) {
+    case "PLANNED":
+      return "Planejada";
+    case "IN_PROGRESS":
+      return "Em curso";
+    case "IN_REVIEW":
+      return "Em revisão";
+    case "APPROVED":
+      return "Aprovada";
+    case "DELIVERED":
+      return "Entregue";
+    case "CANCELLED":
+      return "Cancelada";
+    default:
+      return status;
+  }
+}
+
+export function deliverablesDeepLink(projectId: string, deliverableId?: string | null): string {
+  const base = `/projects/${projectId}/deliverables`;
+  return deliverableId ? `${base}?inspect=${encodeURIComponent(deliverableId)}` : base;
+}
+
+export function canCreateDeliverable(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("deliverable.create"));
+}
+
+export function canUpdateDeliverable(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("deliverable.update"));
+}
+
+export function canAssignDeliverable(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("deliverable.assign"));
+}
+
+export function canApproveDeliverable(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("deliverable.approve"));
+}
+
+export function canDeliverDeliverable(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("deliverable.deliver"));
+}
+
+export function formatProgress(value: number | null | undefined): string {
+  if (value == null) {
+    return "—";
+  }
+  return `${value}%`;
+}

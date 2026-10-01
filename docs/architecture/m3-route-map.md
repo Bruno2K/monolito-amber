@@ -38,7 +38,7 @@ Do **not** ship both `/visao-geral` and `/projects/:projectId/overview` as paral
 
 `/`, `/sign-in`, `/password/setup`, `/password/reset`, `/mfa/challenge`, `/mfa/enroll`, `/org-switch`, `/invite/accept`.
 
-Collision audit: `packages/shared/src/m3-routes.test.ts` asserts canonical paths are unique, M3.2 Next routes exist, Figma Portuguese prototype paths are absent, M3.3 Phase/Discipline API paths are present, and Deliverable/WorkPackage paths remain absent from current OpenAPI.
+Collision audit: `packages/shared/src/m3-routes.test.ts` asserts canonical paths are unique, M3.2 Next routes exist, Figma Portuguese prototype paths are absent, M3.3 Phase/Discipline API paths are present, M3.4 Deliverable API paths are present, and WorkPackage paths remain absent from current OpenAPI.
 
 ## API pairing
 

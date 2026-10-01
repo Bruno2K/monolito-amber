@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS } from "./m3-requirements.js";
+import { M3_1_ARTIFACT_PATHS, M3_1_REQUIREMENT_IDS, M3_3_ARTIFACT_PATHS, M3_3_REQUIREMENT_IDS, M3_4_ARTIFACT_PATHS, M3_4_REQUIREMENT_IDS } from "./m3-requirements.js";
 import { OPERATIONS_PERMISSIONS } from "./permissions.js";
 import { DELIVERABLE_FIELDS, PHASE_FIELDS, WORK_PACKAGE_FIELDS } from "./operations.js";
 
@@ -73,5 +73,22 @@ describe("M3.1 contract consistency", () => {
     expect(existsSync(join(ROOT, "prisma/migrations/20261001160000_m3_3_operations_phase_discipline/migration.sql"))).toBe(
       true,
     );
+  });
+
+  it("embeds every M3.4 REQ id and keeps the Deliverable artifacts", () => {
+    const matrix = read("docs/domain/m3.4-requirements-traceability.md");
+    for (const id of M3_4_REQUIREMENT_IDS) {
+      expect(matrix).toContain(id);
+    }
+    for (const rel of M3_4_ARTIFACT_PATHS) {
+      expect(existsSync(join(ROOT, rel)), rel).toBe(true);
+    }
+    expect(existsSync(join(ROOT, "prisma/migrations/20261001170000_m3_4_operations_deliverable/migration.sql"))).toBe(
+      true,
+    );
+    const sql = read("prisma/migrations/20261001170000_m3_4_operations_deliverable/migration.sql");
+    expect(sql).toMatch(/CREATE TABLE "operations"\."deliverables"/);
+    expect(sql).not.toMatch(/gate\.override/);
+    expect(sql).not.toMatch(/DROP COLUMN\s+discipline_id/i);
   });
 });

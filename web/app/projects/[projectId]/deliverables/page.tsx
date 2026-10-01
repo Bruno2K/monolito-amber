@@ -1,10 +1,16 @@
-export default function DeliverablesPlaceholderPage() {
+import { Suspense } from "react";
+import { DeliverablesView } from "../../../../components/deliverables/DeliverablesView";
+import { StateScreen } from "../../../../components/shell/StateScreen";
+
+export default async function DeliverablesPage({
+  params,
+}: {
+  params: Promise<{ projectId: string }>;
+}) {
+  const { projectId } = await params;
   return (
-    <section className="placeholder-page" data-surface="deliverables">
-      <h1>Entregas</h1>
-      <p>
-        Superfície canônica montada. CRUD de Deliverable não faz parte deste marco e não está disponível aqui.
-      </p>
-    </section>
+    <Suspense fallback={<StateScreen kind="loading" />}>
+      <DeliverablesView projectId={projectId} />
+    </Suspense>
   );
 }

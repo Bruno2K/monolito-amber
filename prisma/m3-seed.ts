@@ -4,6 +4,7 @@ import type { PrismaClient } from "@prisma/client";
 import {
   AUTH_PROVIDER_EMAIL_PASSWORD,
   M3_SEED_DISCIPLINES,
+  M3_SEED_DELIVERABLES,
   M3_SEED_ORGANIZATIONS,
   M3_SEED_ORG_MEMBERSHIPS,
   M3_SEED_PHASES,
@@ -11,6 +12,7 @@ import {
   M3_SEED_PROJECTS,
   M3_SEED_TEAMS,
   M3_SEED_USERS,
+  M3_SEED_WORK_PACKAGES,
   PASSWORD_ALGORITHM,
   ROLE_TEMPLATES,
 } from "../packages/shared/src/index.ts";
@@ -69,6 +71,9 @@ export async function seedM3Dataset(prisma: PrismaClient): Promise<void> {
   const projectIds = new Map<string, string>();
   const teamIds = new Map<string, string>();
   const disciplineIds = new Map<string, string>();
+  const phaseIds = new Map<string, string>();
+  const projectMembershipIds = new Map<string, string>();
+  const deliverableIds = new Map<string, string>();
 
   for (const org of M3_SEED_ORGANIZATIONS) {
     const id = seedUuid(`org:${org.key}`);
@@ -200,6 +205,7 @@ export async function seedM3Dataset(prisma: PrismaClient): Promise<void> {
     if (existing && existing.status !== membership.status) {
       await prisma.projectMembership.update({ where: { id: existing.id }, data: { status: membership.status } });
     }
+    projectMembershipIds.set(`${membership.userKey}:${membership.projectKey}`, row.id);
     const role = await prisma.roleDefinition.findFirst({
       where: {
         organizationId: orgIds.get(project.orgKey),
@@ -284,7 +290,7 @@ export async function seedM3Dataset(prisma: PrismaClient): Promise<void> {
     });
     const actual = actualByStatus[phase.status] ?? actualByStatus.PLANNED;
     if (!existing) {
-      await prisma.phase.create({
+      const created = await prisma.phase.create({
         data: {
           id: seedUuid(`phase:${phase.key}`),
           organizationId,
@@ -298,14 +304,107 @@ export async function seedM3Dataset(prisma: PrismaClient): Promise<void> {
           actualEndAt: actual.end,
         },
       });
+      phaseIds.set(phase.key, created.id);
     } else if (existing.status !== phase.status || existing.sequence !== phase.sequence) {
       await prisma.phase.update({
         where: { id: existing.id },
         data: { status: phase.status, sequence: phase.sequence },
       });
+      phaseIds.set(phase.key, existing.id);
+    } else {
+      phaseIds.set(phase.key, existing.id);
     }
   }
 
-  void teamIds;
-  void disciplineIds;
+  for (const deliverable of M3_SEED_DELIVERABLES) {
+    const project = M3_SEED_PROJECTS.find((row) => row.key === deliverable.projectKey);
+    const projectId = projectIds.get(deliverable.projectKey);
+    const organizationId = project ? orgIds.get(project.orgKey) : undefined;
+    const phaseId = phaseIds.get(deliverable.phaseKey);
+    const disciplineId = disciplineIds.get(deliverable.disciplineKey);
+    if (!projectId || !organizationId || !phaseId || !disciplineId) {
+      throw new Error(`Missing endpoints for deliverable ${deliverable.key}`);
+    }
+    let ownerProjectMembershipId: string | null = null;
+    let ownerTeamId: string | null = null;
+    if (deliverable.ownerKind === "user" && deliverable.ownerUserKey) {
+      ownerProjectMembershipId =
+        projectMembershipIds.get(`${deliverable.ownerUserKey}:${deliverable.projectKey}`) ?? null;
+      if (!ownerProjectMembershipId) {
+        throw new Error(`Missing owner membership for ${deliverable.key}`);
+      }
+    }
+    if (deliverable.ownerKind === "team" && deliverable.ownerTeamKey) {
+      ownerTeamId = teamIds.get(deliverable.ownerTeamKey) ?? null;
+      if (!ownerTeamId) {
+        throw new Error(`Missing owner team for ${deliverable.key}`);
+      }
+    }
+    const existing = await prisma.deliverable.findFirst({
+      where: { projectId, code: deliverable.code, archivedAt: null },
+    });
+    const row =
+      existing ??
+      (await prisma.deliverable.create({
+        data: {
+          id: seedUuid(`del:${deliverable.key}`),
+          organizationId,
+          projectId,
+          phaseId,
+          disciplineId,
+          code: deliverable.code,
+          title: deliverable.title,
+          description: "",
+          status: deliverable.status,
+          ownerProjectMembershipId,
+          ownerTeamId,
+        },
+      }));
+    if (
+      existing &&
+      (existing.status !== deliverable.status ||
+        existing.ownerProjectMembershipId !== ownerProjectMembershipId ||
+        existing.ownerTeamId !== ownerTeamId)
+    ) {
+      await prisma.deliverable.update({
+        where: { id: existing.id },
+        data: { status: deliverable.status, ownerProjectMembershipId, ownerTeamId, title: deliverable.title },
+      });
+    }
+    deliverableIds.set(deliverable.key, row.id);
+  }
+
+  for (const workPackage of M3_SEED_WORK_PACKAGES) {
+    const project = M3_SEED_PROJECTS.find((row) => row.key === workPackage.projectKey);
+    const projectId = projectIds.get(workPackage.projectKey);
+    const organizationId = project ? orgIds.get(project.orgKey) : undefined;
+    const phaseId = phaseIds.get(workPackage.phaseKey);
+    if (!projectId || !organizationId || !phaseId) {
+      throw new Error(`Missing endpoints for work package ${workPackage.key}`);
+    }
+    const deliverableId = workPackage.deliverableKey ? deliverableIds.get(workPackage.deliverableKey) : undefined;
+    const existing = await prisma.workPackage.findFirst({
+      where: { projectId, title: workPackage.title, archivedAt: null },
+    });
+    if (!existing) {
+      await prisma.workPackage.create({
+        data: {
+          id: seedUuid(`wp:${workPackage.key}`),
+          organizationId,
+          projectId,
+          phaseId,
+          deliverableId: deliverableId ?? null,
+          title: workPackage.title,
+          description: "",
+          status: workPackage.status,
+          blockedReason: workPackage.blockedReason ?? null,
+        },
+      });
+    } else if (existing.status !== workPackage.status) {
+      await prisma.workPackage.update({
+        where: { id: existing.id },
+        data: { status: workPackage.status, blockedReason: workPackage.blockedReason ?? null },
+      });
+    }
+  }
 }

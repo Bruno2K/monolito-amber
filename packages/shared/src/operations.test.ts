@@ -13,17 +13,21 @@ import {
   assertDeliverableTransition,
   assertOwnershipXor,
   assertPhaseTransition,
+  assertProgressPercent,
   assertUniqueAmongNonArchived,
   assertUniquePhaseSequence,
   assertUserOwnerRequiresActiveProjectMembership,
   assertValidDateRange,
   assertWorkPackageTransition,
+  archiveIsDeliverableRemovalPath,
   archiveIsPhaseRemovalPath,
   cancelledLinkedWorkPackageBlocksDelivery,
   decodePhaseCursor,
+  deliverableDatesTransitStatus,
   deliverableStatusRequiresApprovePermission,
   deliverableStatusRequiresDeliverPermission,
   encodePhaseCursor,
+  hardDeleteDeliverableAllowed,
   hardDeletePhaseAllowed,
   historicalDisciplineIdentifierPreserved,
   incidentalTasksBlockWorkPackageDone,
@@ -33,6 +37,7 @@ import {
   phaseDatesTransitStatus,
   phaseStatusRequiresCompletePermission,
   phasesMayOverlap,
+  progressPercentTransitsDeliverableStatus,
   teamMembershipImpliesProjectMembership,
   teamOwnerGrantsProjectAccess,
   workPackageStatusRequiresBlockedReason,
@@ -95,9 +100,22 @@ describe("Deliverable state machine", () => {
     assertDeliverableTransition("IN_REVIEW", "CANCELLED");
     expect(() => assertDeliverableTransition("IN_REVIEW", "DELIVERED")).toThrow(OperationsStateError);
     expect(() => assertDeliverableTransition("PLANNED", "APPROVED")).toThrow(OperationsStateError);
+    expect(() => assertDeliverableTransition("IN_PROGRESS", "DELIVERED")).toThrow(OperationsStateError);
     expect(() => assertDeliverableTransition("DELIVERED", "CANCELLED")).toThrow(OperationsStateError);
     expect(deliverableStatusRequiresApprovePermission("APPROVED")).toBe(true);
     expect(deliverableStatusRequiresDeliverPermission("DELIVERED")).toBe(true);
+  });
+
+  it("does not let dates or progress transit Deliverable status", () => {
+    expect(deliverableDatesTransitStatus()).toBe(false);
+    expect(progressPercentTransitsDeliverableStatus()).toBe(false);
+    expect(hardDeleteDeliverableAllowed()).toBe(false);
+    expect(archiveIsDeliverableRemovalPath()).toBe(true);
+    expect(() => assertProgressPercent(-1)).toThrow(OperationsStateError);
+    expect(() => assertProgressPercent(101)).toThrow(OperationsStateError);
+    expect(() => assertProgressPercent(100)).not.toThrow();
+    expect(() => assertProgressPercent(0)).not.toThrow();
+    expect(() => assertProgressPercent(null)).not.toThrow();
   });
 
   it("requires phaseId and disciplineId and unique case-insensitive code among non-archived", () => {
@@ -180,6 +198,10 @@ describe("Deliverable delivery rule", () => {
     expect(
       cancelledLinkedWorkPackageBlocksDelivery([{ status: "CANCELLED", associated: false }]),
     ).toBe(false);
+  });
+
+  it("allows DELIVERED when zero WorkPackages are linked (M3.4)", () => {
+    expect(() => assertDeliverableCanBeDelivered([])).not.toThrow();
   });
 });
 
