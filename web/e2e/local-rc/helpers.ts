@@ -46,26 +46,43 @@ export function emailFor(key: string): string {
   return email;
 }
 
+export async function expectSignIn(page: Page): Promise<void> {
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+}
+
+export async function expectOrgSwitch(page: Page): Promise<void> {
+  await expect(page.getByRole("heading", { name: "Switch organization" })).toBeVisible();
+}
+
+/** Unauthenticated project routes may land on /sign-in?next=… or the session StateScreen. */
+export async function expectUnauthenticatedSurface(page: Page): Promise<void> {
+  await expect(page.getByRole("heading", { name: /Sign in|Sessão necessária|Sessão encerrada/ })).toBeVisible();
+}
+
 export async function signIn(page: Page, userKey: string): Promise<void> {
   await page.goto("/sign-in");
-  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+  await expectSignIn(page);
   await page.getByLabel("Email").fill(emailFor(userKey));
   await page.getByLabel("Password").fill(SEED_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
 export async function selectOrg(page: Page, orgName: string): Promise<void> {
-  await page.waitForURL("**/org-switch");
-  await expect(page.getByRole("heading", { name: "Switch organization" })).toBeVisible();
+  await expectOrgSwitch(page);
   const row = page.locator("li").filter({ hasText: orgName });
   await expect(row).toBeVisible();
   await row.getByRole("button", { name: "Switch" }).click();
-  await page.waitForURL("**/projects");
+  await expect(page.getByRole("heading", { name: "Todos os Projetos" })).toBeVisible();
 }
 
 export async function signInToOrg(page: Page, userKey: string, orgName: string): Promise<void> {
   await signIn(page, userKey);
   await selectOrg(page, orgName);
+}
+
+export async function logoutToSignIn(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Sair" }).click();
+  await expectSignIn(page);
 }
 
 export async function capture(page: Page, testInfo: TestInfo, name: string): Promise<void> {

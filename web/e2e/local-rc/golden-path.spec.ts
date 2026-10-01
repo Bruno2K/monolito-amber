@@ -1,5 +1,14 @@
-import { expect, test } from "@playwright/test";
-import { capture, IDS, signInToOrg } from "./helpers";
+import { expect, test, type Page } from "@playwright/test";
+import { capture, IDS, logoutToSignIn, signInToOrg } from "./helpers";
+
+async function expectOperationalHub(page: Page) {
+  await expect(page.getByRole("heading", { name: "Visão Geral" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Projeto e fase" })).toBeVisible();
+  await expect(page.getByText("Alpha Tower").first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Developed Design" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Progresso das entregas" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bloqueados e atenção" })).toBeVisible();
+}
 
 test.describe("M3.8 local RC golden path (real API + Postgres)", () => {
   test("sign-in → org → project → Phase → Deliverable → WorkPackage → Hub → linked context → logout", async ({
@@ -14,9 +23,7 @@ test.describe("M3.8 local RC golden path (real API + Postgres)", () => {
 
     await page.getByRole("link", { name: "Alpha Tower" }).click();
     await page.waitForURL(`**/projects/${IDS.projectA1}/overview`);
-    await expect(page.getByRole("heading", { name: "Visão Geral" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Projeto e fase" })).toBeVisible();
-    await expect(page.getByText("DEL-ARCH-001")).toBeVisible();
+    await expectOperationalHub(page);
     await capture(page, testInfo, "golden-hub");
 
     await page.getByRole("link", { name: "Estrutura" }).click();
@@ -90,12 +97,13 @@ test.describe("M3.8 local RC golden path (real API + Postgres)", () => {
 
     await page.getByRole("link", { name: "Visão Geral" }).click();
     await page.waitForURL(`**/projects/${IDS.projectA1}/overview`);
-    await expect(page.getByRole("heading", { name: "Visão Geral" })).toBeVisible();
+    await expectOperationalHub(page);
+
+    await page.getByRole("link", { name: "Entregas" }).click();
+    await expect(page.getByRole("heading", { name: "Entregas" })).toBeVisible();
     await expect(page.getByText(`RC pack ${tag}`)).toBeVisible();
 
-    await page.getByRole("button", { name: "Sair" }).click();
-    await page.waitForURL("**/sign-in");
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+    await logoutToSignIn(page);
     await capture(page, testInfo, "golden-logout");
   });
 
