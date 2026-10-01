@@ -22,11 +22,15 @@ PF-1.7 DONE
                                                               Bruno homologated LOCAL RC 2026-10-01
                                                               docs residual #49
                                                               main @ d01dfc9e202c60f027c242d187f6cf2e31c701bf
-                                                                   └─ M3.9 ACTIVE — branch m3-9-exit-gate-audit / Issue #50
-                                                                        ├─ Feature freeze (audit + finding corrections only)
-                                                                        ├─ Shared staging HUMAN_REQUIRED unless credentials already exist
-                                                                        ├─ Engineer recommendation only (no self-declared Exit Gate)
-                                                                        └─ M4 not started
+                                                                   └─ M3.9 #50 / #51 squash-merged
+                                                                        reviewed tip 11d0782509b985eae1919101970e908b5b8e5048
+                                                                        Reviewer PASS (audit WI only)
+                                                                        main @ 762c3f3ba85ff899623cf4c3682e6bddad062bab
+                                                                        Exit Gate FAIL — ACCEPTED
+                                                                        LOCAL ONLY — no EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA / Vercel / Railway chase
+                                                                        team cold — no active M3.9 implementation branch
+                                                                        residuals OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted
+                                                                        not M3 COMPLETE · not M4
 ```
 
 ## Integration edges
@@ -41,12 +45,13 @@ PF-1.7 DONE
 | `main` @ `4972176…` (M2 COMPLETE) | M3.1 … M3.8 pack | M3.8 merge `fd10166f…` |
 | `main` @ `fd10166f…` | RC1 PR #47 | squash-merge `61042767…` — homologated |
 | `main` @ `61042767…` | docs residual #49 | `d01dfc9e…` |
-| `main` @ `d01dfc9e…` | M3.9 branch `m3-9-exit-gate-audit` | in review — Engineer must not merge |
+| `main` @ `d01dfc9e…` | M3.9 PR #51 | squash-merge `762c3f3b…` — Exit Gate FAIL — ACCEPTED |
 
 ## Current boundary
 
 - M2 integration is closed.
 - RC1 is **MERGED** and Bruno homologated LOCAL RC.
-- M3.9 is the only active Work Item (LOCAL ONLY / feature freeze).
-- Shared staging remains HUMAN_REQUIRED without existing credentials.
-- M4 remains not started.
+- M3.9 audit WI is **MERGED**. Exit Gate **FAIL — ACCEPTED**. Team cold. No active implementation branch.
+- **LOCAL ONLY.** Do not chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA / Vercel / Railway / public URL.
+- Residuals F-08 / F-10 / RPO-RTO / PaaS remain OPEN; WIN-PS1 accepted residual.
+- M3 COMPLETE / M4 remain not claimed / not started.

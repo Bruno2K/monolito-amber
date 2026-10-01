@@ -4,21 +4,24 @@
 
 **M2 — Product Experience Foundation is COMPLETE, Exit Gate PASS, and integrated into `main` at `4972176442bdb2631ea1f1710a86191109e79dab`.**
 
-**M3 — Project Operations is ACTIVE / LOCAL ONLY.** Active Work Item: **M3.9 — Final Product, Security & UX Audit / Exit Gate** (Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50)). Branch `m3-9-exit-gate-audit` from `main` @ `d01dfc9e202c60f027c242d187f6cf2e31c701bf`. Homologated Local RC narrative tip `6104276754607334c53c6864135d29c539db813e`.
+**M3 — Project Operations is ACTIVE / LOCAL ONLY.** Team is **cold**. No active implementation Work Item and no active M3.9 implementation branch. Audit WI Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51) squash-merged to `main` @ `762c3f3ba85ff899623cf4c3682e6bddad062bab`. Reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Independent Reviewer **PASS (audit WI only)**. Homologated Local RC narrative tip remains `6104276754607334c53c6864135d29c539db813e`.
 
-Authorization (Bruno 2026-10-01 via Altair): execute M3.9 audit + finding corrections only. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring the Exit Gate or M3 completion; starting M4.
+**M3.9 Exit Gate: FAIL — ACCEPTED.** Shared staging / public URL / PaaS deployed SHA (`EG-OPS-STAGING-URL`, `EG-OPS-PAAS-SHA`) stay HUMAN_REQUIRED / NÃO COMPROVADO. **LOCAL ONLY** — do not chase Vercel / Railway / a public URL. This is **not** M3 COMPLETE and **not** M4.
 
-Feature freeze. Primary evidence = Local RC + Foundation/Local RC CI. Shared staging only if existing credentials already allow — otherwise HUMAN_REQUIRED / NÃO COMPROVADO.
+Authorization (Bruno 2026-10-01 via Altair): docs-only disposition sync. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring Exit Gate PASS or M3 completion; starting M4.
 
-Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; Windows PS1 host-pending (supported path = Docker Desktop + WSL2 + bash).
+Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (supported path = Docker Desktop + WSL2 + bash).
 
-## M3.9 (ACTIVE)
+## M3.9 (MERGED — Exit Gate FAIL — ACCEPTED)
 
+- Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51)
+- Squash-merge tip `762c3f3ba85ff899623cf4c3682e6bddad062bab`
+- Reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Reviewer PASS (audit WI only)
 - Canonical Notion: https://app.notion.com/p/3ec678e54c8d81dab5fceda13242a69b
 - Pack: https://app.notion.com/p/3ec678e54c8d81c49efeccb527b3e2bd
 - Matrix: `docs/domain/m3.9-requirements-traceability.md`
 - Evidence: `docs/development/m3.9-evidence/`
-- Engineer recommendation lives in `EXIT-REPORT.md`. Independent Reviewer inspects raw evidence. Governor owns any Exit Gate / completion claim after merge.
+- Engineer recommendation: FAIL (staging). Former branch `m3-9-exit-gate-audit` is closed.
 
 ## RC1 (MERGED → homologated)
 
@@ -63,4 +66,4 @@ Formal Exception is the sole bypass; READY ≠ RELEASED; Exception ≠ SATISFIED
 
 ## Next boundary
 
-Do not start M4. Do not invent a shared staging URL. After Reviewer + merge, only Governor may mark the Exit Gate / M3 completion if Notion criteria are actually met.
+Team remains cold. Do not start M4. Do not invent a shared staging URL or chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA. Only Governor may later mark the Exit Gate / M3 completion if Notion criteria are actually met.
