@@ -36,6 +36,9 @@ describe("0.2A closed permission catalog", () => {
       }
     }
     expect(ROLE_TEMPLATES).toHaveLength(9);
+    expect(isPermissionCode("phase.create")).toBe(true);
+    expect(isPermissionCode("deliverable.deliver")).toBe(true);
+    expect(isPermissionCode("work_package.complete")).toBe(true);
   });
 
   it("splits org-scoped vs project-scoped permissions from the closed catalog", () => {

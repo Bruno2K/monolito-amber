@@ -4,22 +4,21 @@ Operational snapshot — update when the Work Item, branch, milestone, or exit-g
 
 | Field | Value |
 | --- | --- |
-| Milestone | M2 — Product Experience Foundation |
-| Status | **COMPLETE — EXIT GATE PASS — INTEGRATED** |
+| Milestone | M3 — Project Operations |
+| Status | **ACTIVE / LOCAL ONLY** (M2 remains **COMPLETE — EXIT GATE PASS — INTEGRATED**) |
 | Default branch | `main` |
-| Main integration tip | `4e410b11c8712873ace558b931ea141762ee15bb` |
-| Final WI | M2.10 — Final UX/UI Audit & Exit Gate — **PASS / COMPLETE** |
-| Final reviewed branch tip | `09c79789660c3221d102d8d37b4a78d168a785da` |
-| Final PR | https://github.com/Bruno2K/monolito-amber/pull/28 — **MERGED** |
-| Next milestone | M3 **NEXT / not started** |
-| Active Work Item | None |
-| Metrics | 86 product frames; 257 NAVIGATE; broken / orphans / same-node / whole-frame / overlapping multi-dest = 0; under34 = 0 |
-| Residuals | F-04 **OPTIONAL** only; zero BLOCKER / IMPORTANT / MINOR |
-| Backend delta | Zero — M2.6–M2.10 integration is docs/PNG evidence only |
+| Main integration tip | `4972176442bdb2631ea1f1710a86191109e79dab` |
+| Active Work Item | **M3.1 — Contract, Migration & Test-Data Readiness** |
+| Active branch | `m3.1-contract-migration-test-data` |
+| Issue | [#30](https://github.com/Bruno2K/monolito-amber/issues/30) |
+| M3.1 Exit Gate | **not claimed** (Independent Reviewer + green CI + merge required) |
+| Next Work Item | M3.2 — **not started / not ACTIVE** |
+| Authorization | LOCAL ONLY — no Vercel/Railway/cloud deploy/domain |
+| Forbidden claims | M3.8 PASS; M3.9; M3 COMPLETE; M4 |
 
-## Integration record
+## M2 integration record (closed)
 
-The stack was integrated bottom-up with merge commits, preserving ancestry:
+The M2 stack was integrated bottom-up with merge commits, preserving ancestry:
 
 | PR | WI | Merge commit | Status |
 | --- | --- | --- | --- |
@@ -29,14 +28,8 @@ The stack was integrated bottom-up with merge commits, preserving ancestry:
 | #26 | M2.9 | `64223fa361bf2600f9e1a1799278e3ddc3e056e5` | MERGED |
 | #28 | M2.10 | `4e410b11c8712873ace558b931ea141762ee15bb` | MERGED |
 
-## Final audit record
-
-- M2.10 Independent Reviewer CL1 PASS on technical tip `2aad14db…` after R-01/R-02 were cleared.
-- Post-review synchronization audit found and corrected repository/Figma status drift.
-- Final independent re-review PASS on `09c79789660c3221d102d8d37b4a78d168a785da`.
-- Final branch CI SUCCESS: run `36822378274`.
-- Figma `fkE9SwcNlQG7m0HvcGQBw9`, page `04 — Telas`, remains the canonical M2 design evidence.
+M2.10 Independent Reviewer PASS; Figma `fkE9SwcNlQG7m0HvcGQBw9` remains canonical M2 design evidence.
 
 ## Current boundary
 
-M2 is integrated and closed. Do not infer production implementation from this design milestone. Do not start or mark M3 ACTIVE until Bruno explicitly defines and activates it.
+M3.1 is the only active Work Item. Do not implement Ops CRUD UI, apply Operations Prisma schema, or activate M3.2+. Do not merge without Independent Reviewer PASS.

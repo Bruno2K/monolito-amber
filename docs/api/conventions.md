@@ -6,7 +6,7 @@
 - Correlation: accept `X-Correlation-Id` or generate a UUID
 - Pagination (later): cursor for large lists; allowlisted sort/filter
 - Idempotency-Key required for publish, approve, reject, make-current, task create/status/complete/dependency, milestone create/achieve, gate release, exception request/approve/reject
-- AuthZ uses the closed 0.2A catalog
+- AuthZ uses the closed catalog (0.2A + authorized M3.1 Operations codes). Planned Ops paths: [m3-openapi-plan.md](./m3-openapi-plan.md) — not generated in this WI.
 - Download/preview denied unless `scan_status=CLEAN`
 - Browser sessions: `amber_session` HttpOnly cookie (opaque token; server stores hash)
 

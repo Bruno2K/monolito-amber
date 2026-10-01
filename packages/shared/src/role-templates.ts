@@ -50,7 +50,7 @@ export const ROLE_TEMPLATES: readonly RoleTemplate[] = [
     key: "PROJECT_COORDINATOR",
     name: "Project Coordinator",
     description:
-      "Project read/update, project member/role assignment, document read, issue/task/milestone coordination, gate evaluation, Formal Exception request, and normal project administration. High-risk approvals remain separate where SoD applies.",
+      "Project read/update, project member/role assignment, document read, issue/task/milestone coordination, Phase/Deliverable/WorkPackage management, gate evaluation, Formal Exception request, and normal project administration. High-risk approvals remain separate where SoD applies.",
     permissions: [
       "project.read",
       "project.update",
@@ -75,13 +75,24 @@ export const ROLE_TEMPLATES: readonly RoleTemplate[] = [
       "gate.read",
       "gate.evaluate",
       "exception.request",
+      "phase.create",
+      "phase.update",
+      "phase.complete",
+      "deliverable.create",
+      "deliverable.update",
+      "deliverable.assign",
+      "deliverable.approve",
+      "deliverable.deliver",
+      "work_package.create",
+      "work_package.update",
+      "work_package.complete",
     ],
   },
   {
     key: "DISCIPLINE_COORDINATOR",
     name: "Discipline Coordinator",
     description:
-      "Project read; document/revision creation and publication for authorized discipline scope; issue/task coordination within authorized project/discipline scope.",
+      "Project read; document/revision creation and publication for authorized discipline scope; issue/task coordination; Deliverable and WorkPackage mutation within authorized project/discipline scope. Does not gain Phase management or Deliverable approve/deliver.",
     permissions: [
       "project.read",
       "document.read",
@@ -97,6 +108,12 @@ export const ROLE_TEMPLATES: readonly RoleTemplate[] = [
       "task.assign",
       "task.update",
       "task.complete",
+      "deliverable.create",
+      "deliverable.update",
+      "deliverable.assign",
+      "work_package.create",
+      "work_package.update",
+      "work_package.complete",
     ],
   },
   {

@@ -41,6 +41,8 @@ Authorization context: User + Session + active Org + ACTIVE OrgMembership + (whe
 
 PF-1.1 / PF-1.1R shipped SoD primitives without creating fake Gate/Exception entities. PF-1.3 enforces Revision publisher SoD on approve/reject/make-current. PF-1.4 maps Impact assess → `issue.update` and Impact resolve → `issue.resolve` (closed 0.2A catalog has no `impact.*`). PF-1.5 uses existing `task.*` / `milestone.*`; Task assignment requires ACTIVE ProjectMembership.
 
+M3.1 **additively** extends the closed catalog with Operations codes (`phase.*`, `deliverable.*`, `work_package.*`). Reads use `project.read`. `gate.override` remains forbidden. See [m3-permission-role-template-delta.md](./m3-permission-role-template-delta.md).
+
 ## Audit read
 
 Listing/read requires `organization.read_audit` + tenant/project scope.

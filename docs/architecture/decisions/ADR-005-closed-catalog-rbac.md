@@ -21,3 +21,6 @@ CI asserts the catalog and OpenAPI contain no `gate.override`. Role template per
 
 ## Supersedes
 Stale 0.2 illustrative `gate.override` string
+
+## Amended by
+[ADR-018](./ADR-018-operations-module-state-transitions.md) — M3.1 additively extends the closed catalog with authorized Operations codes (`phase.*`, `deliverable.*`, `work_package.*`). Invented codes remain forbidden. `gate.override` remains forbidden.

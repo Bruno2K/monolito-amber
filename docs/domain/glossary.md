@@ -21,3 +21,8 @@
 | Organization-owned RoleDefinition | Tenant-owned role instantiated from a template; the only assignable AuthZ target |
 | ProjectMembership | First-class link from an Organization Membership to one Project |
 | amber_app | Application DB role: INSERT+SELECT on audit, no UPDATE/DELETE |
+| Phase | Project-scoped delivery phase. Dates do not transit status. Overlap allowed |
+| Discipline | Organization-owned catalog. Code unique case-insensitive per Org. Not Project access. Not assignee |
+| Deliverable | Business/technical outcome (not a file). Requires Phase + Discipline. Deliverable ≠ Document |
+| WorkPackage | Operational breakdown under a Phase (optional Deliverable). WorkPackage ≠ Task |
+| Team | Organization-scoped group. TeamMembership ≠ ProjectMembership; Team owner ≠ Project access |

@@ -2,7 +2,7 @@
 
 Material decisions encoded for PF-1.0 and PF-1.1. Format: Status / Context / Decision / Alternatives / Consequences / Implementation Implications / Supersedes.
 
-Governance tables (Gate / Formal Exception / release evidence) are implemented in PF-1.6 (ADR-017). Planning tables are implemented in PF-1.5 (ADR-016).
+Governance tables (Gate / Formal Exception / release evidence) are implemented in PF-1.6 (ADR-017). Planning tables are implemented in PF-1.5 (ADR-016). Operations (Phase / Deliverable / WorkPackage) is contracted in M3.1 (ADR-018); schema apply is M3.3+.
 
 | ID | Title |
 | --- | --- |
@@ -23,3 +23,4 @@ Governance tables (Gate / Formal Exception / release evidence) are implemented i
 | [ADR-015](./ADR-015-impact-analysis-outbox-consumer.md) | Impact Analysis outbox consumer (at-most-one PENDING_ANALYSIS) |
 | [ADR-016](./ADR-016-planning-tasks-milestones.md) | Planning Tasks, finish-to-start deps, derived Milestone risk |
 | [ADR-017](./ADR-017-governance-gates-formal-exceptions.md) | Governance Gates, typed requirements, Formal Exceptions |
+| [ADR-018](./ADR-018-operations-module-state-transitions.md) | Operations module (Phase, Deliverable, WorkPackage) + M3.1 additive catalog |

@@ -25,3 +25,7 @@ export * from "./impact.js";
 export * from "./issue.js";
 export * from "./planning.js";
 export * from "./governance.js";
+export * from "./operations.js";
+export * from "./m3-routes.js";
+export * from "./m3-seed-design.js";
+export * from "./m3-requirements.js";
