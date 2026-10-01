@@ -15,8 +15,10 @@ Baseline main: `fd10166f4ff5288e14d2796be8950da5a02ca1b9`.
 
 | Job | URL | Status | Tip SHA |
 | --- | --- | --- | --- |
-| Foundation & Security Gates | _pending first push_ | pending | _PR head_ |
-| Local RC (real API + Postgres + MinIO) | _pending first push_ | pending | _PR head_ |
+| Foundation & Security Gates | _pending green on this tip_ | pending | _PR head_ |
+| Local RC (real API + Postgres + MinIO) | _pending green on this tip_ | pending | _PR head_ |
+
+Prior failed run (image pull): https://github.com/Bruno2K/monolito-amber/actions/runs/36923782859 — Docker Hub `minio/minio` 404. Compose/CI/Testcontainers now use `bitnamilegacy/minio` (MinIO server).
 
 Artifact name on Local RC: `m3-rc1-local-rc-evidence`.
 

@@ -9,8 +9,8 @@ need_cmd pnpm
 need_cmd curl
 ensure_env
 
-echo "==> compose up postgres + minio (+ minio-init)"
-"${COMPOSE[@]}" up -d postgres minio minio-init
+echo "==> compose up postgres + minio"
+"${COMPOSE[@]}" up -d postgres minio
 wait_postgres
 
 echo "==> pnpm install / prisma generate"

@@ -51,13 +51,13 @@ function restoreEnv(): void {
 
 beforeAll(async () => {
   unusedDir = await mkdtemp(join(tmpdir(), "amber-not-minio-"));
-  container = await new GenericContainer("minio/minio:latest")
+  container = await new GenericContainer("bitnamilegacy/minio:2025.7.23-debian-12-r5")
     .withExposedPorts(9000)
     .withEnvironment({
       MINIO_ROOT_USER: "amberminio",
       MINIO_ROOT_PASSWORD: "amberminio",
+      MINIO_DEFAULT_BUCKETS: "amber-files",
     })
-    .withCommand(["server", "/data"])
     .withWaitStrategy(Wait.forHttp("/minio/health/live", 9000).forStatusCode(200))
     .start();
   const endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;

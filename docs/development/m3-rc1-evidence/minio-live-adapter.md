@@ -6,7 +6,7 @@ LOCAL ONLY. Bytes in Local RC go through the S3-compatible MinIO service using t
 
 | Variable | Local value |
 | --- | --- |
-| `S3_ENDPOINT` | `http://localhost:9000` (compose service `minio`) |
+| `S3_ENDPOINT` | `http://localhost:9000` (compose service `minio`, image `bitnamilegacy/minio`) |
 | `S3_REGION` | `us-east-1` |
 | `S3_ACCESS_KEY` / `S3_SECRET_KEY` | `amberminio` (placeholder, not a cloud secret) |
 | `S3_BUCKET` | `amber-files` |
@@ -19,8 +19,10 @@ Startup: `assertLiveObjectStorageReady()` in `api/src/main.ts` logs `objectStora
 
 ## Proof (automated)
 
+Images: `bitnamilegacy/minio:2025.7.23-debian-12-r5` (MinIO server). Docker Hub `minio/minio` + `minio/mc` were removed in 2026-09; anonymous Quay pulls were unauthorized from this agent, so Local RC uses the public Bitnami-legacy MinIO image. Bucket `amber-files` is created with `MINIO_DEFAULT_BUCKETS` (and again by the adapter’s `CreateBucket` if missing).
+
 1. **Foundation CI / Testcontainers** — `api/test/integration/object-storage-minio.integration.test.ts`
-   - Starts MinIO.
+   - Starts MinIO from Quay.
    - Puts a tenant-bound key.
    - Reads it back through the adapter.
    - Independent `@aws-sdk/client-s3` `GetObject` against the bucket (not the filesystem).

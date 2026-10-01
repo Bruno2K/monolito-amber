@@ -98,19 +98,15 @@ jobs:
         run: pnpm prisma:generate
       - name: Start MinIO (live Local RC object storage)
         run: |
-          docker run -d --name amber-minio \
-            -p 9000:9000 \
-            -e MINIO_ROOT_USER=amberminio \
-            -e MINIO_ROOT_PASSWORD=amberminio \
-            minio/minio:latest server /data --console-address ":9001"
-          for i in $(seq 1 30); do
+          docker compose up -d minio
+          for i in $(seq 1 45); do
             if curl -sf http://127.0.0.1:9000/minio/health/live >/dev/null; then
               echo "minio ready"
               break
             fi
-            if [[ "$i" -eq 30 ]]; then
+            if [[ "$i" -eq 45 ]]; then
               echo "MinIO never became ready" >&2
-              docker logs amber-minio >&2 || true
+              docker compose logs minio >&2 || true
               exit 1
             fi
             sleep 1

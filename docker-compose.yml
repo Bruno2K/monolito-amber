@@ -4,8 +4,7 @@
 #
 # Service names and host ports:
 #   postgres     5432
-#   minio        9000 (S3 API) / 9001 (console)
-#   minio-init   (oneshot; creates S3_BUCKET)
+#   minio        9000 (S3 API) / 9001 (console); bucket amber-files via MINIO_DEFAULT_BUCKETS
 #   api          3001   (profile: apps)
 #   web          3000   (profile: apps)
 #   redis        6379   (profile: jobs — not part of Local RC)
@@ -30,37 +29,23 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+    # Official Docker Hub `minio/minio` was removed (2026-09). This image is MinIO
+    # (Bitnami legacy packaging), still S3-compatible, pullable without a registry login.
+    image: bitnamilegacy/minio:2025.7.23-debian-12-r5
     environment:
       MINIO_ROOT_USER: amberminio
       MINIO_ROOT_PASSWORD: amberminio
+      MINIO_DEFAULT_BUCKETS: amber-files
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
-      - amber_minio:/data
-
-  minio-init:
-    image: minio/mc:latest
-    depends_on:
-      - minio
-    restart: on-failure
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        set -e
-        i=0
-        until mc alias set local http://minio:9000 amberminio amberminio; do
-          i=$$((i+1))
-          if [ "$$i" -gt 30 ]; then
-            echo "minio-init: MinIO never became ready" >&2
-            exit 1
-          fi
-          sleep 1
-        done
-        mc mb --ignore-existing local/amber-files
-        echo "minio-init: bucket amber-files ready"
+      - amber_minio:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   api:
     profiles: ["apps"]

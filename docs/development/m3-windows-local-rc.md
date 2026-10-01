@@ -65,7 +65,7 @@ If WSL is absent, `up.ps1` starts **compose profile `apps`** so web runs in Linu
 
 ## MinIO
 
-Local RC requires the S3 env contract (`S3_ENDPOINT` … `S3_BUCKET`) and `AMBER_REQUIRE_S3=1`. Filesystem `OBJECT_STORAGE_DIR` is not the live adapter.
+Local RC requires the S3 env contract (`S3_ENDPOINT` … `S3_BUCKET`) and `AMBER_REQUIRE_S3=1`. Filesystem `OBJECT_STORAGE_DIR` is not the live adapter. Compose pulls `bitnamilegacy/minio` (MinIO; Docker Hub `minio/minio` was removed).
 
 ## Shutdown / reset
 

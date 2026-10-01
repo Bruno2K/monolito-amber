@@ -205,6 +205,9 @@ describe("M3.1 contract consistency", () => {
     const compose = read("docker-compose.yml");
     expect(compose).toMatch(/postgres:/);
     expect(compose).toMatch(/minio:/);
+    expect(compose).toMatch(/bitnamilegacy\/minio/);
+    expect(compose).not.toMatch(/^\s+image:\s+minio\/minio/m);
+    expect(compose).not.toMatch(/^\s+image:\s+minio\/mc/m);
     expect(compose).toMatch(/api:/);
     expect(compose).toMatch(/web:/);
     expect(compose).toMatch(/profiles:\s*\n\s*- jobs/m);

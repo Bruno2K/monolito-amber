@@ -5,8 +5,8 @@ $ErrorActionPreference = "Stop"
 Ensure-Env
 
 $compose = Get-Compose
-Write-Host "==> compose up postgres + minio (+ minio-init)"
-& $compose[0] $compose[1] up -d postgres minio minio-init
+Write-Host "==> compose up postgres + minio"
+& $compose[0] $compose[1] up -d postgres minio
 
 if (Test-WslReady) {
   Write-Host "==> delegating migrate+seed to WSL2 bash (supported path)"
