@@ -10,6 +10,8 @@ Organization, Project, Document, Issue, Task, Milestone, Gate.
 
 M3.1 contracts additional Operations aggregates: **Phase**, **Discipline** (org catalog), **Deliverable**, **WorkPackage**, plus **Team** as an Organization-owned subject. See [m3-project-operations-contract.md](./m3-project-operations-contract.md). M3.3 implements Prisma models and APIs for Discipline, Team, and Phase. M3.4 implements Deliverable. M3.5 implements WorkPackage CRUD.
 
+M4.1 freezes the executable Planning contract against this tip (docs only): [m4-planning-scheduling-contract.md](./m4-planning-scheduling-contract.md). It does not apply schema or UI.
+
 PF-1.6 persists Document, Revision, Impact Analysis, Issue, Task, TaskDependency, Milestone, Gate, GateRequirement, FormalException, and GateReleaseDecision. Document is the stable logical artifact (Project + Organization). Revision is one version of that Document. Impact Analysis is the at-most-one case created by a current-base change. Issue is the coordination problem / pendência. Task is executable Planning work (Task ≠ Issue). Milestone is an explicit project checkpoint. Gate is the governance checkpoint over typed requirements. Formal Exception is the sole requirement-specific bypass.
 
 ## Invariants already enforced in code

@@ -28,9 +28,17 @@ PF-1.7 DONE
                                                                         main @ 762c3f3ba85ff899623cf4c3682e6bddad062bab
                                                                         Exit Gate FAIL — ACCEPTED
                                                                         LOCAL ONLY — no EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA / Vercel / Railway chase
-                                                                        team cold — no active M3.9 implementation branch
                                                                         residuals OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted
-                                                                        not M3 COMPLETE · not M4
+                                                                        not M3 COMPLETE
+                                                                        disposition #52
+                                                                        main @ a3eaadcd61c8f8153f61c6a51f920e37b8f362a0
+                                                                             └─ M4 ACTIVE / LOCAL ONLY
+                                                                                  └─ M4.1 IN FLIGHT (Issue #54)
+                                                                                       branch m4-1-contract-baseline
+                                                                                       docs-only contract / baseline / read-model plan
+                                                                                       M4.2–M4.9 LOCKED
+                                                                                       Independent Reviewer required
+                                                                                       do not merge from Engineer pass
 ```
 
 ## Integration edges
@@ -46,12 +54,14 @@ PF-1.7 DONE
 | `main` @ `fd10166f…` | RC1 PR #47 | squash-merge `61042767…` — homologated |
 | `main` @ `61042767…` | docs residual #49 | `d01dfc9e…` |
 | `main` @ `d01dfc9e…` | M3.9 PR #51 | squash-merge `762c3f3b…` — Exit Gate FAIL — ACCEPTED |
+| `main` @ `762c3f3b…` | disposition #52 | `a3eaadcd…` |
+| `main` @ `a3eaadcd…` | M4.1 branch `m4-1-contract-baseline` | in flight — docs only |
 
 ## Current boundary
 
 - M2 integration is closed.
 - RC1 is **MERGED** and Bruno homologated LOCAL RC.
-- M3.9 audit WI is **MERGED**. Exit Gate **FAIL — ACCEPTED**. Team cold. No active implementation branch.
-- **LOCAL ONLY.** Do not chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA / Vercel / Railway / public URL.
+- M3.9 audit WI is **MERGED**. Exit Gate **FAIL — ACCEPTED**. Accepted debt — not M4 scope. **Not M3 COMPLETE.**
+- **M4 ACTIVE / LOCAL ONLY.** M4.1 in flight (Issue #54). M4.2–M4.9 LOCKED.
+- Do not chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA / Vercel / Railway / public URL.
 - Residuals F-08 / F-10 / RPO-RTO / PaaS remain OPEN; WIN-PS1 accepted residual.
-- M3 COMPLETE / M4 remain not claimed / not started.
