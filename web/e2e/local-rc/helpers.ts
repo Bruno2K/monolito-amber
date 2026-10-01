@@ -51,7 +51,12 @@ export async function expectSignIn(page: Page): Promise<void> {
 }
 
 export async function expectOrgSwitch(page: Page): Promise<void> {
-  await expect(page.getByRole("heading", { name: "Switch organization" })).toBeVisible();
+  await expect(page).toHaveURL(/\/org-switch/);
+  // IdentityFrame title is English; empty/loading StateScreen adds a second h1
+  // ("Organization necessária" / "Carregando") on the same page.
+  await expect(
+    page.getByRole("heading", { name: /Switch organization|Organization necessária|Carregando/ }).first(),
+  ).toBeVisible();
 }
 
 /** Unauthenticated project routes may land on /sign-in?next=… or the session StateScreen. */
@@ -68,11 +73,12 @@ export async function closeInspectorIfOpen(page: Page): Promise<void> {
 }
 
 export async function signIn(page: Page, userKey: string): Promise<void> {
-  await page.goto("/sign-in");
+  await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
   await expectSignIn(page);
   await page.getByLabel("Email").fill(emailFor(userKey));
   await page.getByLabel("Password").fill(SEED_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForURL(/\/org-switch/);
   await expectOrgSwitch(page);
 }
 

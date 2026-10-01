@@ -59,7 +59,7 @@ test.describe("M3.8 local RC golden path (real API + Postgres)", () => {
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.getByRole("dialog").getByLabel("Código").fill(`DEL-RC-${tag.toUpperCase()}`);
     await page.getByRole("dialog").getByLabel("Título").fill(`RC pack ${tag}`);
-    await page.getByRole("dialog").getByLabel("Fase").selectOption({ label: "Concept" });
+    await page.getByRole("dialog").locator("#deliverable-phase").selectOption({ label: "Concept" });
     await page.getByRole("dialog").locator("#deliverable-discipline").selectOption({ label: "ARCH Architecture" });
     await page.getByRole("dialog").getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("dialog").getByText(`RC pack ${tag}`)).toBeVisible();
@@ -82,7 +82,7 @@ test.describe("M3.8 local RC golden path (real API + Postgres)", () => {
     await page.getByRole("button", { name: "Novo pacote" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.getByRole("dialog").getByLabel("Título").fill(`RC package ${tag}`);
-    await page.getByRole("dialog").getByLabel("Fase").selectOption({ label: "Concept" });
+    await page.getByRole("dialog").locator("#work-package-phase").selectOption({ label: "Concept" });
     await page.getByRole("dialog").getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("dialog").getByText(`RC package ${tag}`)).toBeVisible();
     await page.getByRole("button", { name: "Ativar" }).click();
