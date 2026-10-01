@@ -11,7 +11,7 @@ PF-1.7 DONE (main)
                            History: RC1 917e95a… REQUEST_CHANGES
                                  → RC2 0758675d… (technical) / ee02fdf8… (Reviewer PASS)
                                  → Governor Exit Gate + DOC SYNC RC3
-                           └─ M2.10 branch m2.10-final-ux-ui-audit (this stacked PR)
+                           └─ M2.10 PR #28 OPEN @ branch m2.10-final-ux-ui-audit
                                 CURRENT: CORRECTION LOOP / IN REVIEW (NOT PASS)
                                 Phase: scaffold + inventory
                                 PR tip: validated in the independent reviewer report
@@ -25,14 +25,14 @@ PF-1.7 DONE (main)
 | From | To | Note |
 | --- | --- | --- |
 | M2.9 @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf` | M2.10 branch | mandatory PR base (not main) |
-| Issue #27 | this stacked PR | Closes #27 when merged later — leave OPEN now |
+| Issue #27 | PR #28 | Closes #27 when merged later — leave OPEN now |
 | M2.9 Reviewer PASS RC2 | M2.9 Governor | M2.9 Exit Gate stands; stack remains OPEN |
 | M2.10 phase 1 | Engineer Figma pass | follow-up on the same branch; do not self-PASS |
 | M2.10 Independent Reviewer | M2 Exit Gate | Governor locks only after Reviewer PASS |
 
 ## Do not
 
-- Merge / squash / destructively rebase / retarget #20 / #22 / #24 / #26 / this PR
+- Merge / squash / destructively rebase / retarget #20 / #22 / #24 / #26 / #28
 - Start M3
 - Change backend / schema / API / Prisma / AuthZ catalog / domain contracts
 - Invent ATTENDIDO or Exit Gate PASS

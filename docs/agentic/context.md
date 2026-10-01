@@ -2,7 +2,7 @@
 
 ## Active Work Item
 
-**M2.10 — Final UX/UI Audit & Exit Gate** is **ACTIVE / IN PROGRESS** (status **CORRECTION LOOP / IN REVIEW**, **NOT PASS**) on branch `m2.10-final-ux-ui-audit`, stacked on `m2.9-prototype-state-coverage` @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf`.
+**M2.10 — Final UX/UI Audit & Exit Gate** is **ACTIVE / IN PROGRESS** (status **CORRECTION LOOP / IN REVIEW**, **NOT PASS**) on PR [#28](https://github.com/Bruno2K/monolito-amber/pull/28) (`m2.10-final-ux-ui-audit`), stacked on `m2.9-prototype-state-coverage` @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf`.
 
 This revision is phase 1 — scaffold + inventory only. It does not embed its own commit SHA.
 
@@ -31,7 +31,7 @@ PR tip validated in the independent reviewer report attached to the PR (pending 
 | #22 | M2.7 | OPEN — PASS / COMPLETE |
 | #24 | M2.8 | OPEN — PASS / COMPLETE |
 | #26 | M2.9 | OPEN — PASS / COMPLETE |
-| this | M2.10 | OPEN — CORRECTION LOOP / IN REVIEW (NOT PASS) |
+| #28 | M2.10 | OPEN — CORRECTION LOOP / IN REVIEW (NOT PASS) |
 
 Do **not** merge any of the above. Do **not** start M3.
 

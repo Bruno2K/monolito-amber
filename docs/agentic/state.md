@@ -8,13 +8,13 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 | Status | **CORRECTION LOOP / IN REVIEW (NOT PASS)** — phase 1 scaffold + inventory |
 | Issue | https://github.com/Bruno2K/monolito-amber/issues/27 |
 | Branch | `m2.10-final-ux-ui-audit` |
-| PR | this stacked PR (number assigned on open — OPEN; do not merge) |
+| PR | https://github.com/Bruno2K/monolito-amber/pull/28 (OPEN — do not merge) |
 | Repo | `Bruno2K/monolito-amber` |
 | Base | `m2.9-prototype-state-coverage` @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf` |
 | PR tip | validated in the independent reviewer report attached to the PR (pending) |
 | This docs revision | scaffold + inventory; does not embed its own SHA |
 | Prior WI | M2.9 — Prototype & State Coverage — **PASS / COMPLETE**; PR #26 OPEN (do not merge) |
-| Stack open | #20 (M2.6 PASS / COMPLETE) · #22 (M2.7 PASS / COMPLETE) · #24 (M2.8 PASS / COMPLETE) · #26 (M2.9 PASS / COMPLETE) · this PR (M2.10 IN PROGRESS) — all OPEN |
+| Stack open | #20 (M2.6 PASS / COMPLETE) · #22 (M2.7 PASS / COMPLETE) · #24 (M2.8 PASS / COMPLETE) · #26 (M2.9 PASS / COMPLETE) · #28 (M2.10 IN PROGRESS) — all OPEN |
 | Next WI | M3 **not started** |
 | Exit Gate | **awaiting Independent Reviewer** — do not self-PASS; not M2 COMPLETE |
 | Merge | DO NOT MERGE — leave OPEN |
@@ -23,7 +23,7 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 
 ## Stacking note
 
-**PR base MUST be** `m2.9-prototype-state-coverage` @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf`, **NOT** `main`. Do not wait for merge of #20/#22/#24/#26. Do not start M3. Do not merge, squash, destructively rebase, or retarget the stack.
+**PR base MUST be** `m2.9-prototype-state-coverage` @ `3a3526fefb41095cc97a20c93a13c1d016f76ccf`, **NOT** `main`. Do not wait for merge of #20/#22/#24/#26/#28. Do not start M3. Do not merge, squash, destructively rebase, or retarget the stack.
 
 ## Review history (labeled — not current status)
 
@@ -43,4 +43,4 @@ Operational snapshot — update when the Work Item, branch, or exit-gate status 
 
 ## Out of scope
 
-Backend schema/API/Prisma/domain/AuthZ catalog; Figma edits this run; inventing ATTENDIDO/PASS; merging #20, #22, #24, or #26; starting M3; Bruno2K/amber.
+Backend schema/API/Prisma/domain/AuthZ catalog; Figma edits this run; inventing ATTENDIDO/PASS; merging #20, #22, #24, #26, or #28; starting M3; Bruno2K/amber.
