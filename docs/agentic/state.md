@@ -7,15 +7,19 @@ Operational snapshot — update when the Work Item, branch, milestone, or exit-g
 | Milestone | M3 — Project Operations |
 | Status | **ACTIVE / LOCAL ONLY** (M2 remains **COMPLETE — EXIT GATE PASS — INTEGRATED**) |
 | Default branch | `main` |
-| Main integration tip | `fd10166f4ff5288e14d2796be8950da5a02ca1b9` (M3.8 pack merged; prior READY claim **revoked by audit**) |
-| Active Work Item | **M3 — Local RC Audit Corrections RC1** |
-| Active branch | `m3-local-rc-audit-corrections` |
-| Issue | [#46](https://github.com/Bruno2K/monolito-amber/issues/46) |
-| M3.8 Exit Gate | **not claimed** (prior LOCAL RC READY/homologated language is revoked; this WI restores truthful evidence only) |
+| Main integration tip | `6104276754607334c53c6864135d29c539db813e` (RC1 #47 squash-merged; Bruno homologated LOCAL RC) |
+| Active Work Item | none (RC1 closed; docs residual #48 closes with this sync) |
+| Active branch | none |
+| Closed RC1 | [#46](https://github.com/Bruno2K/monolito-amber/issues/46) / [#47](https://github.com/Bruno2K/monolito-amber/pull/47) **MERGED → homologated**; reviewed tip `6683bba56299bb28f34029eab8c72dee63bf6aca` |
+| Bruno homologation | 2026-10-01 localhost: "Everything seems fine here." |
+| M3.8 Exit Gate | **not claimed** — **frozen** |
 | Next Work Item | M3.9 / shared staging — **frozen** until new Bruno authorization |
 | Authorization | LOCAL ONLY — no Vercel/Railway/cloud deploy/domain |
-| Forbidden claims | M3.8 Exit Gate PASS; Bruno homologated; LOCAL RC READY; M3.9; M3 COMPLETE; M4 |
+| Residuals (OPEN) | F-08 / F-10 / RPO-RTO / PaaS; Windows PS1 host-pending (supported path = Docker Desktop + WSL2 + bash) |
+| Forbidden claims | M3.8 Exit Gate PASS; M3.9; M3 COMPLETE; M4; cloud (Vercel/Railway/public URL) |
 
 ## Current boundary
 
-M3.1–M3.8 pack are on `main`. RC1 corrects audit findings RC1-01…08 on a candidate PR. Do not merge without Independent Reviewer PASS. Do not enable cloud deploy. Do not claim LOCAL RC READY.
+M3.1–M3.8 pack and RC1 are on `main`. Bruno homologated LOCAL RC. Do not enable cloud deploy. Do not start M3.9.
+
+Historical: independent audit revoked an earlier READY claim on `main` @ `fd10166f4ff5288e14d2796be8950da5a02ca1b9`. RC1 (#46/#47) closed that gap. That revocation is not current status.

@@ -1,9 +1,10 @@
 # M3 RC1 — Reviewer evidence index
 
-Independent Reviewer: inspect **raw files and CI logs**, not Engineer summaries. LOCAL ONLY. This index does **not** claim LOCAL RC READY, Bruno homologated, M3.8 Exit Gate PASS, M3.9, or M3 COMPLETE.
+Independent Reviewer: inspect **raw files and CI logs**, not Engineer summaries. LOCAL ONLY.
 
-Candidate branch: `m3-local-rc-audit-corrections` (Issue [#46](https://github.com/Bruno2K/monolito-amber/issues/46)).
-Baseline main: `fd10166f4ff5288e14d2796be8950da5a02ca1b9`.
+**Status: MERGED / homologated.** Issue [#46](https://github.com/Bruno2K/monolito-amber/issues/46) / PR [#47](https://github.com/Bruno2K/monolito-amber/pull/47). Reviewed tip `6683bba56299bb28f34029eab8c72dee63bf6aca`. Homologated merge SHA `6104276754607334c53c6864135d29c539db813e` on `main`. Bruno homologated LOCAL RC 2026-10-01 ("Everything seems fine here."). This index does **not** claim M3.8 Exit Gate PASS, M3.9, or M3 COMPLETE.
+
+Former candidate branch `m3-local-rc-audit-corrections` is closed. Pre-RC1 baseline main `fd10166f4ff5288e14d2796be8950da5a02ca1b9` is historical, not the current tip.
 
 ## How to read
 
@@ -22,7 +23,25 @@ Green run that produced the axe JSON / screenshots / reset log in this folder an
 
 Workflow run: https://github.com/Bruno2K/monolito-amber/actions/runs/36925819708
 
-Prior failed runs (same branch): [36923782859](https://github.com/Bruno2K/monolito-amber/actions/runs/36923782859) Docker Hub `minio/minio` 404; [36924453952](https://github.com/Bruno2K/monolito-amber/actions/runs/36924453952) / [36925227887](https://github.com/Bruno2K/monolito-amber/actions/runs/36925227887) axe contrast. Not skipped.
+Reviewed tip (pre-merge) — same-tip CI, no new evidence files copied here:
+
+| Job | URL | Status | Tip SHA |
+| --- | --- | --- | --- |
+| Foundation & Security Gates | https://github.com/Bruno2K/monolito-amber/actions/runs/36926675352/job/110585608143 | success | `6683bba56299bb28f34029eab8c72dee63bf6aca` |
+| Local RC (real API + Postgres + MinIO) | https://github.com/Bruno2K/monolito-amber/actions/runs/36926675352/job/110585608335 | success | `6683bba56299bb28f34029eab8c72dee63bf6aca` |
+
+Workflow run: https://github.com/Bruno2K/monolito-amber/actions/runs/36926675352
+
+Homologated merge on `main`:
+
+| Job | URL | Status | Tip SHA |
+| --- | --- | --- | --- |
+| Foundation & Security Gates | https://github.com/Bruno2K/monolito-amber/actions/runs/36927791629/job/110589296982 | success | `6104276754607334c53c6864135d29c539db813e` |
+| Local RC (real API + Postgres + MinIO) | https://github.com/Bruno2K/monolito-amber/actions/runs/36927791629/job/110589297249 | success | `6104276754607334c53c6864135d29c539db813e` |
+
+Workflow run: https://github.com/Bruno2K/monolito-amber/actions/runs/36927791629
+
+Prior failed runs (same former branch): [36923782859](https://github.com/Bruno2K/monolito-amber/actions/runs/36923782859) Docker Hub `minio/minio` 404; [36924453952](https://github.com/Bruno2K/monolito-amber/actions/runs/36924453952) / [36925227887](https://github.com/Bruno2K/monolito-amber/actions/runs/36925227887) axe contrast. Not skipped.
 
 Artifact name on Local RC: `m3-rc1-local-rc-evidence` (PNGs + axe JSON + `reset-rehearsal.log`).
 
