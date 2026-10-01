@@ -95,6 +95,81 @@ function sessionView(session) {
   };
 }
 
+const phasesA = [
+  {
+    id: "phase-brief",
+    organizationId: ORG_A,
+    projectId: PROJECT_A,
+    name: "Brief",
+    description: "",
+    sequence: 0,
+    plannedStartAt: null,
+    plannedEndAt: null,
+    actualStartAt: "2025-01-01T00:00:00.000Z",
+    actualEndAt: "2025-06-01T00:00:00.000Z",
+    status: "COMPLETED",
+    createdBy: USER,
+    version: 1,
+    archivedAt: null,
+    createdAt: "2025-01-01T00:00:00.000Z",
+    updatedAt: "2025-06-01T00:00:00.000Z",
+  },
+  {
+    id: "phase-concept",
+    organizationId: ORG_A,
+    projectId: PROJECT_A,
+    name: "Concept",
+    description: "",
+    sequence: 1,
+    plannedStartAt: "2026-01-01T00:00:00.000Z",
+    plannedEndAt: "2026-06-01T00:00:00.000Z",
+    actualStartAt: null,
+    actualEndAt: null,
+    status: "PLANNED",
+    createdBy: USER,
+    version: 1,
+    archivedAt: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  },
+];
+
+const deliverables = [
+  {
+    id: "del-arch-001",
+    organizationId: ORG_A,
+    projectId: PROJECT_A,
+    phaseId: "phase-concept",
+    disciplineId: "disc-arch",
+    code: "DEL-ARCH-001",
+    title: "Concept pack",
+    description: "Resultado contratual — não é um arquivo",
+    ownerProjectMembershipId: "pm-ada",
+    ownerTeamId: null,
+    plannedStartAt: "2026-01-01T00:00:00.000Z",
+    dueAt: "2026-09-28T00:00:00.000Z",
+    status: "PLANNED",
+    progressPercent: 0,
+    version: 1,
+    archivedAt: null,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  },
+];
+
+function requireProject(session, projectId, res) {
+  if (!session) {
+    problem(res, 401, "SESSION_EXPIRED", "Session has expired");
+    return null;
+  }
+  const project = projects.find((row) => row.id === projectId);
+  if (!project || project.organizationId !== session.orgId) {
+    problem(res, 403, "TENANCY_DENIED", "Project is not bound to the authorized Organization");
+    return null;
+  }
+  return project;
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   const path = url.pathname;
@@ -210,6 +285,11 @@ const server = http.createServer(async (req, res) => {
         "phase.create",
         "phase.update",
         "phase.complete",
+        "deliverable.create",
+        "deliverable.update",
+        "deliverable.assign",
+        "deliverable.approve",
+        "deliverable.deliver",
       ],
     });
     return;
@@ -327,6 +407,164 @@ const server = http.createServer(async (req, res) => {
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
     return;
+  }
+
+  const membersMatch = /^\/api\/v1\/projects\/([^/]+)\/members$/.exec(path);
+  if (membersMatch && req.method === "GET") {
+    const project = requireProject(session, membersMatch[1], res);
+    if (!project) {
+      return;
+    }
+    json(res, 200, [
+      {
+        id: "pm-ada",
+        status: "ACTIVE",
+        email: "ada@example.com",
+        displayName: "M. Santos",
+      },
+    ]);
+    return;
+  }
+
+  const teamsMatch = /^\/api\/v1\/organizations\/([^/]+)\/teams$/.exec(path);
+  if (teamsMatch && req.method === "GET") {
+    if (!session) {
+      problem(res, 401, "SESSION_EXPIRED", "Session has expired");
+      return;
+    }
+    if (teamsMatch[1] !== session.orgId) {
+      problem(res, 403, "TENANCY_DENIED", "Path organizationId does not match session-bound Organization");
+      return;
+    }
+    json(res, 200, {
+      items:
+        session.orgId === ORG_A
+          ? [{ id: "team-structure", organizationId: ORG_A, name: "Alpha Structure Team" }]
+          : [{ id: "team-b", organizationId: ORG_B, name: "Beta Team" }],
+    });
+    return;
+  }
+
+  const deliverableListMatch = /^\/api\/v1\/projects\/([^/]+)\/deliverables$/.exec(path);
+  if (deliverableListMatch) {
+    const project = requireProject(session, deliverableListMatch[1], res);
+    if (!project) {
+      return;
+    }
+    if (req.method === "GET") {
+      const q = (url.searchParams.get("q") ?? "").toLowerCase();
+      const status = url.searchParams.get("status");
+      const phaseId = url.searchParams.get("phaseId");
+      const disciplineId = url.searchParams.get("disciplineId");
+      const statuses = status ? status.split(",") : [];
+      const rows = deliverables.filter((row) => {
+        if (row.projectId !== project.id || row.archivedAt) {
+          return false;
+        }
+        if (q && !`${row.code} ${row.title}`.toLowerCase().includes(q)) {
+          return false;
+        }
+        if (statuses.length && !statuses.includes(row.status)) {
+          return false;
+        }
+        if (phaseId && row.phaseId !== phaseId) {
+          return false;
+        }
+        if (disciplineId && row.disciplineId !== disciplineId) {
+          return false;
+        }
+        return true;
+      });
+      json(res, 200, { items: rows, nextCursor: null });
+      return;
+    }
+    if (req.method === "POST") {
+      const body = await readBody(req);
+      const created = {
+        id: `del-${Date.now()}`,
+        organizationId: project.organizationId,
+        projectId: project.id,
+        phaseId: body.phaseId,
+        disciplineId: body.disciplineId,
+        code: body.code,
+        title: body.title,
+        description: body.description ?? "",
+        ownerProjectMembershipId: body.ownerProjectMembershipId ?? null,
+        ownerTeamId: body.ownerTeamId ?? null,
+        plannedStartAt: body.plannedStartAt ?? null,
+        dueAt: body.dueAt ?? null,
+        status: "PLANNED",
+        progressPercent: body.progressPercent ?? 0,
+        version: 1,
+        archivedAt: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      deliverables.push(created);
+      json(res, 201, created);
+      return;
+    }
+  }
+
+  const deliverableAction = /^\/api\/v1\/projects\/([^/]+)\/deliverables\/([^/]+)(?:\/([^/]+))?$/.exec(path);
+  if (deliverableAction) {
+    const project = requireProject(session, deliverableAction[1], res);
+    if (!project) {
+      return;
+    }
+    const row = deliverables.find((item) => item.id === deliverableAction[2] && item.projectId === project.id);
+    if (!row) {
+      problem(res, 403, "TENANCY_DENIED", "Deliverable is not bound to the authorized Project");
+      return;
+    }
+    const action = deliverableAction[3];
+    if (req.method === "GET" && !action) {
+      json(res, 200, row);
+      return;
+    }
+    if (req.method === "PATCH" && !action) {
+      const body = await readBody(req);
+      Object.assign(row, {
+        title: body.title ?? row.title,
+        code: body.code ?? row.code,
+        description: body.description ?? row.description,
+        phaseId: body.phaseId ?? row.phaseId,
+        disciplineId: body.disciplineId ?? row.disciplineId,
+        plannedStartAt: body.plannedStartAt !== undefined ? body.plannedStartAt : row.plannedStartAt,
+        dueAt: body.dueAt !== undefined ? body.dueAt : row.dueAt,
+        progressPercent: body.progressPercent !== undefined ? body.progressPercent : row.progressPercent,
+        version: row.version + 1,
+        updatedAt: new Date().toISOString(),
+      });
+      json(res, 200, row);
+      return;
+    }
+    if (req.method === "POST" && action) {
+      const body = await readBody(req);
+      if (action === "assign") {
+        row.ownerProjectMembershipId = body.ownerProjectMembershipId ?? null;
+        row.ownerTeamId = body.ownerTeamId ?? null;
+      } else if (action === "unassign") {
+        row.ownerProjectMembershipId = null;
+        row.ownerTeamId = null;
+      } else if (action === "start") {
+        row.status = "IN_PROGRESS";
+      } else if (action === "submit-for-review") {
+        row.status = "IN_REVIEW";
+      } else if (action === "approve") {
+        row.status = "APPROVED";
+      } else if (action === "deliver") {
+        row.status = "DELIVERED";
+      } else if (action === "cancel") {
+        row.status = "CANCELLED";
+      } else if (action === "archive") {
+        row.archivedAt = new Date().toISOString();
+      }
+      row.version += 1;
+      row.updatedAt = new Date().toISOString();
+      json(res, 200, row);
+      return;
+    }
   }
 
   problem(res, 404, "NOT_FOUND", "Not found");

@@ -597,9 +597,12 @@ export class PhasesService {
     return { ...bound, phase };
   }
 
-  private async phaseIsReferenced(_phaseId: string): Promise<boolean> {
-    // Deliverable FKs land in M3.4. Archive remains the removal path regardless.
-    return false;
+  private async phaseIsReferenced(phaseId: string): Promise<boolean> {
+    const [deliverables, workPackages] = await Promise.all([
+      this.prisma.deliverable.count({ where: { phaseId } }),
+      this.prisma.workPackage.count({ where: { phaseId } }),
+    ]);
+    return deliverables + workPackages > 0;
   }
 
   private requireExpectedVersion(current: number, expected: number | undefined) {

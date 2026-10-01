@@ -1,7 +1,8 @@
 /**
  * Deterministic M3 seed / test-data design. Synthetic identities only.
  * M3.3 implements the writer for Organizations, memberships, Teams,
- * Disciplines, and Phases. Deliverable / WorkPackage rows wait for M3.4 / M3.5.
+ * Disciplines, and Phases. M3.4 writes Deliverable rows and WorkPackage
+ * rows for the delivery rule. WorkPackage CRUD APIs wait for M3.5.
  */
 
 export const M3_SEED_PASSWORD = "correct-horse-12";

@@ -261,6 +261,33 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
   },
   {
     method: "POST",
+    path: "/api/v1/projects/{projectId}/deliverables/{deliverableId}/unassign",
+    lifecycle: "add",
+    permission: "deliverable.assign",
+    idempotency: true,
+    purpose: "Clear ownership (zero owners)",
+    implementedIn: "m3.4",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/deliverables/{deliverableId}/start",
+    lifecycle: "add",
+    permission: "deliverable.update",
+    idempotency: true,
+    purpose: "Explicit PLANNED → IN_PROGRESS",
+    implementedIn: "m3.4",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/deliverables/{deliverableId}/submit-for-review",
+    lifecycle: "add",
+    permission: "deliverable.update",
+    idempotency: true,
+    purpose: "Explicit IN_PROGRESS → IN_REVIEW",
+    implementedIn: "m3.4",
+  },
+  {
+    method: "POST",
     path: "/api/v1/projects/{projectId}/deliverables/{deliverableId}/approve",
     lifecycle: "add",
     permission: "deliverable.approve",
@@ -274,7 +301,34 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     lifecycle: "add",
     permission: "deliverable.deliver",
     idempotency: true,
-    purpose: "DELIVERED only when all still-linked WorkPackages are DONE",
+    purpose: "DELIVERED only when all still-linked WorkPackages are DONE; zero WPs allowed in M3.4",
+    implementedIn: "m3.4",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/deliverables/{deliverableId}/cancel",
+    lifecycle: "add",
+    permission: "deliverable.update",
+    idempotency: true,
+    purpose: "Explicit CANCELLED from any state before DELIVERED",
+    implementedIn: "m3.4",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/deliverables/{deliverableId}/archive",
+    lifecycle: "add",
+    permission: "deliverable.update",
+    idempotency: true,
+    purpose: "Soft-archive a Deliverable (never hard-delete)",
+    implementedIn: "m3.4",
+  },
+  {
+    method: "GET",
+    path: "/api/v1/organizations/{organizationId}/teams",
+    lifecycle: "add",
+    permission: "organization.manage_catalogs|project.read",
+    idempotency: false,
+    purpose: "List Organization-owned Teams for ownership pickers (Team ≠ Project access)",
     implementedIn: "m3.4",
   },
   {
@@ -334,7 +388,10 @@ export const M3_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
 ];
 
 export const M3_3_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn === "m3.3");
-export const M3_LATER_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn !== "m3.3");
+export const M3_4_API_ROUTES = M3_PLANNED_API_ROUTES.filter((row) => row.implementedIn === "m3.4");
+export const M3_LATER_API_ROUTES = M3_PLANNED_API_ROUTES.filter(
+  (row) => row.implementedIn !== "m3.3" && row.implementedIn !== "m3.4",
+);
 
 export const EXISTING_API_PATHS_TO_KEEP = [
   "/api/v1/projects",

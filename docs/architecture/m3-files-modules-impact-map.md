@@ -64,7 +64,8 @@ M3.1 **lands** contract artifacts, additive catalog/template deltas, and CI test
 | `api/src/operations/**` | M3.3 Phase/Discipline; M3.4–M3.5 Deliverable/WP |
 | `web/app/projects/[projectId]/structure` | M3.3 |
 | OpenAPI generated paths for phases/disciplines | M3.3 |
-| OpenAPI generated paths for deliverables/work-packages | M3.4–M3.5 |
+| OpenAPI generated paths for deliverables | M3.4 |
+| OpenAPI generated paths for work-packages | M3.5 |
 | M3.8 seed writer / E2E | M3.8 LOCAL RC |
 
 ## Runtime processes

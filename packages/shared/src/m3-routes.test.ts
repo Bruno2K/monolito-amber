@@ -7,6 +7,7 @@ import {
   FIGMA_PROTOTYPE_ROUTE_MAP,
   M3_2_NEXT_APP_ROUTES,
   M3_3_API_ROUTES,
+  M3_4_API_ROUTES,
   M3_CANONICAL_UI_ROUTES,
   M3_LATER_API_ROUTES,
   M3_PLANNED_API_ROUTES,
@@ -62,7 +63,7 @@ describe("M3 route collision audit", () => {
     expect(existing).not.toContain("/projects/[projectId]/planner");
   });
 
-  it("exposes M3.3 Phase/Discipline API paths in OpenAPI and keeps Deliverable/WorkPackage paths for later WIs", () => {
+  it("exposes M3.3 Phase/Discipline and M3.4 Deliverable API paths in OpenAPI and keeps WorkPackage paths for M3.5", () => {
     const openapi = JSON.parse(readFileSync(join(ROOT, "api/openapi/openapi.json"), "utf8")) as {
       paths: Record<string, unknown>;
     };
@@ -72,11 +73,16 @@ describe("M3 route collision audit", () => {
     for (const row of M3_3_API_ROUTES) {
       expect(existing, row.path).toContain(row.path);
     }
+    for (const row of M3_4_API_ROUTES) {
+      expect(existing, row.path).toContain(row.path);
+    }
     for (const row of M3_LATER_API_ROUTES) {
       expect(existing, row.path).not.toContain(row.path);
     }
     expect(existing).toContain("/api/v1/projects");
     expect(existing).toContain("/api/v1/projects/{projectId}");
+    expect(existing).toContain("/api/v1/projects/{projectId}/deliverables");
+    expect(existing.some((path) => path.includes("work-packages"))).toBe(false);
     expect(M3_PLANNED_API_ROUTES.every((row) => !row.path.includes("gate.override"))).toBe(true);
   });
 });

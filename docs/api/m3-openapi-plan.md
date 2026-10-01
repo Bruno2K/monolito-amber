@@ -1,6 +1,6 @@
 # M3.1 OpenAPI plan
 
-**Status:** Phase/Discipline paths are generated from Nest in M3.3. Deliverable/WorkPackage remain plan-only until M3.4/M3.5.
+**Status:** Phase/Discipline paths are generated from Nest in M3.3. Deliverable paths are generated in M3.4. WorkPackage remain plan-only until M3.5.
 
 Prefix remains `/api/v1`. Errors remain RFC 7807 Problem Details with `correlationId`. Path `organizationId` / `projectId` are routing hints; session + membership is authoritative (F-04).
 
@@ -17,7 +17,7 @@ Especially KEEP:
 | GET | `/api/v1/catalog/permissions` | Closed catalog including M3.1 additive codes after seed |
 | GET | `/api/v1/catalog/role-templates` | Templates including additive grants |
 
-## ADD (M3.3 implemented; M3.4–M3.5 still planned)
+## ADD (M3.3–M3.4 implemented; M3.5 still planned)
 
 Planned operations (collision-tested against today’s OpenAPI; none of these paths exist yet):
 
@@ -32,8 +32,14 @@ Planned operations (collision-tested against today’s OpenAPI; none of these pa
 | GET/POST | `/api/v1/projects/{projectId}/deliverables` | `project.read` / `deliverable.create` | POST yes |
 | GET/PATCH | `/api/v1/projects/{projectId}/deliverables/{deliverableId}` | `project.read` / `deliverable.update` | no |
 | POST | `…/deliverables/{deliverableId}/assign` | `deliverable.assign` | yes |
+| POST | `…/deliverables/{deliverableId}/unassign` | `deliverable.assign` | yes |
+| POST | `…/deliverables/{deliverableId}/start` | `deliverable.update` | yes |
+| POST | `…/deliverables/{deliverableId}/submit-for-review` | `deliverable.update` | yes |
 | POST | `…/deliverables/{deliverableId}/approve` | `deliverable.approve` | yes |
 | POST | `…/deliverables/{deliverableId}/deliver` | `deliverable.deliver` | yes |
+| POST | `…/deliverables/{deliverableId}/cancel` | `deliverable.update` | yes |
+| POST | `…/deliverables/{deliverableId}/archive` | `deliverable.update` | yes |
+| GET | `/api/v1/organizations/{organizationId}/teams` | `organization.manage_catalogs` or `project.read` | no |
 | GET/POST | `/api/v1/projects/{projectId}/work-packages` | `project.read` / `work_package.create` | POST yes |
 | GET/PATCH | `/api/v1/projects/{projectId}/work-packages/{workPackageId}` | `project.read` / `work_package.update` | no |
 | POST | `…/work-packages/{workPackageId}/complete` | `work_package.complete` | yes |

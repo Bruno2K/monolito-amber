@@ -43,6 +43,15 @@ export const OUTBOX_EVENT_TYPES = {
   PhaseArchived: "PhaseArchived",
   DisciplineCreated: "DisciplineCreated",
   DisciplineUpdated: "DisciplineUpdated",
+  DeliverableCreated: "DeliverableCreated",
+  DeliverableUpdated: "DeliverableUpdated",
+  DeliverableAssigned: "DeliverableAssigned",
+  DeliverableStarted: "DeliverableStarted",
+  DeliverableSubmitted: "DeliverableSubmitted",
+  DeliverableApproved: "DeliverableApproved",
+  DeliverableDelivered: "DeliverableDelivered",
+  DeliverableCancelled: "DeliverableCancelled",
+  DeliverableArchived: "DeliverableArchived",
 } as const;
 
 /**

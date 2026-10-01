@@ -774,6 +774,145 @@ button.btn {
   }
 }
 
+.deliverables-page {
+  max-width: 1120px;
+}
+
+.deliverables-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.deliverables-search,
+.deliverables-toolbar select,
+.structure-inspector select {
+  padding: 8px 12px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-md);
+  font: inherit;
+  background: var(--bg-input);
+}
+
+.deliverables-search {
+  min-width: min(100%, 240px);
+  flex: 1;
+}
+
+.deliverables-table-wrap {
+  overflow: auto;
+  background: #fff;
+  border: 1px solid var(--header-border);
+  border-radius: 8px;
+}
+
+.deliverables-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.deliverables-table th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--header-border);
+}
+
+.deliverables-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--header-border);
+  vertical-align: top;
+  color: var(--text-secondary);
+}
+
+.deliverables-table tr.is-active {
+  background: #fff8eb;
+}
+
+.deliverable-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.deliverable-link:focus-visible,
+.deliverables-table tr:hover {
+  outline: none;
+}
+
+.deliverable-link:focus-visible strong {
+  color: var(--amber);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+}
+
+.status-pill.status-planned {
+  background: #fef3c7;
+}
+
+.status-pill.status-in_progress {
+  background: #dbeafe;
+}
+
+.status-pill.status-in_review {
+  background: #e0e7ff;
+}
+
+.status-pill.status-approved {
+  background: #d1fae5;
+}
+
+.status-pill.status-delivered {
+  background: #dcfce7;
+}
+
+.status-pill.status-cancelled {
+  background: #fee2e2;
+}
+
+.table-count {
+  margin: 8px 12px 12px;
+}
+
+.owner-fieldset {
+  border: 1px solid var(--header-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 12px 0;
+}
+
+@media (max-width: 1180px) {
+  .deliverables-table th:nth-child(3),
+  .deliverables-table td:nth-child(3) {
+    display: none;
+  }
+
+  .deliverables-inspector-shell .structure-inspector {
+    width: min(100%, 100vw);
+  }
+}
+
 @media (max-width: 1280px) {
   .search-field {
     display: none;

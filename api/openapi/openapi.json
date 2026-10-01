@@ -3832,6 +3832,531 @@
           "operations"
         ]
       }
+    },
+    "/api/v1/projects/{projectId}/deliverables": {
+      "get": {
+        "operationId": "DeliverablesController_list",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List Deliverables of an authorized Project (omit archived by default; unauthorized rows omitted)",
+        "tags": [
+          "operations"
+        ]
+      },
+      "post": {
+        "operationId": "DeliverablesController_create",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a Deliverable in PLANNED with required phaseId and disciplineId",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}": {
+      "get": {
+        "operationId": "DeliverablesController_get",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Read one Deliverable. Cross-tenant and cross-project ids are denied without leakage.",
+        "tags": [
+          "operations"
+        ]
+      },
+      "patch": {
+        "operationId": "DeliverablesController_update",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update Deliverable fields. Status and ownership use dedicated endpoints. CAS expectedVersion is required.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/assign": {
+      "post": {
+        "operationId": "DeliverablesController_assign",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Set ownership XOR (user | Team | none). Team does not grant Project access.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/unassign": {
+      "post": {
+        "operationId": "DeliverablesController_unassign",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Clear Deliverable ownership",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/start": {
+      "post": {
+        "operationId": "DeliverablesController_start",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit PLANNED → IN_PROGRESS. Dates and progress never auto-start.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/submit-for-review": {
+      "post": {
+        "operationId": "DeliverablesController_submitForReview",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit IN_PROGRESS → IN_REVIEW",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/approve": {
+      "post": {
+        "operationId": "DeliverablesController_approve",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit IN_REVIEW → APPROVED",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/deliver": {
+      "post": {
+        "operationId": "DeliverablesController_deliver",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit APPROVED → DELIVERED. Linked WorkPackages must be DONE; zero linked WorkPackages is allowed in M3.4.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/cancel": {
+      "post": {
+        "operationId": "DeliverablesController_cancel",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Explicit CANCELLED from any state before DELIVERED",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/deliverables/{deliverableId}/archive": {
+      "post": {
+        "operationId": "DeliverablesController_archive",
+        "parameters": [
+          {
+            "name": "deliverableId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Soft-archive a Deliverable. Hard-delete is forbidden.",
+        "tags": [
+          "operations"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organizationId}/teams": {
+      "get": {
+        "operationId": "TeamsController_list",
+        "parameters": [
+          {
+            "name": "organizationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List visible Organization Teams for Deliverable ownership. Team membership does not grant Project access.",
+        "tags": [
+          "operations"
+        ]
+      }
     }
   },
   "info": {

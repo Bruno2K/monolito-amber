@@ -158,9 +158,13 @@ export const OPERATIONS_AUDIT_EVENTS = [
   "DELIVERABLE_CREATED",
   "DELIVERABLE_UPDATED",
   "DELIVERABLE_ASSIGNED",
+  "DELIVERABLE_STATUS_CHANGED",
+  "DELIVERABLE_STARTED",
+  "DELIVERABLE_SUBMITTED",
   "DELIVERABLE_APPROVED",
   "DELIVERABLE_DELIVERED",
   "DELIVERABLE_CANCELLED",
+  "DELIVERABLE_ARCHIVED",
   "WORK_PACKAGE_CREATED",
   "WORK_PACKAGE_UPDATED",
   "WORK_PACKAGE_ASSIGNED",
@@ -211,6 +215,36 @@ export function deliverableStatusRequiresApprovePermission(to: DeliverableStatus
 
 export function deliverableStatusRequiresDeliverPermission(to: DeliverableStatus): boolean {
   return to === "DELIVERED";
+}
+
+export function deliverableStatusRequiresUpdatePermission(to: DeliverableStatus): boolean {
+  return to === "IN_PROGRESS" || to === "IN_REVIEW" || to === "CANCELLED";
+}
+
+/** Dates and progress never transit Deliverable status. */
+export function deliverableDatesTransitStatus(): boolean {
+  return false;
+}
+
+export function progressPercentTransitsDeliverableStatus(): boolean {
+  return false;
+}
+
+export function assertProgressPercent(value: number | null | undefined): void {
+  if (value == null) {
+    return;
+  }
+  if (!Number.isInteger(value) || value < 0 || value > 100) {
+    throw new OperationsStateError("progressPercent must be an integer from 0 to 100");
+  }
+}
+
+export function hardDeleteDeliverableAllowed(): boolean {
+  return false;
+}
+
+export function archiveIsDeliverableRemovalPath(): boolean {
+  return true;
 }
 
 export function workPackageStatusRequiresCompletePermission(to: WorkPackageStatus): boolean {
@@ -390,6 +424,42 @@ export function clampPhaseListLimit(limit: number | undefined): number {
 
 export function encodePhaseCursor(sequence: number, id: string): string {
   return Buffer.from(`${sequence}:${id}`, "utf8").toString("base64url");
+}
+
+export const DELIVERABLE_LIST_DEFAULT_LIMIT = 100;
+export const DELIVERABLE_LIST_MAX_LIMIT = 100;
+
+export function clampDeliverableListLimit(limit: number | undefined): number {
+  if (limit == null || !Number.isFinite(limit)) {
+    return DELIVERABLE_LIST_DEFAULT_LIMIT;
+  }
+  const parsed = Math.trunc(limit);
+  if (parsed < 1) {
+    return 1;
+  }
+  return Math.min(parsed, DELIVERABLE_LIST_MAX_LIMIT);
+}
+
+export function encodeDeliverableCursor(code: string, id: string): string {
+  return Buffer.from(`${code}:${id}`, "utf8").toString("base64url");
+}
+
+export function decodeDeliverableCursor(cursor: string): { code: string; id: string } {
+  try {
+    const raw = Buffer.from(cursor, "base64url").toString("utf8");
+    const sep = raw.indexOf(":");
+    if (sep <= 0) {
+      throw new Error("invalid");
+    }
+    const code = raw.slice(0, sep);
+    const id = raw.slice(sep + 1);
+    if (!code || !id) {
+      throw new Error("invalid");
+    }
+    return { code, id };
+  } catch {
+    throw new OperationsStateError("Invalid list cursor");
+  }
 }
 
 export function decodePhaseCursor(cursor: string): { sequence: number; id: string } {
