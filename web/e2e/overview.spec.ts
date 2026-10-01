@@ -17,20 +17,20 @@ test.describe("M3.6 Operational Project Hub", () => {
     await expect(page.getByRole("heading", { name: "Projeto e fase" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Progresso das entregas" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Bloqueados e atenção" })).toBeVisible();
-    await expect(page.getByText("Concept")).toBeVisible();
-    await expect(page.getByText("DEL-ARCH-001")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Concept", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "DEL-ARCH-001 · Concept pack" })).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath(`hub-${testInfo.project.name}.png`),
       fullPage: true,
     });
 
-    await page.getByRole("link", { name: /DEL-ARCH-001/ }).click();
+    await page.getByRole("link", { name: "DEL-ARCH-001 · Concept pack" }).click();
     await page.waitForURL(new RegExp(`/projects/${PROJECT_A}/deliverables\\?inspect=del-arch-001`));
     await expect(page.getByRole("heading", { name: "Entregas" })).toBeVisible();
     await expect(page.getByRole("dialog")).toBeVisible();
 
     await page.goto(`/projects/${PROJECT_A}/overview`);
-    await page.getByRole("link", { name: /WP-PLAN-001|WP-HUB-BLOCK/ }).first().click();
+    await page.getByRole("link", { name: "WP-PLAN-001 · Outline programme" }).click();
     await page.waitForURL(new RegExp(`/projects/${PROJECT_A}/work-packages\\?inspect=`));
     await expect(page.getByRole("heading", { name: "Pacotes de trabalho" })).toBeVisible();
   });

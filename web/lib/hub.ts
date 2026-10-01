@@ -111,6 +111,20 @@ export function hubItemLabel(item: HubListItem): string {
   return item.code ? `${item.code} · ${item.title}` : item.title;
 }
 
+export function uniqueHubItems(items: HubListItem[]): HubListItem[] {
+  const seen = new Set<string>();
+  const unique: HubListItem[] = [];
+  for (const item of items) {
+    const key = `${item.kind ?? "row"}-${item.id}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    unique.push(item);
+  }
+  return unique;
+}
+
 export function relatedSourceKeys(sources: ProjectHubResponse["relatedSources"]["sources"]): string[] {
   return Object.keys(sources).filter((key) => sources[key as keyof typeof sources]);
 }

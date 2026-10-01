@@ -8,6 +8,7 @@ import { classifyProblem } from "../../lib/errors";
 import {
   hubItemLabel,
   relatedSourceKeys,
+  uniqueHubItems,
   type HubListItem,
   type ProjectHubResponse,
 } from "../../lib/hub";
@@ -87,7 +88,11 @@ export function OverviewView({ projectId }: { projectId: string }) {
   const counts = hub.deliverableCountsByStatus.counts;
   const totalDeliverables = Object.values(counts).reduce((sum, value) => sum + value, 0);
   const related = relatedSourceKeys(hub.relatedSources.sources);
-  const attention = [...hub.overdueDeliverables.items, ...hub.blockedWorkPackages.items, ...hub.lateWorkPackages.items];
+  const attention = uniqueHubItems([
+    ...hub.overdueDeliverables.items,
+    ...hub.blockedWorkPackages.items,
+    ...hub.lateWorkPackages.items,
+  ]);
 
   return (
     <section className="hub-page" data-surface="overview">
@@ -96,20 +101,9 @@ export function OverviewView({ projectId }: { projectId: string }) {
           <h1>Visão Geral</h1>
           <p>
             Hub operacional derivado do Projeto autorizado. Cada cartão explica origem e regra — isto não é uma segunda
-            fonte da verdade.
+            fonte da verdade. Entregas, Estrutura e Pacotes reautorizam nas rotas de origem pela navegação do shell.
           </p>
         </div>
-        <p className="hub-links">
-          <Link className="btn secondary" href={hub.links.structure}>
-            Estrutura
-          </Link>
-          <Link className="btn" href={hub.links.deliverables}>
-            Entregas
-          </Link>
-          <Link className="btn secondary" href={hub.links.workPackages}>
-            Pacotes
-          </Link>
-        </p>
       </header>
 
       {hub.stale || hub.freshness.stale ? (
