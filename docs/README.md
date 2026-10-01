@@ -35,9 +35,10 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 
 ## Product UX evidence (M2)
 
-- [M2.6 — Governance Gates & Exceptions](./ux/m2.6-governance-gates-exceptions.md) — Figma frames, invariants, AuthZ/SoD, Exit Gate (PR #20 open; no backend)
-- [M2.7 — Overview & Portfolio Health](./ux/m2.7-overview-portfolio-health.md) — Visão Geral + Portfolio derived/read-model UX (stacked on M2.6; PR #22 open; no backend)
-- [M2.8 — Activity Experience](./ux/m2.8-activity-experience.md) — Project Atividade read-only material timeline UX (stacked on M2.7; PR open; no backend; not chat / not Audit / not Messaging)
+- [M2.6 — Governance Gates & Exceptions](./ux/m2.6-governance-gates-exceptions.md) — Figma frames, invariants, AuthZ/SoD; **PASS / COMPLETE** (PR #20 OPEN; do not merge; no backend)
+- [M2.7 — Overview & Portfolio Health](./ux/m2.7-overview-portfolio-health.md) — Visão Geral + Portfolio derived/read-model UX (stacked on M2.6; **PASS / COMPLETE**; PR #22 OPEN; do not merge; no backend)
+- [M2.8 — Activity Experience](./ux/m2.8-activity-experience.md) — Project Atividade read-only material timeline UX (stacked on M2.7; **PASS / COMPLETE**; PR #24 OPEN; do not merge; no backend; not chat / not Audit / not Messaging)
+- [M2.9 — Prototype & State Coverage](./ux/m2.9-prototype-state-coverage.md) — Integrated prototype + state/AuthZ/a11y coverage across M2.1–M2.8 (stacked on M2.8 @ 762ab787…; PR [#26](https://github.com/Bruno2K/monolito-amber/pull/26) OPEN; **PASS / COMPLETE**; NAVIGATE 257 / zeros on broken·orphans·same-node·whole-frame·overlapping multi-dest·text overlap·actionable clip; transversal only; no backend; do not merge; M2.10 NEXT / not started; RC2 technical content `0758675d…`; tip that received Reviewer PASS RC2 `ee02fdf8…`; PR tip validated in the independent reviewer report attached to the PR; this index line is document-only final synchronization)
 
 ## Deferred after Platform Foundation (PF-1.0..1.7)
 
