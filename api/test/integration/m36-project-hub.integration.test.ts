@@ -171,7 +171,7 @@ async function createDeliverable(code: string, overrides: Record<string, unknown
 describe("M3.6 Operational Project Hub", () => {
   it("requires project.read and ACTIVE memberships; team-only and foreign project are denied", async () => {
     const anon = request.agent(app.getHttpServer());
-    expect((await anon.get(`/api/v1/projects/${projectA}/hub`)).status).toBe(401);
+    expect((await anon.get(`/api/v1/projects/${projectA}/hub`)).status).toBe(403);
     expect((await teamOnly.get(`/api/v1/projects/${projectA}/hub`)).status).toBe(403);
     expect((await coordinator.get(`/api/v1/projects/${SPOOFED}/hub`)).status).toBe(403);
     expect((await coordinator.get(`/api/v1/projects/${projectB}/hub`)).status).toBe(403);
