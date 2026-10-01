@@ -31,7 +31,12 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [api](./api/conventions.md) — REST `/api/v1`, OpenAPI 3.1, Problem Details
 - [development](./development/local-setup.md) — local, tests, migrations
 - [agentic](./agentic/context.md) — agent operating context, harness, loop, roles
+- [ux](./ux/m2.6-governance-gates-exceptions.md) — product UX evidence (M2)
 
-## Deferred after Platform Foundation (PF-1.0..1.6)
+## Product UX evidence (M2)
 
-Gate Templates; Governance UX; Planning Gantt / critical path; Impact dashboard / Issue board / coordination timeline; BIM/IFC/BCF viewers; analytics; AI; Kubernetes; microservices; CQRS; event sourcing; Kafka; invented permissions; a second Gate bypass (`gate.override`); final Documents, Coordination, Planning, or Governance UX.
+- [M2.6 — Governance Gates & Exceptions](./ux/m2.6-governance-gates-exceptions.md) — Figma frames, invariants, AuthZ/SoD, Exit Gate (PR open; no backend)
+
+## Deferred after Platform Foundation (PF-1.0..1.7)
+
+Gate Templates; Planning Gantt / critical path; Impact dashboard / Issue board / coordination timeline; BIM/IFC/BCF viewers; analytics; AI; Kubernetes; microservices; CQRS; event sourcing; Kafka; invented permissions; a second Gate bypass (`gate.override`); Next.js product pages for Documents, Coordination, Planning, or Governance (M2.6 Figma evidence is authorized — see above).
