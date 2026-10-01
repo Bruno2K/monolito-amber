@@ -6,7 +6,7 @@ This repository is **PUBLIC** by design (portfolio). No secrets, credentials, or
 
 ## Current slice
 
-**M2.8 — Activity Experience** (Issue #23). Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
+**M2.8 — Activity Experience** (Issue #23) is **COMPLETE / Exit Gate PASS** in PR #24. Figma product UX + docs/evidence only. Leave PR **OPEN** (do not merge).
 
 **Stacked on M2.7** branch `m2.7-overview-portfolio-health` @ `85852e6`. **M2.7 and M2.6 are COMPLETE/PASS; PRs #22 and #20 remain OPEN** — do not wait for merge; do not base on `main`.
 
@@ -45,7 +45,7 @@ Platform Foundation **PF-1.0..1.7 is DONE on main** (`49588c3cc9ec0f6b43be5c35f1
 - Governance reads Documents/Coordination/Planning via adapters and does not mutate upstream
 - **M2.6** delivers Governance Gates & Exceptions **product UX in Figma** + evidence docs (COMPLETE/PASS; PR #20 OPEN; no backend)
 - **M2.7** delivers Visão Geral + Portfolio Health as **derived/read-model** UX in Figma + evidence docs (COMPLETE/PASS; PR #22 OPEN; stacked on M2.6; no backend; no health SoT; actor-visible portfolio only)
-- **M2.8** delivers Project **Atividade** as **read-only material operational timeline** UX in Figma + evidence docs (stacked on M2.7; not chat; Messaging/Calendar private excluded; not Audit backdoor; project.read + per-item AuthZ)
+- **M2.8** delivers Project **Atividade** as **read-only material operational timeline** UX in Figma + evidence docs (COMPLETE/PASS; PR #24 OPEN; stacked on M2.7; not chat; Messaging/Calendar private excluded; not Audit backdoor; project.read + per-item AuthZ)
 
 ## Forbidden (future phase — not activated)
 
