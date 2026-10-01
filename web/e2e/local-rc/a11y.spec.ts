@@ -104,14 +104,21 @@ test.describe("M3 RC1 accessibility (real API + Postgres)", () => {
   }, testInfo) => {
     await signInToOrg(page, "coord-a", "Amber Demo Alpha");
 
-    await page.route(`**/api/v1/projects/${IDS.projectA1}/hub`, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 2500));
-      await route.continue();
+    let releaseHub: (() => void) | undefined;
+    const held = new Promise<void>((resolve) => {
+      releaseHub = resolve;
     });
-    const loadingNav = page.goto(`/projects/${IDS.projectA1}/overview`);
-    await expect(page.getByRole("heading", { name: "Carregando" })).toBeVisible({ timeout: 5000 });
+    await page.route(`**/api/v1/projects/${IDS.projectA1}/hub`, async (route) => {
+      await Promise.race([held, new Promise((resolve) => setTimeout(resolve, 8000))]);
+      await route.continue().catch(() => undefined);
+    });
+    const loadingNav = page.goto(`/projects/${IDS.projectA1}/overview`, {
+      waitUntil: "domcontentloaded",
+    });
+    await expect(page.getByRole("heading", { name: "Carregando" })).toBeVisible({ timeout: 8000 });
     await capture(page, testInfo, "state-loading");
-    await loadingNav;
+    releaseHub?.();
+    await loadingNav.catch(() => undefined);
     await page.unroute(`**/api/v1/projects/${IDS.projectA1}/hub`);
 
     await page.route(`**/api/v1/projects/${IDS.projectA1}/hub`, (route) =>

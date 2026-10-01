@@ -7,13 +7,13 @@
   --border-sidebar: #1f2937;
   --nav-active-bg: #1f2937;
   --text-sidebar: #d1d5db;
-  --text-sidebar-muted: #4b5563;
+  --text-sidebar-muted: #9ca3af;
   --text-sidebar-bright: #f9fafb;
   --amber: #d97706;
   --header-bg: #ffffff;
   --header-border: #e5e7eb;
   --text-primary: #111827;
-  --text-muted: #9ca3af;
+  --text-muted: #4b5563;
   --text-secondary: #4b5563;
   --bg-page: #f9fafb;
   --bg-input: #ffffff;
@@ -354,7 +354,7 @@ button.btn {
 .nav-chevron {
   display: inline-flex;
   transform: rotate(180deg);
-  color: #6b7280;
+  color: var(--text-sidebar-muted);
 }
 
 .nav-active-dot {

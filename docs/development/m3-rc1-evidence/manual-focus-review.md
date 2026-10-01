@@ -68,7 +68,7 @@ Captured under this directory (`state-*-desktop-1440.png` / `narrow-1180.png` af
 
 ## Automated axe
 
-Zero **serious** / **critical** required. If a `moderate`/`minor` finding remains, it is dumped to `axe-accepted-*.json`. Accepted class (if any): contrast on muted helper copy (`--text-muted`) that is supplementary to a named heading/control — not the sole indicator.
+Zero **serious** / **critical** required. Muted tokens meet 4.5:1: `--text-muted` `#4b5563` on white header/page; `--text-sidebar-muted` `#9ca3af` on `--bg-sidebar` `#0f1115`. If a `moderate`/`minor` finding remains, it is dumped to `axe-accepted-*.json`.
 
 ## Out of scope
 
