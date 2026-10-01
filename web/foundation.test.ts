@@ -2,17 +2,26 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-const FORBIDDEN_PAGES = [
-  "app/projects",
-  "app/documents",
-  "app/coordination",
-  "app/planning",
+const FORBIDDEN_PROTOTYPE_PAGES = [
+  "app/visao-geral",
+  "app/planejamento",
+  "app/calendarios",
+  "app/mensagens",
+  "app/equipe",
   "app/gates",
+  "app/excecoes",
+  "app/atividade",
+  "app/portfolio",
+  "app/entregas",
 ];
 
-describe("web identity shell", () => {
-  it("does not expose product Project/Documents/Coordination/Planning/Gate pages", () => {
-    for (const relative of FORBIDDEN_PAGES) {
+describe("web M3.2 application shell", () => {
+  it("mounts canonical English product routes and does not ship Figma prototype Portuguese paths", () => {
+    expect(existsSync(join(__dirname, "app/projects/page.tsx"))).toBe(true);
+    expect(existsSync(join(__dirname, "app/projects/[projectId]/overview/page.tsx"))).toBe(true);
+    expect(existsSync(join(__dirname, "app/projects/[projectId]/structure/page.tsx"))).toBe(true);
+    expect(existsSync(join(__dirname, "app/projects/[projectId]/deliverables/page.tsx"))).toBe(true);
+    for (const relative of FORBIDDEN_PROTOTYPE_PAGES) {
       expect(existsSync(join(__dirname, relative)), relative).toBe(false);
     }
     expect("gate.override" in globalThis).toBe(false);

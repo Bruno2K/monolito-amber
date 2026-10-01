@@ -1,53 +1,60 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { Banner, Button, ErrorText } from "../../components/ui";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button, ErrorText, IdentityFrame } from "../../components/ui";
 import { api } from "../../lib/api";
-
-interface OrgRow {
-  id: string;
-  name: string;
-  status: string;
-  type: string;
-  active: boolean;
-}
+import { StateScreen } from "../../components/shell/StateScreen";
+import type { OrganizationRow } from "../../lib/types";
 
 export default function OrgSwitchPage() {
-  const [orgs, setOrgs] = useState<OrgRow[]>([]);
+  const router = useRouter();
+  const [orgs, setOrgs] = useState<OrganizationRow[]>([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  async function refresh() {
-    const { status, body } = await api<OrgRow[]>("/api/v1/organizations");
-    if (status >= 400) {
+  const refresh = useCallback(async () => {
+    const result = await api<OrganizationRow[]>("/api/v1/organizations");
+    if (!result.ok) {
+      if (result.status === 401) {
+        router.replace("/sign-in");
+        return;
+      }
       setError("Sign in to switch organization");
+      setLoading(false);
       return;
     }
-    setOrgs(body);
-  }
+    setOrgs(result.body);
+    setLoading(false);
+  }, [router]);
 
   useEffect(() => {
     void refresh();
-  }, []);
+  }, [refresh]);
 
   async function onSwitch(event: FormEvent, organizationId: string) {
     event.preventDefault();
-    const { status } = await api("/api/v1/auth/active-organization", {
+    const result = await api("/api/v1/auth/active-organization", {
       method: "POST",
       body: JSON.stringify({ organizationId }),
     });
-    if (status >= 400) {
+    if (!result.ok) {
       setError("Organization switch denied");
       return;
     }
-    await refresh();
+    router.push("/projects");
   }
 
+  const activeOrgs = orgs.filter((org) => org.status === "ACTIVE");
+
   return (
-    <>
-      <Banner>Org switcher — session-bound tenant, not a product screen</Banner>
-      <h1>Switch organization</h1>
+    <IdentityFrame title="Switch organization" banner="Org switcher — session-bound tenant, not a product screen">
       <p>The active Organization is stored on the server session. Client org ids are never authority.</p>
       <ErrorText>{error}</ErrorText>
+      {loading ? <StateScreen kind="loading" /> : null}
+      {!loading && activeOrgs.length === 0 ? (
+        <StateScreen kind="no-org" detail="Nenhuma Organization ACTIVE está disponível para esta sessão." />
+      ) : null}
       <ul className="org-list">
         {orgs.map((org) => (
           <li key={org.id}>
@@ -61,6 +68,6 @@ export default function OrgSwitchPage() {
           </li>
         ))}
       </ul>
-    </>
+    </IdentityFrame>
   );
 }

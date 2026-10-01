@@ -2,9 +2,10 @@
 
 | Suite | Command | Notes |
 | --- | --- | --- |
-| Unit | `pnpm test:unit` | Domain/policy helpers |
+| Unit | `pnpm test:unit` | Domain/policy helpers + web shell (nav, errors, context) |
 | Security stubs | `pnpm test:security` | Fail closed if files missing or skipped |
-| Integration | `pnpm test:integration` | Testcontainers Postgres, or `TEST_DATABASE_URL` |
+| Integration | `pnpm test:integration` | Testcontainers Postgres, or `TEST_DATABASE_URL` (includes M3.2 session/org/project) |
+| Web E2E | `pnpm --filter @amber/web test:e2e` | Playwright golden path + a11y/viewports (local; not in the Foundation CI job) |
 | OpenAPI | `pnpm openapi:generate && pnpm openapi:validate` | 3.1 + no override tokens |
 | Migrations | `pnpm prisma:validate` | Versioned SQL + audit grants |
 

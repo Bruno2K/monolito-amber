@@ -13,6 +13,7 @@ export default tseslint.config(
       "api/openapi/openapi.json",
       "web/next-env.d.ts",
       "web/.next/**",
+      "web/e2e/**",
     ],
   },
   {

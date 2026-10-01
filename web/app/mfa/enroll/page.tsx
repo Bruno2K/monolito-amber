@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { Banner, Button, ErrorText, Field } from "../../../components/ui";
+import { Button, ErrorText, Field, IdentityFrame } from "../../../components/ui";
 import { api } from "../../../lib/api";
 
 export default function MfaEnrollPage() {
@@ -12,35 +12,31 @@ export default function MfaEnrollPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    void api<{ otpauth: string; challengeToken: string }>("/api/v1/auth/mfa/enroll", { method: "POST" }).then(
-      ({ status, body }) => {
-        if (status >= 400) {
-          setError("Sign in before enrolling MFA");
-          return;
-        }
-        setOtpauth(body.otpauth);
-        setChallengeToken(body.challengeToken);
-      },
-    );
+    void api<{ otpauth: string; challengeToken: string }>("/api/v1/auth/mfa/enroll", { method: "POST" }).then((result) => {
+      if (!result.ok) {
+        setError("Sign in before enrolling MFA");
+        return;
+      }
+      setOtpauth(result.body.otpauth);
+      setChallengeToken(result.body.challengeToken);
+    });
   }, []);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    const { status, body } = await api<{ recoveryCodes: string[] }>("/api/v1/auth/mfa/enroll/verify", {
+    const result = await api<{ recoveryCodes: string[] }>("/api/v1/auth/mfa/enroll/verify", {
       method: "POST",
       body: JSON.stringify({ challengeToken, totp }),
     });
-    if (status >= 400) {
+    if (!result.ok) {
       setError("Invalid authenticator code");
       return;
     }
-    setCodes(body.recoveryCodes);
+    setCodes(result.body.recoveryCodes);
   }
 
   return (
-    <>
-      <Banner>MFA enrollment — not a product screen</Banner>
-      <h1>Enroll authenticator</h1>
+    <IdentityFrame title="Enroll authenticator" banner="MFA enrollment — not a product screen">
       <p>Organization Administrators and Governance Approvers must enroll TOTP.</p>
       {otpauth ? (
         <p>
@@ -48,7 +44,15 @@ export default function MfaEnrollPage() {
         </p>
       ) : null}
       <form onSubmit={onSubmit}>
-        <Field id="totp" label="Authenticator code" inputMode="numeric" autoComplete="one-time-code" required value={totp} onChange={(e) => setTotp(e.target.value)} />
+        <Field
+          id="totp"
+          label="Authenticator code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          required
+          value={totp}
+          onChange={(e) => setTotp(e.target.value)}
+        />
         <ErrorText>{error}</ErrorText>
         <Button>Verify and generate recovery codes</Button>
       </form>
@@ -65,6 +69,6 @@ export default function MfaEnrollPage() {
           </ul>
         </section>
       ) : null}
-    </>
+    </IdentityFrame>
   );
 }
