@@ -29,7 +29,7 @@ test.describe("M3.2 golden path", () => {
     await expect(page.getByRole("heading", { name: "Visão Geral" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Visão Geral" })).toHaveAttribute("aria-current", "page");
     await expect(page.getByRole("navigation", { name: "Trilha de navegação" })).toContainText("Residencial Aurora");
-    await expect(page.getByText("Ativo", { exact: true })).toBeVisible();
+    await expect(page.getByRole("banner").getByText("Ativo", { exact: true })).toBeVisible();
     await page.screenshot({
       path: testInfo.outputPath(`overview-${testInfo.project.name}.png`),
       fullPage: true,

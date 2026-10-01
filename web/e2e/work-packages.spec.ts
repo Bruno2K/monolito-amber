@@ -31,7 +31,7 @@ test.describe("M3.5 Work Packages", () => {
     await page.getByRole("button", { name: "Novo pacote" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.getByRole("dialog").getByLabel("Título").fill("E2E package");
-    await page.getByRole("dialog").getByLabel("Fase").selectOption("phase-concept");
+    await page.getByRole("dialog").locator("#work-package-phase").selectOption("phase-concept");
     await page.getByRole("dialog").getByRole("button", { name: "Salvar" }).click();
     await expect(page.getByRole("dialog").getByText("E2E package")).toBeVisible();
     await page.getByRole("button", { name: "Ativar" }).click();

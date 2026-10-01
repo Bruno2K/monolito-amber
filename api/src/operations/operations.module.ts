@@ -14,6 +14,9 @@ import { TeamsController } from "./teams.controller";
 import { TeamsService } from "./teams.service";
 import { WorkPackagesController } from "./work-packages.controller";
 import { WorkPackagesService } from "./work-packages.service";
+import { HubCacheService } from "./hub.cache";
+import { HubController } from "./hub.controller";
+import { HubService } from "./hub.service";
 
 @Module({
   imports: [AuditModule, AuthModule, AuthzModule, FoundationModule],
@@ -23,6 +26,7 @@ import { WorkPackagesService } from "./work-packages.service";
     DeliverablesController,
     WorkPackagesController,
     TeamsController,
+    HubController,
   ],
   providers: [
     OperationsAccess,
@@ -31,7 +35,16 @@ import { WorkPackagesService } from "./work-packages.service";
     DeliverablesService,
     WorkPackagesService,
     TeamsService,
+    HubCacheService,
+    HubService,
   ],
-  exports: [PhasesService, DisciplinesService, DeliverablesService, WorkPackagesService, TeamsService],
+  exports: [
+    PhasesService,
+    DisciplinesService,
+    DeliverablesService,
+    WorkPackagesService,
+    TeamsService,
+    HubCacheService,
+  ],
 })
 export class OperationsModule {}

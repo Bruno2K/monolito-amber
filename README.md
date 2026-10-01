@@ -8,7 +8,7 @@ Official commercial name remains OPEN; **Amber** is the technical name.
 
 ## Platform Foundation (PF-1.0..1.7) — complete · M2 COMPLETE / INTEGRATED
 
-PF-1.0 through PF-1.7 and M2 are merged on `main`. **M3.1** and **M3.2** are merged. Current Work Item is **M3.3 — Project Structure: Phase & Discipline** (**ACTIVE / LOCAL ONLY**). Do not claim the M3.3 Exit Gate PASS from the Engineer pass.
+PF-1.0 through PF-1.7 and M2 are merged on `main`. **M3.1–M3.5** are merged. Current Work Item is **M3.6 — Operational Project Hub** (**ACTIVE / LOCAL ONLY**). Do not claim the M3.6 Exit Gate PASS from the Engineer pass.
 
 This repository is **PUBLIC** (portfolio). Do not commit secrets.
 

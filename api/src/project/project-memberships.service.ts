@@ -16,6 +16,7 @@ import type { RequestSession } from "../auth/session.types";
 import { AuthzService } from "../authz/authz.service";
 import { currentCorrelationId } from "../observability/request-context";
 import { RolesService } from "../org/roles.service";
+import { HubCacheService } from "../operations/hub.cache";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
@@ -25,6 +26,7 @@ export class ProjectMembershipsService {
     private readonly audit: AuditService,
     private readonly authz: AuthzService,
     private readonly roles: RolesService,
+    private readonly hubCache: HubCacheService,
   ) {}
 
   async list(session: RequestSession, projectId: string) {
@@ -148,6 +150,7 @@ export class ProjectMembershipsService {
         targetUserId: membership.organizationMembership.userId,
       }),
     });
+    this.hubCache.invalidateProject(projectId);
     return updated;
   }
 

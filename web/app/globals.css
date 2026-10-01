@@ -941,6 +941,81 @@ button.btn {
   margin: 12px 0;
 }
 
+.hub-page {
+  max-width: 1100px;
+}
+
+.hub-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.hub-links .btn {
+  margin-top: 0;
+}
+
+.hub-stale {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef3c7;
+  color: var(--text);
+}
+
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.hub-card,
+.hub-related {
+  background: #fff;
+  border: 1px solid var(--header-border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.hub-card h2,
+.hub-related h2 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.hub-origin {
+  margin: 0 0 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.hub-list,
+.hub-counts,
+.hub-related-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hub-list li,
+.hub-counts li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hub-project-meta {
+  margin-top: 16px;
+}
+
 @media (max-width: 1180px) {
   .deliverables-table th:nth-child(3),
   .deliverables-table td:nth-child(3) {
@@ -949,6 +1024,19 @@ button.btn {
 
   .deliverables-inspector-shell .structure-inspector {
     width: min(100%, 100vw);
+  }
+
+  .hub-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-links {
+    width: 100%;
+  }
+
+  .hub-links .btn {
+    flex: 1 1 auto;
+    text-align: center;
   }
 }
 
