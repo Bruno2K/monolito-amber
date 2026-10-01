@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { expect, type APIRequestContext, type Page, type TestInfo } from "@playwright/test";
+import { expect, type APIRequestContext, type Cookie, type Page, type TestInfo } from "@playwright/test";
 
 /** Well-known local synthetic (packages/shared M3_SEED_PASSWORD). Not a production secret. */
 export const SEED_PASSWORD = process.env.AMBER_E2E_PASSWORD ?? "correct-horse-12";
@@ -79,7 +79,25 @@ export async function closeInspectorIfOpen(page: Page): Promise<void> {
   }
 }
 
+/**
+ * Login POSTs share one in-memory IP bucket (20 / 15 min). Local RC runs two
+ * viewports serially, so reuse the session cookie after the first UI login.
+ */
+const loginCookieCache = new Map<string, Cookie[]>();
+
 export async function signIn(page: Page, userKey: string): Promise<void> {
+  const cached = loginCookieCache.get(userKey);
+  if (cached && cached.length > 0) {
+    await page.context().addCookies(cached);
+    await page.goto("/");
+    const path = new URL(page.url()).pathname;
+    if (!path.includes("/sign-in")) {
+      await expectPostAuthLanded(page);
+      return;
+    }
+    loginCookieCache.delete(userKey);
+  }
+
   await page.goto("/sign-in");
   await expectSignIn(page);
   await page.getByLabel("Email").fill(emailFor(userKey));
@@ -89,12 +107,16 @@ export async function signIn(page: Page, userKey: string): Promise<void> {
     { timeout: 20_000 },
   );
   await page.getByRole("button", { name: "Sign in" }).click();
-  await loginPost;
+  const loginResponse = await loginPost;
+  if (loginResponse.status() >= 400) {
+    throw new Error(`login POST ${loginResponse.status()} for ${userKey}`);
+  }
   await page.waitForURL((url) => {
     const path = url.pathname;
     return path.includes("/org-switch") || path.startsWith("/projects") || path.includes("/mfa/");
   }, { timeout: 20_000 });
   await expectPostAuthLanded(page);
+  loginCookieCache.set(userKey, await page.context().cookies());
 }
 
 export async function selectOrg(page: Page, orgName: string): Promise<void> {
