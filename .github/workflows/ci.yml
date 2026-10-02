@@ -131,5 +131,7 @@ jobs:
           path: |
             docs/development/m3.8-evidence
             docs/development/m3-rc1-evidence
+            docs/ux/evidence/m4.2
+            docs/ux/evidence/m4.3
           if-no-files-found: warn
 

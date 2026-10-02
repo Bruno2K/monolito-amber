@@ -7,17 +7,18 @@ import { api } from "../../lib/api";
 import { classifyProblem } from "../../lib/errors";
 import { useInspectorEscape } from "../../lib/use-inspector-escape";
 import {
+  canCreateTask,
   contextLabel,
   formatPlanningDate,
   formatProgress,
   lateExplanation,
   taskStatusLabel,
   type PlanningReadModel,
-  type PlanningTaskRow,
 } from "../../lib/planning";
 import { type PhaseListResponse, type PhaseRow } from "../../lib/operations";
 import { useShell } from "../session/ShellProvider";
 import { PlanningComingView, PlanningEmpty, PlanningError, PlanningSkeleton } from "./PlanningStates";
+import { TaskInspector } from "./TaskInspector";
 
 const TABS = [
   { id: "list", label: "Lista" },
@@ -49,6 +50,7 @@ export function PlannerView({ projectId }: { projectId: string }) {
   const [errorDetail, setErrorDetail] = useState<string | undefined>();
   const [model, setModel] = useState<PlanningReadModel | null>(null);
   const [phases, setPhases] = useState<PhaseRow[]>([]);
+  const [creating, setCreating] = useState(false);
 
   const replaceParams = useCallback(
     (patch: Record<string, string | null>) => {
@@ -71,12 +73,13 @@ export function PlannerView({ projectId }: { projectId: string }) {
 
   const openItem = useCallback(
     (taskId: string | null) => {
+      setCreating(false);
       replaceParams({ inspect: taskId });
     },
     [replaceParams],
   );
 
-  useInspectorEscape(Boolean(selectedId), openItem);
+  useInspectorEscape(Boolean(selectedId) || creating, openItem);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -175,8 +178,9 @@ export function PlannerView({ projectId }: { projectId: string }) {
   }
 
   const filtered = Boolean(query.trim() || statusFilter || lateFilter || phaseFilter);
-  const inspectorOpen = Boolean(selected);
+  const inspectorOpen = Boolean(selected) || creating;
   const archived = Boolean(project?.archivedAt || model.project.readOnly);
+  const permissions = project?.permissions ?? [];
 
   function onTab(next: string) {
     replaceParams({ view: next === "list" ? null : next });
@@ -189,7 +193,26 @@ export function PlannerView({ projectId }: { projectId: string }) {
           <h1>Planejamento</h1>
           <p>Lista unificada do projeto. Status armazenado é explícito; atraso é derivado.</p>
         </div>
-        <button type="button" className="btn" disabled aria-disabled="true" title="Criação de tarefas no próximo marco">
+        <button
+          type="button"
+          className="btn"
+          disabled={archived || !canCreateTask(permissions)}
+          aria-disabled={archived || !canCreateTask(permissions) ? "true" : undefined}
+          title={
+            archived
+              ? "Projeto arquivado — mutações recusadas"
+              : canCreateTask(permissions)
+                ? "Criar tarefa"
+                : "Criar tarefa requer task.create"
+          }
+          onClick={() => {
+            if (archived || !canCreateTask(permissions)) {
+              return;
+            }
+            setCreating(true);
+            replaceParams({ inspect: null });
+          }}
+        >
           Nova Tarefa
         </button>
       </header>
@@ -392,7 +415,7 @@ export function PlannerView({ projectId }: { projectId: string }) {
                 </div>
               )}
 
-              {selected ? (
+              {inspectorOpen ? (
                 <div className="structure-overlay deliverables-inspector-shell" role="presentation">
                   <button
                     type="button"
@@ -400,7 +423,22 @@ export function PlannerView({ projectId }: { projectId: string }) {
                     aria-label="Fechar inspetor"
                     onClick={() => openItem(null)}
                   />
-                  <TaskInspector row={selected} onClose={() => openItem(null)} />
+                  <TaskInspector
+                    projectId={projectId}
+                    organizationId={project?.organizationId ?? model.organizationId}
+                    row={creating ? null : selected}
+                    creating={creating}
+                    readOnly={archived}
+                    permissions={permissions}
+                    onClose={() => openItem(null)}
+                    onChanged={async (inspectId) => {
+                      setCreating(false);
+                      if (inspectId) {
+                        replaceParams({ inspect: inspectId });
+                      }
+                      await load();
+                    }}
+                  />
                 </div>
               ) : null}
             </div>
@@ -435,79 +473,3 @@ export function PlannerView({ projectId }: { projectId: string }) {
   );
 }
 
-function TaskInspector({ row, onClose }: { row: PlanningTaskRow; onClose: () => void }) {
-  return (
-    <aside className="structure-inspector" role="dialog" aria-modal="true" aria-labelledby="planner-inspect-title">
-      <header className="inspector-header">
-        <div>
-          <p className="muted">Tarefa</p>
-          <h2 id="planner-inspect-title">{row.title}</h2>
-        </div>
-        <button type="button" className="btn secondary" onClick={onClose}>
-          Fechar
-        </button>
-      </header>
-      <p>
-        Status armazenado: <span className={`status-pill status-${row.status.toLowerCase()}`}>{taskStatusLabel(row.status)}</span>
-      </p>
-      {row.late ? (
-        <p className="planner-late-explain" role="status">
-          <strong>Atrasada (derivado).</strong> {lateExplanation(row.status)}
-        </p>
-      ) : (
-        <p className="muted">Não atrasada. Lateness é derivada do prazo e não altera o status.</p>
-      )}
-      {row.previews.issue ? (
-        <p>
-          <span className="planner-issue-rel">Issue relacionada</span>: {row.previews.issue.title} ({row.previews.issue.status}).
-          A Issue não é esta Tarefa.
-        </p>
-      ) : row.issueId ? (
-        <p className="muted">Issue ligada omitida — sem pré-visualização autorizada.</p>
-      ) : null}
-      <dl className="planner-dl">
-        <div>
-          <dt>Fase</dt>
-          <dd>{row.previews.phase?.name ?? "—"}</dd>
-        </div>
-        <div>
-          <dt>Entrega</dt>
-          <dd>{row.previews.deliverable ? `${row.previews.deliverable.code} · ${row.previews.deliverable.title}` : "—"}</dd>
-        </div>
-        <div>
-          <dt>Pacote</dt>
-          <dd>{row.previews.workPackage?.title ?? "—"}</dd>
-        </div>
-        <div>
-          <dt>Marco</dt>
-          <dd>
-            {row.previews.milestone
-              ? `${row.previews.milestone.title} (${row.previews.milestone.status})`
-              : "—"}
-          </dd>
-        </div>
-        <div>
-          <dt>Responsável</dt>
-          <dd>{row.previews.assignee?.displayName ?? "—"}</dd>
-        </div>
-        <div>
-          <dt>Disciplina</dt>
-          <dd>{row.responsibleDisciplineId ?? "—"}</dd>
-        </div>
-        <div>
-          <dt>Início planejado</dt>
-          <dd>{formatPlanningDate(row.plannedStartAt)}</dd>
-        </div>
-        <div>
-          <dt>Prazo</dt>
-          <dd>{formatPlanningDate(row.dueDate)}</dd>
-        </div>
-        <div>
-          <dt>Progresso</dt>
-          <dd>{formatProgress(row.progressPercent)}</dd>
-        </div>
-      </dl>
-      {row.blockedReason ? <p>Motivo do bloqueio: {row.blockedReason}</p> : null}
-    </aside>
-  );
-}

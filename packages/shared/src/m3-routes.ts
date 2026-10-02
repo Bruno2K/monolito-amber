@@ -20,7 +20,7 @@ export interface ApiRoutePlan {
   permission: string;
   idempotency: boolean;
   purpose: string;
-    implementedIn?: "m3.3" | "m3.4" | "m3.5" | "m3.6" | "m3.7" | "m4.2";
+    implementedIn?: "m3.3" | "m3.4" | "m3.5" | "m3.6" | "m3.7" | "m4.2" | "m4.3";
 }
 
 export const M3_CANONICAL_UI_ROUTES: readonly UiRoutePlan[] = [
@@ -98,6 +98,51 @@ export const M4_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
     purpose:
       "Unified authorized Planning read-model (tasks + milestones + dependencies). view= is a projection hint. Re-authorizes linked previews.",
     implementedIn: "m4.2",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/tasks/{taskId}/start",
+    lifecycle: "add",
+    permission: "task.update",
+    idempotency: true,
+    purpose: "Explicit start (TODO|BLOCKED → IN_PROGRESS). expectedVersion required.",
+    implementedIn: "m4.3",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/tasks/{taskId}/block",
+    lifecycle: "add",
+    permission: "task.update",
+    idempotency: true,
+    purpose: "Explicit block. Non-empty blockedReason required.",
+    implementedIn: "m4.3",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/tasks/{taskId}/unblock",
+    lifecycle: "add",
+    permission: "task.update",
+    idempotency: true,
+    purpose: "Explicit unblock (BLOCKED → IN_PROGRESS). Auditable.",
+    implementedIn: "m4.3",
+  },
+  {
+    method: "POST",
+    path: "/api/v1/projects/{projectId}/tasks/{taskId}/cancel",
+    lifecycle: "add",
+    permission: "task.update",
+    idempotency: true,
+    purpose: "Explicit cancel. Terminal. No sibling cascade.",
+    implementedIn: "m4.3",
+  },
+  {
+    method: "GET",
+    path: "/api/v1/projects/{projectId}/tasks/{taskId}/history",
+    lifecycle: "add",
+    permission: "project.read",
+    idempotency: false,
+    purpose: "Task-scoped append-only audit / state history.",
+    implementedIn: "m4.3",
   },
 ];
 

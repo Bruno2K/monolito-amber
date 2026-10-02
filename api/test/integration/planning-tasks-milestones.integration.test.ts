@@ -119,6 +119,12 @@ async function inviteToProject(label: string, templateKey: string): Promise<Agen
   return agent;
 }
 
+async function taskVersion(agent: Agent, taskId: string): Promise<number> {
+  const res = await agent.get(`/api/v1/projects/${projectA}/tasks/${taskId}`);
+  expect(res.status).toBe(200);
+  return res.body.version as number;
+}
+
 describe("PF-1.5 Planning / Tasks / Milestones", () => {
   it("creates a source Issue without auto-creating Tasks", async () => {
     const issue = await coordinator
@@ -194,19 +200,25 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
   it("assigns only ACTIVE ProjectMembership and rejects invented assignees", async () => {
     const assigned = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}/assign`)
-      .send({ assigneeUserId: contributorUserId });
+      .set("Idempotency-Key", `asg-ok-${suffix}`)
+      .send({ assigneeUserId: contributorUserId, expectedVersion: await taskVersion(coordinator, standaloneTaskId) });
     expect(assigned.status).toBeLessThan(400);
     expect(assigned.body.assigneeUserId).toBe(contributorUserId);
 
     const stranger = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}/assign`)
-      .send({ assigneeUserId: randomUUID() });
+      .set("Idempotency-Key", `asg-stranger-${suffix}`)
+      .send({ assigneeUserId: randomUUID(), expectedVersion: assigned.body.version });
     expect(stranger.status).toBe(409);
     expect(stranger.body.code).toBe("PLANNING_STATE");
 
     const otherOrg = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}/assign`)
-      .send({ assigneeUserId: (await ownerB.get("/api/v1/auth/session")).body.userId });
+      .set("Idempotency-Key", `asg-xorg-${suffix}`)
+      .send({
+        assigneeUserId: (await ownerB.get("/api/v1/auth/session")).body.userId,
+        expectedVersion: assigned.body.version,
+      });
     expect(otherOrg.status).toBe(409);
   });
 
@@ -220,7 +232,7 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
     const started = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}/status`)
       .set("Idempotency-Key", `st-start-${suffix}`)
-      .send({ status: "IN_PROGRESS" });
+      .send({ status: "IN_PROGRESS", expectedVersion: await taskVersion(coordinator, standaloneTaskId) });
     expect(started.status).toBeLessThan(400);
     expect(started.body.status).toBe("IN_PROGRESS");
     expect(started.body.startedAt).toBeTruthy();
@@ -228,19 +240,20 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
     const blockedNoReason = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}/status`)
       .set("Idempotency-Key", `st-block-empty-${suffix}`)
-      .send({ status: "BLOCKED" });
+      .send({ status: "BLOCKED", expectedVersion: started.body.version });
     expect(blockedNoReason.status).toBe(409);
 
     const blocked = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}/status`)
       .set("Idempotency-Key", `st-block-${suffix}`)
-      .send({ status: "BLOCKED", blockedReason: "Waiting for survey" });
+      .send({ status: "BLOCKED", blockedReason: "Waiting for survey", expectedVersion: started.body.version });
     expect(blocked.status).toBeLessThan(400);
     expect(blocked.body.status).toBe("BLOCKED");
     expect(blocked.body.blockedReason).toBe("Waiting for survey");
 
     const latePatch = await coordinator.patch(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}`).send({
       dueDate: "2000-01-01T00:00:00.000Z",
+      expectedVersion: blocked.body.version,
     });
     expect(latePatch.status).toBeLessThan(400);
     expect(latePatch.body.late).toBe(true);
@@ -295,7 +308,7 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
     const startBlocked = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${succTaskId}/status`)
       .set("Idempotency-Key", `st-succ-early-${suffix}`)
-      .send({ status: "IN_PROGRESS" });
+      .send({ status: "IN_PROGRESS", expectedVersion: succ.body.version });
     expect(startBlocked.status).toBe(409);
 
     const otherTask = await ownerB
@@ -312,31 +325,33 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
   });
 
   it("allows start only after the predecessor is DONE, then completes without resolving the Issue", async () => {
+    const predCurrent = await taskVersion(coordinator, predTaskId);
     await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${predTaskId}/status`)
       .set("Idempotency-Key", `st-pred-start-${suffix}`)
-      .send({ status: "IN_PROGRESS" });
+      .send({ status: "IN_PROGRESS", expectedVersion: predCurrent });
     const predDone = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${predTaskId}/complete`)
       .set("Idempotency-Key", `st-pred-done-${suffix}`)
-      .send({});
+      .send({ expectedVersion: predCurrent + 1 });
     expect(predDone.status).toBeLessThan(400);
     expect(predDone.body.status).toBe("DONE");
 
     const start = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${succTaskId}/status`)
       .set("Idempotency-Key", `st-succ-ok-${suffix}`)
-      .send({ status: "IN_PROGRESS" });
+      .send({ status: "IN_PROGRESS", expectedVersion: await taskVersion(coordinator, succTaskId) });
     expect(start.status).toBeLessThan(400);
 
+    const linkedCurrent = await taskVersion(coordinator, linkedTaskId);
     await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${linkedTaskId}/status`)
       .set("Idempotency-Key", `st-linked-start-${suffix}`)
-      .send({ status: "IN_PROGRESS" });
+      .send({ status: "IN_PROGRESS", expectedVersion: linkedCurrent });
     const done = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${linkedTaskId}/complete`)
       .set("Idempotency-Key", `st-linked-done-${suffix}`)
-      .send({});
+      .send({ expectedVersion: linkedCurrent + 1 });
     expect(done.status).toBeLessThan(400);
     expect(done.body.status).toBe("DONE");
     expect(done.body.late).toBe(false);
@@ -374,6 +389,7 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
 
     const linked = await coordinator.patch(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}`).send({
       milestoneId,
+      expectedVersion: await taskVersion(coordinator, standaloneTaskId),
     });
     expect(linked.status).toBeLessThan(400);
     expect(linked.body.milestoneId).toBe(milestoneId);
@@ -383,14 +399,14 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
     expect(atRisk.body.recordedStatus).toBe("PLANNED");
     expect(atRisk.body.status).toBe("AT_RISK");
 
-    await coordinator
+    const reopen = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}/status`)
       .set("Idempotency-Key", `st-reopen-${suffix}`)
-      .send({ status: "IN_PROGRESS" });
+      .send({ status: "IN_PROGRESS", expectedVersion: linked.body.version });
     const completedLate = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}/complete`)
       .set("Idempotency-Key", `st-late-done-${suffix}`)
-      .send({});
+      .send({ expectedVersion: reopen.body.version });
     expect(completedLate.status).toBeLessThan(400);
     expect(completedLate.body.status).toBe("DONE");
 

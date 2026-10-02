@@ -38,6 +38,15 @@ export interface PlanningTaskRow {
   createdAt: string;
   updatedAt: string;
   previews: PlanningPreview;
+  history?: PlanningHistoryEvent[];
+}
+
+export interface PlanningHistoryEvent {
+  id: string;
+  eventType: string;
+  actorUserId: string | null;
+  createdAt: string;
+  payload: Record<string, unknown> | unknown;
 }
 
 export interface PlanningMilestoneRow {
@@ -169,4 +178,75 @@ export function formatProgress(value: number | null | undefined): string {
     return "—";
   }
   return `${value}%`;
+}
+
+export function canCreateTask(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("task.create"));
+}
+
+export function canUpdateTask(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("task.update"));
+}
+
+export function canAssignTask(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("task.assign"));
+}
+
+export function canCompleteTask(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("task.complete"));
+}
+
+export function isoDateInput(value: string | null | undefined): string {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+export function dateInputToIso(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return `${trimmed}T00:00:00.000Z`;
+}
+
+export function auditEventLabel(eventType: string): string {
+  switch (eventType) {
+    case "TASK_CREATED":
+      return "Criada";
+    case "TASK_UPDATED":
+      return "Campos atualizados";
+    case "TASK_ASSIGNED":
+      return "Atribuição";
+    case "TASK_DUE_DATE_CHANGED":
+      return "Datas alteradas";
+    case "TASK_PROGRESS_CHANGED":
+      return "Progresso alterado";
+    case "TASK_STATUS_CHANGED":
+      return "Status alterado";
+    case "TASK_BLOCKED":
+      return "Bloqueada";
+    case "TASK_UNBLOCKED":
+      return "Desbloqueada";
+    case "TASK_COMPLETED":
+      return "Concluída";
+    case "TASK_CANCELLED":
+      return "Cancelada";
+    case "TASK_DELIVERY_REFS_UPDATED":
+      return "Relações atualizadas";
+    default:
+      return eventType;
+  }
+}
+
+export function newIdempotencyKey(prefix: string): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }

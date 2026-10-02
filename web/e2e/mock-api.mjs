@@ -301,7 +301,103 @@ function requireProject(session, projectId, res) {
   return project;
 }
 
+const mockTasks = [];
+const mockTaskHistory = new Map();
+
+function seedMockTasks() {
+  if (mockTasks.length > 0) {
+    return;
+  }
+  const now = Date.now();
+  mockTasks.push(
+    {
+      id: "task-grid",
+      organizationId: ORG_A,
+      projectId: PROJECT_A,
+      issueId: "iss-grid",
+      milestoneId: "ms-concept",
+      phaseId: "phase-concept",
+      deliverableId: "del-arch-001",
+      workPackageId: "wp-outline",
+      title: "Atualizar malha estrutural",
+      description: "Task ≠ Issue",
+      status: "IN_PROGRESS",
+      late: false,
+      kanbanColumn: "EM_ANDAMENTO",
+      priority: "HIGH",
+      responsibleDisciplineId: "disc-str",
+      assigneeUserId: USER,
+      dueDate: new Date(now + 86400000).toISOString(),
+      plannedStartAt: new Date(now - 86400000).toISOString(),
+      estimatedMinutes: 120,
+      progressPercent: 40,
+      startedAt: new Date(now - 3600000).toISOString(),
+      completedAt: null,
+      blockedReason: null,
+      version: 1,
+      createdAt: new Date(now - 86400000).toISOString(),
+      updatedAt: new Date(now).toISOString(),
+      previews: {
+        issue: { id: "iss-grid", title: "Choque de malha", status: "OPEN", relation: "issue" },
+        phase: { id: "phase-concept", name: "Concept" },
+        deliverable: { id: "del-arch-001", code: "DEL-ARCH-001", title: "Architectural pack" },
+        workPackage: { id: "wp-outline", title: "Outline programme", code: "WP-PLAN-001" },
+        milestone: { id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED" },
+        assignee: { userId: USER, displayName: "M. Santos" },
+      },
+    },
+    {
+      id: "task-late",
+      organizationId: ORG_A,
+      projectId: PROJECT_A,
+      issueId: null,
+      milestoneId: null,
+      phaseId: "phase-concept",
+      deliverableId: null,
+      workPackageId: null,
+      title: "Emitir planta atrasada",
+      description: "",
+      status: "TODO",
+      late: true,
+      kanbanColumn: "EM_RISCO",
+      priority: "NORMAL",
+      responsibleDisciplineId: "disc-arch",
+      assigneeUserId: null,
+      dueDate: "2020-01-01T00:00:00.000Z",
+      plannedStartAt: null,
+      estimatedMinutes: null,
+      progressPercent: 0,
+      startedAt: null,
+      completedAt: null,
+      blockedReason: null,
+      version: 1,
+      createdAt: "2020-01-01T00:00:00.000Z",
+      updatedAt: "2020-01-01T00:00:00.000Z",
+      previews: {
+        phase: { id: "phase-concept", name: "Concept" },
+      },
+    },
+  );
+  mockTaskHistory.set("task-grid", [
+    { id: "h-grid-1", eventType: "TASK_CREATED", actorUserId: USER, createdAt: "2026-01-01T00:00:00.000Z", payload: {} },
+    { id: "h-grid-2", eventType: "TASK_STATUS_CHANGED", actorUserId: USER, createdAt: "2026-01-02T00:00:00.000Z", payload: { to: "IN_PROGRESS" } },
+  ]);
+}
+
+function appendHistory(taskId, eventType) {
+  const list = mockTaskHistory.get(taskId) ?? [];
+  list.push({
+    id: `h-${taskId}-${list.length + 1}`,
+    eventType,
+    actorUserId: USER,
+    createdAt: new Date().toISOString(),
+    payload: {},
+  });
+  mockTaskHistory.set(taskId, list);
+}
+
 const server = http.createServer(async (req, res) => {
+  seedMockTasks();
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   const path = url.pathname;
   const token = cookieToken(req);
@@ -426,6 +522,10 @@ const server = http.createServer(async (req, res) => {
         "work_package.create",
         "work_package.update",
         "work_package.complete",
+        "task.create",
+        "task.update",
+        "task.assign",
+        "task.complete",
       ],
     });
     return;
@@ -555,6 +655,7 @@ const server = http.createServer(async (req, res) => {
       {
         id: "pm-ada",
         status: "ACTIVE",
+        userId: USER,
         email: "ada@example.com",
         displayName: "M. Santos",
       },
@@ -913,6 +1014,196 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  const issueListMatch = /^\/api\/v1\/projects\/([^/]+)\/issues$/.exec(path);
+  if (issueListMatch && req.method === "GET") {
+    const project = requireProject(session, issueListMatch[1], res);
+    if (!project) {
+      return;
+    }
+    json(res, 200, project.id === PROJECT_A ? [{ id: "iss-grid", title: "Choque de malha", status: "OPEN" }] : []);
+    return;
+  }
+
+  const milestoneListMatch = /^\/api\/v1\/projects\/([^/]+)\/milestones$/.exec(path);
+  if (milestoneListMatch && req.method === "GET") {
+    const project = requireProject(session, milestoneListMatch[1], res);
+    if (!project) {
+      return;
+    }
+    json(
+      res,
+      200,
+      project.id === PROJECT_A
+        ? [{ id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED", targetDate: null, phaseId: "phase-concept", deliverableId: null }]
+        : [],
+    );
+    return;
+  }
+
+  const taskCollection = /^\/api\/v1\/projects\/([^/]+)\/tasks$/.exec(path);
+  if (taskCollection) {
+    const project = requireProject(session, taskCollection[1], res);
+    if (!project) {
+      return;
+    }
+    if (req.method === "GET") {
+      json(res, 200, mockTasks.filter((row) => row.projectId === project.id));
+      return;
+    }
+    if (req.method === "POST") {
+      const body = await readBody(req);
+      if (!String(body.title ?? "").trim()) {
+        problem(res, 409, "PLANNING_STATE", "Task title is required");
+        return;
+      }
+      const created = {
+        id: `task-${Date.now()}`,
+        organizationId: project.organizationId,
+        projectId: project.id,
+        issueId: body.issueId ?? null,
+        milestoneId: body.milestoneId ?? null,
+        phaseId: body.phaseId ?? null,
+        deliverableId: body.deliverableId ?? null,
+        workPackageId: body.workPackageId ?? null,
+        title: String(body.title).trim(),
+        description: body.description ?? "",
+        status: "TODO",
+        late: false,
+        kanbanColumn: "PLANEJADAS",
+        priority: body.priority ?? null,
+        responsibleDisciplineId: body.responsibleDisciplineId ?? null,
+        assigneeUserId: null,
+        dueDate: body.dueDate ?? null,
+        plannedStartAt: body.plannedStartAt ?? null,
+        estimatedMinutes: body.estimatedMinutes ?? null,
+        progressPercent: body.progressPercent ?? null,
+        startedAt: null,
+        completedAt: null,
+        blockedReason: null,
+        version: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        previews: {},
+      };
+      mockTasks.push(created);
+      appendHistory(created.id, "TASK_CREATED");
+      json(res, 201, created);
+      return;
+    }
+  }
+
+  const taskAction = /^\/api\/v1\/projects\/([^/]+)\/tasks\/([^/]+)(?:\/([^/]+))?$/.exec(path);
+  if (taskAction) {
+    const project = requireProject(session, taskAction[1], res);
+    if (!project) {
+      return;
+    }
+    const task = mockTasks.find((row) => row.id === taskAction[2] && row.projectId === project.id);
+    if (!task) {
+      problem(res, 403, "TENANCY_DENIED", "Task is not bound to the authorized Project");
+      return;
+    }
+    const action = taskAction[3];
+    if (req.method === "GET" && action === "history") {
+      json(res, 200, mockTaskHistory.get(task.id) ?? []);
+      return;
+    }
+    if (req.method === "GET" && !action) {
+      json(res, 200, task);
+      return;
+    }
+    const body = req.method === "GET" ? {} : await readBody(req);
+    if (body.expectedVersion != null && Number(body.expectedVersion) !== task.version) {
+      problem(res, 409, "OPTIMISTIC_LOCK", "Optimistic lock conflict");
+      return;
+    }
+    if (req.method === "PATCH" && !action) {
+      if (body.status != null || body.assigneeUserId !== undefined) {
+        problem(res, 409, "PLANNING_STATE", "Status and assignee have dedicated endpoints and are not patchable");
+        return;
+      }
+      Object.assign(task, {
+        title: body.title?.trim() || task.title,
+        description: body.description !== undefined ? body.description : task.description,
+        priority: body.priority !== undefined ? body.priority : task.priority,
+        plannedStartAt: body.plannedStartAt !== undefined ? body.plannedStartAt : task.plannedStartAt,
+        dueDate: body.dueDate !== undefined ? body.dueDate : task.dueDate,
+        estimatedMinutes: body.estimatedMinutes !== undefined ? body.estimatedMinutes : task.estimatedMinutes,
+        progressPercent: body.progressPercent !== undefined ? body.progressPercent : task.progressPercent,
+        version: task.version + 1,
+        updatedAt: new Date().toISOString(),
+      });
+      if (task.dueDate && new Date(task.dueDate).getTime() < Date.now() && task.status !== "DONE" && task.status !== "CANCELLED") {
+        task.late = true;
+      }
+      appendHistory(task.id, "TASK_UPDATED");
+      json(res, 200, task);
+      return;
+    }
+    if (req.method === "POST" && action === "assign") {
+      task.assigneeUserId = body.assigneeUserId ?? null;
+      task.previews = { ...task.previews, assignee: task.assigneeUserId ? { userId: USER, displayName: "M. Santos" } : undefined };
+      task.version += 1;
+      appendHistory(task.id, "TASK_ASSIGNED");
+      json(res, 200, task);
+      return;
+    }
+    if (req.method === "POST" && (action === "start" || action === "unblock" || (action === "status" && body.status === "IN_PROGRESS"))) {
+      if (task.status === "TODO" || task.status === "BLOCKED") {
+        task.status = "IN_PROGRESS";
+        task.startedAt = task.startedAt ?? new Date().toISOString();
+        task.blockedReason = null;
+        task.version += 1;
+        appendHistory(task.id, action === "unblock" ? "TASK_UNBLOCKED" : "TASK_STATUS_CHANGED");
+        json(res, 200, task);
+        return;
+      }
+      problem(res, 409, "PLANNING_STATE", `Task cannot transition from ${task.status} to IN_PROGRESS`);
+      return;
+    }
+    if (req.method === "POST" && (action === "block" || (action === "status" && body.status === "BLOCKED"))) {
+      if (!String(body.blockedReason ?? "").trim()) {
+        problem(res, 409, "PLANNING_STATE", "BLOCKED requires a blocked reason");
+        return;
+      }
+      if (task.status !== "IN_PROGRESS") {
+        problem(res, 409, "PLANNING_STATE", `Task cannot transition from ${task.status} to BLOCKED`);
+        return;
+      }
+      task.status = "BLOCKED";
+      task.blockedReason = String(body.blockedReason).trim();
+      task.version += 1;
+      appendHistory(task.id, "TASK_BLOCKED");
+      json(res, 200, task);
+      return;
+    }
+    if (req.method === "POST" && (action === "complete" || (action === "status" && body.status === "DONE"))) {
+      if (task.status !== "IN_PROGRESS") {
+        problem(res, 409, "PLANNING_STATE", `Task cannot transition from ${task.status} to DONE`);
+        return;
+      }
+      task.status = "DONE";
+      task.completedAt = new Date().toISOString();
+      task.late = false;
+      task.version += 1;
+      appendHistory(task.id, "TASK_COMPLETED");
+      json(res, 200, task);
+      return;
+    }
+    if (req.method === "POST" && (action === "cancel" || (action === "status" && body.status === "CANCELLED"))) {
+      if (task.status === "DONE" || task.status === "CANCELLED") {
+        problem(res, 409, "PLANNING_STATE", `Task cannot transition from ${task.status} to CANCELLED`);
+        return;
+      }
+      task.status = "CANCELLED";
+      task.late = false;
+      task.version += 1;
+      appendHistory(task.id, "TASK_CANCELLED");
+      json(res, 200, task);
+      return;
+    }
+  }
+
   const planningMatch = /^\/api\/v1\/projects\/([^/]+)\/planning$/.exec(path);
   if (planningMatch) {
     const project = requireProject(session, planningMatch[1], res);
@@ -923,78 +1214,7 @@ const server = http.createServer(async (req, res) => {
       problem(res, 405, "METHOD_NOT_ALLOWED", "Planning read-model is GET-only");
       return;
     }
-    const now = Date.now();
-    const tasks = project.id === PROJECT_A
-      ? [
-          {
-            id: "task-grid",
-            organizationId: ORG_A,
-            projectId: PROJECT_A,
-            issueId: "iss-grid",
-            milestoneId: "ms-concept",
-            phaseId: "phase-concept",
-            deliverableId: "del-arch-001",
-            workPackageId: "wp-outline",
-            title: "Atualizar malha estrutural",
-            description: "Task ≠ Issue",
-            status: "IN_PROGRESS",
-            late: false,
-            kanbanColumn: "EM_ANDAMENTO",
-            priority: "HIGH",
-            responsibleDisciplineId: "STR",
-            assigneeUserId: USER,
-            dueDate: new Date(now + 86400000).toISOString(),
-            plannedStartAt: new Date(now - 86400000).toISOString(),
-            estimatedMinutes: 120,
-            progressPercent: 40,
-            startedAt: new Date(now - 3600000).toISOString(),
-            completedAt: null,
-            blockedReason: null,
-            version: 1,
-            createdAt: new Date(now - 86400000).toISOString(),
-            updatedAt: new Date(now).toISOString(),
-            previews: {
-              issue: { id: "iss-grid", title: "Choque de malha", status: "OPEN", relation: "issue" },
-              phase: { id: "phase-concept", name: "Concept" },
-              deliverable: { id: "del-arch-001", code: "DEL-ARCH-001", title: "Architectural pack" },
-              workPackage: { id: "wp-outline", title: "Outline programme", code: "WP-PLAN-001" },
-              milestone: { id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED" },
-              assignee: { userId: USER, displayName: "M. Santos" },
-            },
-          },
-          {
-            id: "task-late",
-            organizationId: ORG_A,
-            projectId: PROJECT_A,
-            issueId: null,
-            milestoneId: null,
-            phaseId: "phase-concept",
-            deliverableId: null,
-            workPackageId: null,
-            title: "Emitir planta atrasada",
-            description: "",
-            status: "TODO",
-            late: true,
-            kanbanColumn: "EM_RISCO",
-            priority: "NORMAL",
-            responsibleDisciplineId: "ARCH",
-            assigneeUserId: null,
-            dueDate: "2020-01-01T00:00:00.000Z",
-            plannedStartAt: null,
-            estimatedMinutes: null,
-            progressPercent: 0,
-            startedAt: null,
-            completedAt: null,
-            blockedReason: null,
-            version: 1,
-            createdAt: "2020-01-01T00:00:00.000Z",
-            updatedAt: "2020-01-01T00:00:00.000Z",
-            previews: {
-              phase: { id: "phase-concept", name: "Concept" },
-            },
-          },
-        ]
-      : [];
+    const tasks = mockTasks.filter((row) => row.projectId === project.id);
     const q = (url.searchParams.get("q") ?? "").toLowerCase();
     const status = url.searchParams.get("status");
     const late = url.searchParams.get("late");
@@ -1014,7 +1234,10 @@ const server = http.createServer(async (req, res) => {
       }
       return true;
     });
-    const inspected = inspect ? tasks.find((row) => row.id === inspect) ?? null : null;
+    const inspectedRow = inspect ? tasks.find((row) => row.id === inspect) ?? null : null;
+    const inspected = inspectedRow
+      ? { ...inspectedRow, history: mockTaskHistory.get(inspectedRow.id) ?? [] }
+      : null;
     json(res, 200, {
       projectId: project.id,
       organizationId: project.organizationId,

@@ -1133,6 +1133,36 @@ button.btn {
   margin-top: 16px;
 }
 
+.planner-assign,
+.planner-lifecycle {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.planner-confirm {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+}
+
+.planner-history {
+  margin-top: 20px;
+}
+
+.planner-history-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.planner-history-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0;
+}
+
 .planner-skel {
   display: block;
   background: #e5e7eb;

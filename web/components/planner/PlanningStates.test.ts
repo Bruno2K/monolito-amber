@@ -29,11 +29,10 @@ describe("M4.2 planning system states", () => {
     expect(html).toContain("falhou");
   });
 
-  it("M4.2-R14 planner view does not smuggle mutations", () => {
+  it("M4.3 planner enables Nova Tarefa when authorized", () => {
     const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "PlannerView.tsx"), "utf8");
-    expect(src).not.toMatch(/method:\s*"POST"/);
-    expect(src).not.toMatch(/task\.create/);
     expect(src).toMatch(/Nova Tarefa/);
-    expect(src).toMatch(/disabled/);
+    expect(src).toMatch(/canCreateTask/);
+    expect(src).toMatch(/TaskInspector/);
   });
 });

@@ -100,6 +100,7 @@ export class TasksService {
     },
   ) {
     const bound = await this.access.requireProject(session, "task.create", projectId);
+    this.access.rejectArchivedProject(bound.project);
     this.access.rejectClientAuthority(input, bound.organizationId, bound.project.id);
     const started = await this.idempotency.begin(bound.organizationId, idempotencyKey, {
       title: input.title,
@@ -129,6 +130,10 @@ export class TasksService {
       deliverableId: input.deliverableId,
       workPackageId: input.workPackageId,
     });
+    const responsibleDisciplineId = await this.resolveOptionalDiscipline(
+      bound.organizationId,
+      input.responsibleDisciplineId,
+    );
     assertTaskProgressPercent(input.progressPercent);
     assertEstimatedMinutes(input.estimatedMinutes);
     const created = await this.prisma.$transaction(async (tx) => {
@@ -145,7 +150,7 @@ export class TasksService {
           description: input.description?.trim() ?? "",
           status: "TODO",
           priority: this.parseOptionalPriority(input.priority),
-          responsibleDisciplineId: input.responsibleDisciplineId?.trim() || null,
+          responsibleDisciplineId,
           dueDate: this.parseDate(input.dueDate, "Task due date"),
           plannedStartAt: this.parseDate(input.plannedStartAt, "Task planned start"),
           estimatedMinutes: input.estimatedMinutes ?? null,
@@ -198,6 +203,7 @@ export class TasksService {
     session: RequestSession,
     projectId: string,
     taskId: string,
+    idempotencyKey: string | undefined,
     input: {
       title?: string;
       description?: string;
@@ -220,12 +226,23 @@ export class TasksService {
     },
   ) {
     const bound = await this.requireTask(session, "task.update", projectId, taskId);
+    this.access.rejectArchivedProject(bound.project);
     this.access.rejectClientAuthority(input, bound.organizationId, bound.project.id);
-    if (input.status || input.assigneeUserId) {
+    if (input.status !== undefined || input.assigneeUserId !== undefined) {
       throw new PlanningStateError("Status and assignee have dedicated endpoints and are not patchable");
     }
-    if (input.expectedVersion != null) {
-      this.foundation.cas({ version: bound.task.version }, input.expectedVersion);
+    this.requireExpectedVersion(bound.task.version, input.expectedVersion);
+    const started = idempotencyKey
+      ? await this.idempotency.begin(bound.organizationId, idempotencyKey, {
+          taskId,
+          expectedVersion: input.expectedVersion,
+          title: input.title ?? null,
+          progressPercent: input.progressPercent ?? null,
+          dueDate: input.dueDate ?? null,
+        })
+      : null;
+    if (started?.replay) {
+      return started.replay.responseBody;
     }
     const issueId =
       input.issueId !== undefined
@@ -244,6 +261,10 @@ export class TasksService {
         workPackageId: input.workPackageId !== undefined ? input.workPackageId : bound.task.workPackageId,
       },
     );
+    const responsibleDisciplineId =
+      input.responsibleDisciplineId !== undefined
+        ? await this.resolveOptionalDiscipline(bound.organizationId, input.responsibleDisciplineId)
+        : bound.task.responsibleDisciplineId;
     if (input.progressPercent !== undefined) {
       assertTaskProgressPercent(input.progressPercent);
     }
@@ -261,10 +282,7 @@ export class TasksService {
           title: input.title?.trim() || bound.task.title,
           description: input.description !== undefined ? input.description : bound.task.description,
           priority: input.priority !== undefined ? this.parseOptionalPriority(input.priority) : bound.task.priority,
-          responsibleDisciplineId:
-            input.responsibleDisciplineId !== undefined
-              ? input.responsibleDisciplineId?.trim() || null
-              : bound.task.responsibleDisciplineId,
+          responsibleDisciplineId,
           dueDate: input.dueDate !== undefined ? this.parseDate(input.dueDate, "Task due date") : bound.task.dueDate,
           plannedStartAt:
             input.plannedStartAt !== undefined
@@ -280,7 +298,30 @@ export class TasksService {
           version: bound.task.version + 1,
         },
       });
-      if (input.dueDate !== undefined && String(input.dueDate) !== String(bound.task.dueDate)) {
+      await this.audit.insert(
+        {
+          organizationId: updated.organizationId,
+          projectId: updated.projectId,
+          actorUserId: session.userId,
+          eventType: "TASK_UPDATED",
+          resourceType: "task",
+          resourceId: updated.id,
+          correlationId: currentCorrelationId(),
+          payload: redactSecrets({
+            title: updated.title !== bound.task.title,
+            description: updated.description !== bound.task.description,
+            priority: updated.priority,
+            plannedStartAt: updated.plannedStartAt,
+            estimatedMinutes: updated.estimatedMinutes,
+          }),
+        },
+        tx,
+      );
+      const dueChanged =
+        input.dueDate !== undefined &&
+        (updated.dueDate?.toISOString() ?? null) !== (bound.task.dueDate?.toISOString() ?? null);
+      if (dueChanged || (input.plannedStartAt !== undefined &&
+        (updated.plannedStartAt?.toISOString() ?? null) !== (bound.task.plannedStartAt?.toISOString() ?? null))) {
         await this.audit.insert(
           {
             organizationId: updated.organizationId,
@@ -290,7 +331,31 @@ export class TasksService {
             resourceType: "task",
             resourceId: updated.id,
             correlationId: currentCorrelationId(),
-            payload: redactSecrets({ from: bound.task.dueDate, to: updated.dueDate }),
+            payload: redactSecrets({
+              from: bound.task.dueDate,
+              to: updated.dueDate,
+              plannedStartFrom: bound.task.plannedStartAt,
+              plannedStartTo: updated.plannedStartAt,
+            }),
+          },
+          tx,
+        );
+      }
+      if (input.progressPercent !== undefined && updated.progressPercent !== bound.task.progressPercent) {
+        await this.audit.insert(
+          {
+            organizationId: updated.organizationId,
+            projectId: updated.projectId,
+            actorUserId: session.userId,
+            eventType: "TASK_PROGRESS_CHANGED",
+            resourceType: "task",
+            resourceId: updated.id,
+            correlationId: currentCorrelationId(),
+            payload: redactSecrets({
+              from: bound.task.progressPercent,
+              to: updated.progressPercent,
+              statusUnchanged: updated.status,
+            }),
           },
           tx,
         );
@@ -317,18 +382,33 @@ export class TasksService {
           tx,
         );
       }
-      return updated;
+      const body = this.toDto(updated);
+      if (started) {
+        await this.idempotency.commit(bound.organizationId, started.key, started.hash, 200, body, tx);
+      }
+      return body;
     });
-    return this.toDto(next);
+    return next;
   }
 
   async assign(
     session: RequestSession,
     projectId: string,
     taskId: string,
-    input: { assigneeUserId: string | null },
+    idempotencyKey: string | undefined,
+    input: { assigneeUserId: string | null; expectedVersion?: number },
   ) {
     const bound = await this.requireTask(session, "task.assign", projectId, taskId);
+    this.access.rejectArchivedProject(bound.project);
+    this.requireExpectedVersion(bound.task.version, input.expectedVersion);
+    const started = await this.idempotency.begin(bound.organizationId, idempotencyKey, {
+      taskId,
+      assigneeUserId: input.assigneeUserId,
+      expectedVersion: input.expectedVersion ?? null,
+    });
+    if (started.replay) {
+      return started.replay.responseBody;
+    }
     if (input.assigneeUserId != null) {
       await this.assertActiveProjectAssignee(
         bound.organizationId,
@@ -368,9 +448,11 @@ export class TasksService {
         currentCorrelationId(),
         tx,
       );
-      return updated;
+      const body = this.toDto(updated);
+      await this.idempotency.commit(bound.organizationId, started.key, started.hash, 200, body, tx);
+      return body;
     });
-    return this.toDto(next);
+    return next;
   }
 
   async transition(
@@ -387,18 +469,18 @@ export class TasksService {
       ? "task.complete"
       : "task.update";
     const bound = await this.requireTask(session, permission, projectId, taskId);
+    this.access.rejectArchivedProject(bound.project);
     const started = await this.idempotency.begin(bound.organizationId, idempotencyKey, {
       taskId,
       status: input.status,
       blockedReason: input.blockedReason ?? null,
+      expectedVersion: input.expectedVersion ?? null,
     });
     if (started.replay) {
       return started.replay.responseBody;
     }
     assertTaskTransition(bound.task.status as TaskStatus, input.status);
-    if (input.expectedVersion != null) {
-      this.foundation.cas({ version: bound.task.version }, input.expectedVersion);
-    }
+    this.requireExpectedVersion(bound.task.version, input.expectedVersion);
     if (taskStatusRequiresBlockedReason(input.status)) {
       const reason = input.blockedReason?.trim() ?? "";
       if (!reason) {
@@ -442,6 +524,21 @@ export class TasksService {
         },
         tx,
       );
+      if (bound.task.status === "BLOCKED" && updated.status === "IN_PROGRESS") {
+        await this.audit.insert(
+          {
+            organizationId: updated.organizationId,
+            projectId: updated.projectId,
+            actorUserId: session.userId,
+            eventType: "TASK_UNBLOCKED",
+            resourceType: "task",
+            resourceId: updated.id,
+            correlationId: currentCorrelationId(),
+            payload: redactSecrets({ from: bound.task.blockedReason, to: updated.status }),
+          },
+          tx,
+        );
+      }
       if (updated.status === "BLOCKED") {
         await this.audit.insert(
           {
@@ -526,6 +623,46 @@ export class TasksService {
     return body;
   }
 
+  async start(
+    session: RequestSession,
+    projectId: string,
+    taskId: string,
+    idempotencyKey: string | undefined,
+    input: { expectedVersion?: number } = {},
+  ) {
+    return this.transition(session, projectId, taskId, idempotencyKey, {
+      status: "IN_PROGRESS",
+      expectedVersion: input.expectedVersion,
+    });
+  }
+
+  async block(
+    session: RequestSession,
+    projectId: string,
+    taskId: string,
+    idempotencyKey: string | undefined,
+    input: { blockedReason?: string; expectedVersion?: number },
+  ) {
+    return this.transition(session, projectId, taskId, idempotencyKey, {
+      status: "BLOCKED",
+      blockedReason: input.blockedReason,
+      expectedVersion: input.expectedVersion,
+    });
+  }
+
+  async unblock(
+    session: RequestSession,
+    projectId: string,
+    taskId: string,
+    idempotencyKey: string | undefined,
+    input: { expectedVersion?: number } = {},
+  ) {
+    return this.transition(session, projectId, taskId, idempotencyKey, {
+      status: "IN_PROGRESS",
+      expectedVersion: input.expectedVersion,
+    });
+  }
+
   async complete(
     session: RequestSession,
     projectId: string,
@@ -539,6 +676,44 @@ export class TasksService {
     });
   }
 
+  async cancel(
+    session: RequestSession,
+    projectId: string,
+    taskId: string,
+    idempotencyKey: string | undefined,
+    input: { expectedVersion?: number } = {},
+  ) {
+    return this.transition(session, projectId, taskId, idempotencyKey, {
+      status: "CANCELLED",
+      expectedVersion: input.expectedVersion,
+    });
+  }
+
+  async listHistory(session: RequestSession, projectId: string, taskId: string) {
+    const bound = await this.requireTask(session, "project.read", projectId, taskId);
+    return this.historyFor(bound.organizationId, bound.project.id, bound.task.id);
+  }
+
+  async historyFor(organizationId: string, projectId: string, taskId: string) {
+    const rows = await this.prisma.auditEvent.findMany({
+      where: {
+        organizationId,
+        projectId,
+        resourceType: "task",
+        resourceId: taskId,
+      },
+      orderBy: { createdAt: "asc" },
+      take: 100,
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      eventType: row.eventType,
+      actorUserId: row.actorUserId,
+      createdAt: row.createdAt,
+      payload: row.payload,
+    }));
+  }
+
   async addDependency(
     session: RequestSession,
     projectId: string,
@@ -547,6 +722,7 @@ export class TasksService {
     input: { predecessorTaskId: string; type?: string },
   ) {
     const bound = await this.requireTask(session, "task.update", projectId, taskId);
+    this.access.rejectArchivedProject(bound.project);
     assertFinishToStartType(input.type);
     if (!UUID_RE.test(input.predecessorTaskId)) {
       throw new DenyByDefaultError("Client predecessorTaskId is not authoritative");
@@ -733,6 +909,40 @@ export class TasksService {
       throw new DenyByDefaultError("Task Milestone is not bound to the authorized Project");
     }
     return milestone.id;
+  }
+
+  private requireExpectedVersion(current: number, expected: number | undefined) {
+    if (expected == null) {
+      throw new PlanningStateError("expectedVersion is required");
+    }
+    this.foundation.cas({ version: current }, expected);
+  }
+
+  private async resolveOptionalDiscipline(
+    organizationId: string,
+    value: string | null | undefined,
+  ): Promise<string | null> {
+    if (value == null || value === "") {
+      return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    if (UUID_RE.test(trimmed)) {
+      const row = await this.prisma.discipline.findUnique({ where: { id: trimmed } });
+      if (!row || row.organizationId !== organizationId || !row.active) {
+        throw new PlanningStateError("Task responsible discipline is not bound to the authorized Organization");
+      }
+      return row.id;
+    }
+    const row = await this.prisma.discipline.findFirst({
+      where: { organizationId, code: trimmed, active: true },
+    });
+    if (!row) {
+      throw new PlanningStateError("Task responsible discipline is not bound to the authorized Organization");
+    }
+    return row.id;
   }
 
   private async assertActiveProjectAssignee(
