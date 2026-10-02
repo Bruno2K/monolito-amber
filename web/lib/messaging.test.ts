@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  acceptAsyncResult,
+  appendInboxItems,
+  appendTranscriptPage,
   appendUniqueMessage,
   authorizedSearchHits,
   authorizedUnreadTotal,
+  beginSend,
   buildInboxViews,
   canEditOwnMessage,
   canSendMessage,
@@ -12,8 +16,12 @@ import {
   conversationFailure,
   eligibleDirectPeers,
   filterInbox,
+  inboxPageDisposition,
   inboxSurface,
+  membersFromProjectRows,
   nextInboxIndex,
+  nextTranscriptCursor,
+  peersFromProjectMembers,
   peerMembershipId,
   privacySafeSnippet,
   resourcePresentation,
@@ -22,6 +30,7 @@ import {
   visiblePendingSends,
   watermarkTarget,
   type InboxItem,
+  type MessageRecord,
 } from "./messaging";
 
 const actor = "member-a";
@@ -77,8 +86,7 @@ describe("M5.5 messaging presentation", () => {
         { id: actor, displayName: "Eu", status: "ACTIVE" },
         { id: peer, displayName: "Bia", status: "ACTIVE" },
         { id: "suspended", displayName: "Suspenso", status: "SUSPENDED" },
-        { id: "other-org", displayName: "Fora", status: "ACTIVE" },
-      ].filter((member) => member.id !== "other-org" || member.status === "ACTIVE"),
+      ],
       actor,
     );
     expect(peers.map((member) => member.displayName)).toEqual(["Bia"]);
@@ -216,4 +224,81 @@ describe("M5.5 messaging presentation", () => {
     expect(composerKeyAction({ key: "Enter", shiftKey: false })).toBe("send");
     expect(composerKeyAction({ key: "Enter", shiftKey: true })).toBe("newline");
   });
+
+  it("ignores stale thread results after navigation or revocation", () => {
+    expect(acceptAsyncResult({ generation: 1, currentGeneration: 2, revokedGeneration: null, value: "A" })).toBeNull();
+    expect(acceptAsyncResult({ generation: 2, currentGeneration: 2, revokedGeneration: null, value: "B" })).toBe("B");
+    expect(acceptAsyncResult({ generation: 3, currentGeneration: 4, revokedGeneration: 3, value: "secret" })).toBeNull();
+    expect(acceptAsyncResult({ generation: 4, currentGeneration: 4, revokedGeneration: 3, value: "later" })).toBe("later");
+  });
+
+  it("follows transcript cursors past the first hundred messages without duplicating or looping", () => {
+    const first = Array.from({ length: 100 }, (_, index) => message(index));
+    const second = [message(100)];
+    const page = appendTranscriptPage(first, second);
+    expect(page.messages).toHaveLength(101);
+    expect(page.messages[100]?.id).toBe("m-100");
+    expect(watermarkTarget(page.messages)).toBe("m-100");
+    expect(appendTranscriptPage(page.messages, second).added).toBe(0);
+    expect(nextTranscriptCursor(null, "cursor-2", 100)).toBe("cursor-2");
+    expect(nextTranscriptCursor("cursor-2", "cursor-2", 1)).toBeNull();
+    expect(nextTranscriptCursor("cursor-2", "cursor-3", 0)).toBeNull();
+    const inbox = appendInboxItems([{ id: "c1" }], [{ id: "c1" }, { id: "c2" }]);
+    expect(inbox.items.map((item) => item.id)).toEqual(["c1", "c2"]);
+    expect(inbox.added).toBe(1);
+  });
+
+  it("fails closed when a later inbox page is unauthorized", () => {
+    expect(inboxPageDisposition(200)).toBe("commit");
+    expect(inboxPageDisposition(403)).toBe("deny");
+    expect(inboxPageDisposition(404)).toBe("deny");
+    expect(inboxPageDisposition(500)).toBe("retry");
+    expect(inboxPageDisposition(0)).toBe("retry");
+    expect(inboxSurface({ status: 403, itemCount: 1, visibleCount: 1, filtered: false })).toBe("no-permission");
+    expect(inboxSurface({ status: 503, itemCount: 0, visibleCount: 0, filtered: false })).toBe("error");
+    expect(inboxSurface({ status: 0, itemCount: 0, visibleCount: 0, filtered: false })).toBe("error");
+  });
+
+  it("starts only one send while a submission is in flight and reuses the failed key", () => {
+    let inFlight = false;
+    let started = 0;
+    for (let press = 0; press < 5; press += 1) {
+      const decision = beginSend(inFlight, "oi");
+      if (decision.started) {
+        started += 1;
+        inFlight = true;
+      }
+    }
+    expect(started).toBe(1);
+    expect(reuseSendKey({ key: "same", body: "oi" }, "oi")).toBe("same");
+    expect(reuseSendKey({ key: "same", body: "oi" }, "alterado")).toBeNull();
+  });
+
+  it("discovers active project peers and keeps suspended people out of the picker", () => {
+    const rows = [
+      { organizationMembershipId: actor, displayName: "Eu", status: "ACTIVE" },
+      { organizationMembershipId: peer, displayName: "Seed Contributor A", status: "ACTIVE" },
+      { organizationMembershipId: peer, displayName: "Seed Contributor A", status: "ACTIVE" },
+      { organizationMembershipId: "suspended", displayName: "Seed Suspended Member A", status: "SUSPENDED" },
+      { organizationMembershipId: "removed", displayName: "Seed Removed Member A", status: "REMOVED" },
+    ];
+    expect(peersFromProjectMembers(rows, actor).map((member) => member.displayName)).toEqual(["Seed Contributor A"]);
+    expect(membersFromProjectRows(rows, actor).some((member) => member.status === "SUSPENDED")).toBe(true);
+    expect(peersFromProjectMembers(rows, actor).some((member) => member.displayName.includes("Beta"))).toBe(false);
+  });
 });
+
+function message(index: number): MessageRecord {
+  return {
+    id: `m-${index}`,
+    conversationId: "conv-direct",
+    authorOrganizationMembershipId: index % 2 === 0 ? peer : actor,
+    body: `corpo ${index}`,
+    createdAt: `2026-10-02T12:${String(Math.floor(index / 60)).padStart(2, "0")}:${String(index % 60).padStart(2, "0")}.000Z`,
+    editedAt: null,
+    deletedAt: null,
+    version: 1,
+    lifecycle: "VISIBLE",
+    resourcePreviews: [],
+  };
+}

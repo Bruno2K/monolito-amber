@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { apiJson, CALENDAR_IDS, clearBrowserToSignIn, IDS, m5SeedUuid, signInToOrg } from "./helpers";
+import { apiJson, CALENDAR_IDS, clearBrowserToSignIn, IDS, m5SeedUuid, seedUuid, signInToOrg } from "./helpers";
 
 const DIRECT_ID = m5SeedUuid("conversation:dm-coord-contributor");
 const TEAM_ID = m5SeedUuid("conversation:team-a-chat");
@@ -143,4 +143,106 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     await page.goto("/messages");
     await expect(page.getByText(stamp)).toHaveCount(0);
   });
+
+  test("paginates past 100 messages, keeps the other watermark, and blocks duplicate Enter", async ({ page, browser }, testInfo) => {
+    test.setTimeout(180_000);
+    const stamp = `M55b-${testInfo.project.name}-${Date.now()}`;
+    const disciplineId = seedUuid("orgmem:org-a:discipline-a");
+    await signInToOrg(page, "coord-a", "Amber Demo Alpha");
+    const direct = await apiJson(page, "POST", "/api/v1/conversations/direct", {
+      headers: { "Idempotency-Key": `m55b-direct-${stamp}` },
+      data: { organizationMembershipId: CALENDAR_IDS.memContributorA },
+    });
+    expect(direct.status).toBeLessThan(300);
+    const conversationId = String(direct.body.id);
+    for (let index = 1; index <= 101; index += 1) {
+      const sent = await apiJson(page, "POST", `/api/v1/conversations/${conversationId}/messages`, {
+        headers: { "Idempotency-Key": `m55b-page-${stamp}-${index}` },
+        data: { body: `${stamp} #${index}` },
+      });
+      expect(sent.status).toBeLessThan(300);
+    }
+    const other = await browser.newContext();
+    const otherPage = await other.newPage();
+    await signInToOrg(otherPage, "contributor-a", "Amber Demo Alpha");
+    const otherBefore = await apiJson(otherPage, "GET", "/api/v1/conversations?pageSize=100");
+    const otherUnreadBefore = unreadFor(otherBefore.body.items, conversationId);
+
+    await page.goto(`/messages/${conversationId}`);
+    await expect(page.getByText("Carregando conversa")).toBeHidden();
+    const transcript = page.locator(".messages-transcript");
+    await transcript.evaluate((node) => {
+      node.scrollTop = node.scrollHeight;
+    });
+    await expect(page.getByText(`${stamp} #101`, { exact: true })).toBeVisible();
+    await transcript.evaluate((node) => {
+      node.scrollTop = 0;
+    });
+    await expect(page.getByText(`${stamp} #1`, { exact: true })).toBeVisible();
+    const coordAfter = await apiJson(page, "GET", "/api/v1/conversations?pageSize=100");
+    expect(unreadFor(coordAfter.body.items, conversationId)).toBe(0);
+    const otherAfter = await apiJson(otherPage, "GET", "/api/v1/conversations?pageSize=100");
+    expect(unreadFor(otherAfter.body.items, conversationId)).toBe(otherUnreadBefore);
+    await other.close();
+
+    const once = `${stamp} once`;
+    let posts = 0;
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route(`**/api/v1/conversations/${conversationId}/messages`, async (route) => {
+      if (route.request().method() !== "POST") {
+        await route.continue();
+        return;
+      }
+      posts += 1;
+      await gate;
+      await route.continue();
+    });
+    const composer = page.getByLabel("Mensagem");
+    await composer.fill(once);
+    await composer.press("Enter");
+    await composer.press("Enter");
+    await composer.press("Enter");
+    await expect.poll(() => posts).toBe(1);
+    release();
+    await expect(page.getByText(once)).toHaveCount(1);
+    await page.unroute(`**/api/v1/conversations/${conversationId}/messages`);
+
+    const second = await apiJson(page, "POST", "/api/v1/conversations/direct", {
+      headers: { "Idempotency-Key": `m55b-discipline-${stamp}` },
+      data: { organizationMembershipId: disciplineId },
+    });
+    expect(second.status).toBeLessThan(300);
+    const secondId = String(second.body.id);
+    expect(secondId).not.toBe(conversationId);
+    await composer.fill("rascunho da conversa A");
+    await page.goto(`/messages/${secondId}`);
+    await expect(page.getByText("Carregando conversa")).toBeHidden();
+    await expect(page.getByLabel("Mensagem")).toHaveValue("");
+    await expect(page.getByText(`${stamp} #101`, { exact: true })).toHaveCount(0);
+    await expect(page.getByText("rascunho da conversa A")).toHaveCount(0);
+
+    await page.goto(`/messages/${conversationId}`);
+    await expect(page.getByText(`${stamp} #101`)).toBeVisible();
+    await page.route(`**/api/v1/conversations/${conversationId}**`, async (route) => {
+      await route.fulfill({
+        status: 403,
+        contentType: "application/json",
+        body: JSON.stringify({ status: 403, code: "TENANCY_DENIED", detail: "revoked" }),
+      });
+    });
+    await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+    await expect(page.getByRole("heading", { name: "Conversa indisponível" })).toBeVisible();
+    await expect(page.getByText(`${stamp} #101`, { exact: true })).toHaveCount(0);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+    expect(overflow).toBe(true);
+    await expect(page.getByRole("button", { name: "Nova conversa" })).toBeVisible();
+  });
 });
+
+function unreadFor(items: unknown, conversationId: string): number {
+  const rows = Array.isArray(items) ? (items as Array<{ id?: string; unreadCount?: number }>) : [];
+  return rows.find((row) => row.id === conversationId)?.unreadCount ?? 0;
+}

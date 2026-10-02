@@ -18,6 +18,7 @@ const OPERATIONAL_ROUTES = [
   { name: "planner-marcos", path: `/projects/${IDS.projectA1}/planner?view=milestones` },
   { name: "calendars-hub", path: "/calendars" },
   { name: "calendars-schedule", path: "/calendars/schedule" },
+  { name: "messages", path: "/messages" },
 ] as const;
 
 async function analyzeAxe(page: Page, label: string, projectName: string) {

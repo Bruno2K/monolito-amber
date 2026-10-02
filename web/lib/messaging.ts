@@ -254,7 +254,7 @@ export function inboxSurface(input: {
   if (isAuthorizationMiss(input.status)) {
     return "no-permission";
   }
-  if (input.status >= 400) {
+  if (input.status === 0 || input.status >= 400) {
     return "error";
   }
   if (input.itemCount === 0) {
@@ -402,6 +402,133 @@ export function formatMessageTime(iso: string): string {
     return "";
   }
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(date);
+}
+
+export interface ProjectPeerRow {
+  organizationMembershipId: string;
+  displayName: string;
+  status: string;
+}
+
+export type InboxPageDisposition = "commit" | "deny" | "retry";
+
+export function inboxPageDisposition(status: number): InboxPageDisposition {
+  if (status >= 200 && status < 300) {
+    return "commit";
+  }
+  if (isAuthorizationMiss(status)) {
+    return "deny";
+  }
+  return "retry";
+}
+
+export function membersFromProjectRows(rows: readonly ProjectPeerRow[], actorMembershipId: string | null): DirectoryMember[] {
+  const seen = new Set<string>();
+  const members: DirectoryMember[] = [];
+  for (const row of rows) {
+    const id = row.organizationMembershipId.trim();
+    if (!id || id === actorMembershipId || seen.has(id)) {
+      continue;
+    }
+    seen.add(id);
+    members.push({ id, displayName: row.displayName, status: row.status });
+  }
+  return members;
+}
+
+export function peersFromProjectMembers(rows: readonly ProjectPeerRow[], actorMembershipId: string | null): DirectoryMember[] {
+  const seen = new Set<string>();
+  const peers: DirectoryMember[] = [];
+  for (const row of rows) {
+    if (row.status !== "ACTIVE") {
+      continue;
+    }
+    const id = row.organizationMembershipId.trim();
+    if (!id || id === actorMembershipId || seen.has(id)) {
+      continue;
+    }
+    seen.add(id);
+    peers.push({ id, displayName: row.displayName, status: "ACTIVE" });
+  }
+  peers.sort((left, right) => left.displayName.localeCompare(right.displayName, "pt"));
+  return peers;
+}
+
+export function compareMessages(left: Pick<MessageRecord, "createdAt" | "id">, right: Pick<MessageRecord, "createdAt" | "id">): number {
+  if (left.createdAt < right.createdAt) {
+    return -1;
+  }
+  if (left.createdAt > right.createdAt) {
+    return 1;
+  }
+  if (left.id < right.id) {
+    return -1;
+  }
+  if (left.id > right.id) {
+    return 1;
+  }
+  return 0;
+}
+
+export function appendInboxItems<T extends { id: string }>(existing: readonly T[], page: readonly T[]): { items: T[]; added: number } {
+  const seen = new Set(existing.map((item) => item.id));
+  const items = [...existing];
+  let added = 0;
+  for (const item of page) {
+    if (seen.has(item.id)) {
+      continue;
+    }
+    seen.add(item.id);
+    items.push(item);
+    added += 1;
+  }
+  return { items, added };
+}
+
+export function appendTranscriptPage(existing: readonly MessageRecord[], page: readonly MessageRecord[]): { messages: MessageRecord[]; added: number } {
+  const seen = new Set(existing.map((message) => message.id));
+  const messages = [...existing];
+  let added = 0;
+  for (const message of page) {
+    if (seen.has(message.id)) {
+      continue;
+    }
+    seen.add(message.id);
+    messages.push(message);
+    added += 1;
+  }
+  messages.sort(compareMessages);
+  return { messages, added };
+}
+
+/** Stop when the cursor repeats, the page adds nothing, or the server has no further page. */
+export function nextTranscriptCursor(previousCursor: string | null, nextCursor: string | null, added: number): string | null {
+  if (!nextCursor || nextCursor === previousCursor || added === 0) {
+    return null;
+  }
+  return nextCursor;
+}
+
+export function acceptAsyncResult<T>(input: {
+  generation: number;
+  currentGeneration: number;
+  revokedGeneration: number | null;
+  value: T;
+}): T | null {
+  if (input.generation !== input.currentGeneration) {
+    return null;
+  }
+  if (input.revokedGeneration !== null && input.generation <= input.revokedGeneration) {
+    return null;
+  }
+  return input.value;
+}
+
+export function beginSend(inFlight: boolean, body: string): { inFlight: boolean; started: boolean } {
+  if (inFlight || body.trim().length === 0) {
+    return { inFlight, started: false };
+  }
+  return { inFlight: true, started: true };
 }
 
 export function stateCopy(state: MessagingSurface): { title: string; detail: string } {
