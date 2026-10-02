@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { M3_SEED_ORGANIZATIONS, M3_SEED_PROJECTS, M3_SEED_USERS } from "../../packages/shared/src/m3-seed-design.ts";
 import { M4_SEED_MILESTONES, M4_SEED_PRE_M4_TASK, M4_SEED_TASKS } from "../../packages/shared/src/m4-seed-design.ts";
-import { M5_SEED_CALENDARS } from "../../packages/shared/src/m5-seed-design.ts";
+import { M5_SEED_CALENDARS, M5_SEED_CONVERSATIONS } from "../../packages/shared/src/m5-seed-design.ts";
 
 function seedUuid(namespace: string, key: string): string {
   const digest = createHash("sha256").update(`${namespace}${key}`).digest("hex");
@@ -95,9 +95,14 @@ async function main(): Promise<void> {
   if (calendarCount !== M5_SEED_CALENDARS.length) {
     throw new Error(`expected ${M5_SEED_CALENDARS.length} M5 seed calendars, found ${calendarCount}`);
   }
+  const expectedConversation = m5Id("conversation:dm-coord-contributor");
+  const conversation = await prisma.conversation.findUnique({ where: { id: expectedConversation } });
+  if (!conversation || conversation.kind !== "DIRECT") {
+    throw new Error(`M5 dm-coord-contributor missing or kind mismatch (expected ${expectedConversation})`);
+  }
   const conversationCount = await prisma.conversation.count();
-  if (conversationCount !== 0) {
-    throw new Error(`M5.2 must not seed Messaging rows, found ${conversationCount} conversations`);
+  if (conversationCount !== M5_SEED_CONVERSATIONS.length) {
+    throw new Error(`expected ${M5_SEED_CONVERSATIONS.length} M5 seed conversations, found ${conversationCount}`);
   }
   console.log(`seed_org_a=${expectedOrgA}`);
   console.log(`seed_org_b=${expectedOrgB}`);
@@ -108,6 +113,7 @@ async function main(): Promise<void> {
   console.log(`seed_issue_a1_grid=${expectedIssue}`);
   console.log(`pre_m4_activation_present=${preM4 ? "yes" : "no"}`);
   console.log(`seed_cal_owner_private=${expectedCalendar}`);
+  console.log(`seed_dm_coord_contributor=${expectedConversation}`);
   console.log("deterministic_seed=ok");
 }
 
