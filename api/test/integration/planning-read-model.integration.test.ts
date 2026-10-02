@@ -272,4 +272,83 @@ describe("M4.2 unified Planning read-model", () => {
     expect(hidden.status).toBe(200);
     expect(hidden.body.inspected).toBeNull();
   });
+
+  it("M4.6-HTTP-01 Gantt projection reuses the same authorized Task set and exposes distinct schedule lanes", async () => {
+    const started = Date.now();
+    const list = await coordinator.get(`/api/v1/projects/${projectA}/planning?view=list&sort=title&order=asc`);
+    const gantt = await coordinator.get(`/api/v1/projects/${projectA}/planning?view=gantt&sort=title&order=asc`);
+    expect(gantt.status).toBe(200);
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(gantt.body.view).toBe("gantt");
+    expect(gantt.body.tasks.map((row: { id: string }) => row.id)).toEqual(
+      list.body.tasks.map((row: { id: string }) => row.id),
+    );
+    expect(gantt.body.schedule).toBeDefined();
+    expect(gantt.body.schedule.take).toBe(500);
+    const kinds = new Set(gantt.body.schedule.lanes.map((row: { kind: string }) => row.kind));
+    expect(kinds.has("TASK")).toBe(true);
+    expect(kinds.has("MILESTONE")).toBe(true);
+    for (const lane of gantt.body.schedule.lanes) {
+      expect(lane.sourceId).toBe(lane.id);
+      expect(lane.domain).toMatch(/operations\.|planning\./);
+    }
+    expect(gantt.body.schedule.links.every((link: { predecessorTaskId: string; successorTaskId: string }) => {
+      const ids = new Set(
+        gantt.body.schedule.lanes.filter((row: { kind: string }) => row.kind === "TASK").map((row: { id: string }) => row.id),
+      );
+      return ids.has(link.predecessorTaskId) && ids.has(link.successorTaskId);
+    })).toBe(true);
+    expect(JSON.stringify(gantt.body)).not.toMatch(/gantt_bars|shadow_date|schedule_store/i);
+  });
+
+  it("M4.6-HTTP-02 Task date PATCH does not shift siblings and rejects propagateDates", async () => {
+    const before = await coordinator.get(`/api/v1/projects/${projectA}/planning?view=gantt`);
+    const successor = before.body.schedule.lanes.find((row: { id: string }) => row.id === succId);
+    const predLane = before.body.schedule.lanes.find((row: { id: string }) => row.id === predId);
+    const predTask = before.body.tasks.find((row: { id: string }) => row.id === predId) ??
+      (await coordinator.get(`/api/v1/projects/${projectA}/planning?inspect=${predId}`)).body.inspected;
+    const rejected = await coordinator
+      .patch(`/api/v1/projects/${projectA}/tasks/${predId}`)
+      .set("Idempotency-Key", `gantt-prop-${suffix}`)
+      .send({
+        plannedStartAt: "2026-10-01T00:00:00.000Z",
+        dueDate: "2026-10-08T00:00:00.000Z",
+        expectedVersion: predTask.version,
+        propagateDates: true,
+      });
+    expect(rejected.status).toBe(409);
+    expect(rejected.body.reason).toBe("DEPENDENCY_DATE_SHIFT_REJECTED");
+
+    const updated = await coordinator
+      .patch(`/api/v1/projects/${projectA}/tasks/${predId}`)
+      .set("Idempotency-Key", `gantt-date-${suffix}`)
+      .send({
+        plannedStartAt: "2026-10-01T00:00:00.000Z",
+        dueDate: "2026-10-08T00:00:00.000Z",
+        expectedVersion: predTask.version,
+      });
+    expect(updated.status).toBe(200);
+    expect(updated.body.status).toBe("TODO");
+
+    const after = await coordinator.get(`/api/v1/projects/${projectA}/planning?view=gantt`);
+    const succAfter = after.body.schedule.lanes.find((row: { id: string }) => row.id === succId);
+    expect(succAfter.start).toBe(successor?.start ?? null);
+    expect(succAfter.end).toBe(successor?.end ?? null);
+    const predAfter = after.body.schedule.lanes.find((row: { id: string }) => row.id === predId);
+    expect(predAfter.start).toBe("2026-10-01T00:00:00.000Z");
+    const listAfter = await coordinator.get(`/api/v1/projects/${projectA}/planning?view=list&q=Predecessor`);
+    const listed = listAfter.body.tasks.find((row: { id: string }) => row.id === predId);
+    expect(listed.plannedStartAt).toBe(predAfter.start);
+    expect(predLane).toBeDefined();
+
+    const viewerDenied = await viewer
+      .patch(`/api/v1/projects/${projectA}/tasks/${predId}`)
+      .set("Idempotency-Key", `gantt-viewer-${suffix}`)
+      .send({
+        dueDate: "2026-11-01T00:00:00.000Z",
+        expectedVersion: updated.body.version,
+      });
+    expect(viewerDenied.status).toBeGreaterThanOrEqual(400);
+    expect(viewerDenied.status).not.toBe(200);
+  });
 });

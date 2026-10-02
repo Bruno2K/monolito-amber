@@ -87,6 +87,42 @@ export interface PlanningDependencyRow {
   type: string;
 }
 
+export type ScheduleLaneKind = "PHASE" | "DELIVERABLE" | "WORK_PACKAGE" | "TASK" | "MILESTONE";
+
+export interface PlanningScheduleLane {
+  kind: ScheduleLaneKind;
+  id: string;
+  domain: string;
+  sourceId: string;
+  title: string;
+  code: string | null;
+  parent: { kind: ScheduleLaneKind; id: string } | null;
+  depth: number;
+  start: string | null;
+  end: string | null;
+  status: string | null;
+  recordedStatus: string | null;
+  late: boolean;
+  risk: { code: string; text: string } | null;
+  version: number | null;
+}
+
+export interface PlanningScheduleLink {
+  id: string;
+  predecessorTaskId: string;
+  successorTaskId: string;
+  type: string;
+}
+
+export interface PlanningSchedule {
+  dateRange: { start: string; end: string };
+  take: number;
+  truncated: boolean;
+  canEditTaskDates: boolean;
+  lanes: PlanningScheduleLane[];
+  links: PlanningScheduleLink[];
+}
+
 export interface PlanningReadModel {
   projectId: string;
   organizationId: string;
@@ -96,6 +132,7 @@ export interface PlanningReadModel {
   tasks: PlanningTaskRow[];
   milestones: PlanningMilestoneRow[];
   dependencies: PlanningDependencyRow[];
+  schedule?: PlanningSchedule;
   page: { page: number; pageSize: number; total: number; sort: string; order: "asc" | "desc" | string };
   counts: {
     total: number;
@@ -409,4 +446,79 @@ export function newIdempotencyKey(prefix: string): string {
     return `${prefix}-${crypto.randomUUID()}`;
   }
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+export function scheduleLaneKindLabel(kind: ScheduleLaneKind): string {
+  switch (kind) {
+    case "PHASE":
+      return "Fase";
+    case "DELIVERABLE":
+      return "Entrega";
+    case "WORK_PACKAGE":
+      return "Pacote";
+    case "TASK":
+      return "Tarefa";
+    case "MILESTONE":
+      return "Marco";
+    default:
+      return kind;
+  }
+}
+
+export function scheduleRiskLabel(lane: PlanningScheduleLane): string {
+  if (lane.risk?.text) {
+    return lane.risk.text;
+  }
+  if (lane.kind === "TASK" && lane.late) {
+    return lateExplanation(lane.status ?? "TODO");
+  }
+  return "";
+}
+
+export function resolveGanttDateEdit(input: {
+  kind: ScheduleLaneKind;
+  propagate?: boolean;
+  shiftSuccessors?: boolean;
+}): { kind: "apply" } | { kind: "reject"; reason: "DEPENDENCY_DATE_SHIFT_REJECTED"; message: string } {
+  if (input.kind !== "TASK") {
+    return {
+      kind: "reject",
+      reason: "DEPENDENCY_DATE_SHIFT_REJECTED",
+      message: "O Gantt só edita datas da Tarefa. Fase, Entrega, Pacote e Marco permanecem no objeto de origem.",
+    };
+  }
+  if (input.propagate || input.shiftSuccessors) {
+    return {
+      kind: "reject",
+      reason: "DEPENDENCY_DATE_SHIFT_REJECTED",
+      message: "Datas não se propagam para predecessores, sucessores ou pais. Cada agregado permanece a fonte da verdade.",
+    };
+  }
+  return { kind: "apply" };
+}
+
+export function ganttBarOffset(input: {
+  start: string | null;
+  end: string | null;
+  rangeStart: string;
+  rangeEnd: string;
+}): { left: number; width: number } | null {
+  const rangeStart = Date.parse(input.rangeStart);
+  const rangeEnd = Date.parse(input.rangeEnd);
+  const start = input.start ? Date.parse(input.start) : Number.NaN;
+  const end = input.end ? Date.parse(input.end) : Number.NaN;
+  if (Number.isNaN(rangeStart) || Number.isNaN(rangeEnd) || rangeEnd <= rangeStart) {
+    return null;
+  }
+  const hasStart = !Number.isNaN(start);
+  const hasEnd = !Number.isNaN(end);
+  if (!hasStart && !hasEnd) {
+    return null;
+  }
+  const barStart = hasStart ? start : end;
+  const barEnd = hasEnd ? end : start + 86_400_000;
+  const span = rangeEnd - rangeStart;
+  const left = Math.max(0, ((barStart - rangeStart) / span) * 100);
+  const width = Math.max(0.8, ((Math.max(barEnd, barStart) - barStart) / span) * 100);
+  return { left, width: Math.min(width, 100 - left) };
 }

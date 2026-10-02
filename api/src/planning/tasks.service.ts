@@ -7,6 +7,7 @@ import {
   assertAcyclicDependency,
   assertEstimatedMinutes,
   assertFinishToStartType,
+  assertNoScheduleDatePropagation,
   assertTaskProgressPercent,
   assertTaskTransition,
   incompletePredecessorBlockers,
@@ -227,6 +228,10 @@ export class TasksService {
       organizationId?: string;
       projectId?: string;
       expectedVersion?: number;
+      propagateDates?: boolean;
+      shiftSuccessors?: boolean;
+      successorDueDate?: unknown;
+      predecessorDueDate?: unknown;
     },
   ) {
     const bound = await this.requireTask(session, "task.update", projectId, taskId);
@@ -235,6 +240,7 @@ export class TasksService {
     if (input.status !== undefined || input.assigneeUserId !== undefined) {
       throw new PlanningStateError("Status and assignee have dedicated endpoints and are not patchable");
     }
+    assertNoScheduleDatePropagation(input);
     this.requireExpectedVersion(bound.task.version, input.expectedVersion);
     const started = idempotencyKey
       ? await this.idempotency.begin(bound.organizationId, idempotencyKey, {

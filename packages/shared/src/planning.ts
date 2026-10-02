@@ -368,6 +368,323 @@ export function countTasksByKanbanColumn(
   return counts;
 }
 
+export const PLANNING_SCHEDULE_TAKE = 500;
+
+export const SCHEDULE_LANE_KINDS = ["PHASE", "DELIVERABLE", "WORK_PACKAGE", "TASK", "MILESTONE"] as const;
+export type ScheduleLaneKind = (typeof SCHEDULE_LANE_KINDS)[number];
+
+export function scheduleDomainFor(kind: ScheduleLaneKind): string {
+  switch (kind) {
+    case "PHASE":
+      return "operations.phases";
+    case "DELIVERABLE":
+      return "operations.deliverables";
+    case "WORK_PACKAGE":
+      return "operations.work_packages";
+    case "TASK":
+      return "planning.tasks";
+    case "MILESTONE":
+      return "planning.milestones";
+    default:
+      return "planning.tasks";
+  }
+}
+
+function parseScheduleTime(value: Date | string | null | undefined): number | null {
+  if (value == null || value === "") {
+    return null;
+  }
+  const ms = typeof value === "string" ? Date.parse(value) : value.getTime();
+  return Number.isNaN(ms) ? null : ms;
+}
+
+/**
+ * Bar geometry from stored dates only. Does not invent status, critical path, or lag.
+ * Missing start → point at end. Missing end → one-day bar from start. Both missing → no bar.
+ */
+export function ganttBarRange(input: {
+  start: Date | string | null;
+  end: Date | string | null;
+}): { start: Date; end: Date } | null {
+  const startMs = parseScheduleTime(input.start);
+  const endMs = parseScheduleTime(input.end);
+  if (startMs == null && endMs == null) {
+    return null;
+  }
+  if (startMs != null && endMs != null) {
+    return { start: new Date(startMs), end: new Date(endMs) };
+  }
+  if (startMs != null) {
+    return { start: new Date(startMs), end: new Date(startMs + 86_400_000) };
+  }
+  return { start: new Date(endMs!), end: new Date(endMs!) };
+}
+
+export function planningScheduleDateRange(
+  items: readonly { start: Date | string | null; end: Date | string | null }[],
+  now = new Date(),
+): { start: Date; end: Date } {
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  for (const item of items) {
+    const bar = ganttBarRange(item);
+    if (!bar) {
+      continue;
+    }
+    min = Math.min(min, bar.start.getTime(), bar.end.getTime());
+    max = Math.max(max, bar.start.getTime(), bar.end.getTime());
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 7));
+    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 21));
+    return { start, end };
+  }
+  return { start: new Date(min - 86_400_000), end: new Date(max + 86_400_000) };
+}
+
+export function authorizedScheduleLinks(
+  edges: readonly { id: string; predecessorTaskId: string; successorTaskId: string; type?: string }[],
+  authorizedTaskIds: ReadonlySet<string>,
+): Array<{ id: string; predecessorTaskId: string; successorTaskId: string; type: string }> {
+  return edges
+    .filter((edge) => authorizedTaskIds.has(edge.predecessorTaskId) && authorizedTaskIds.has(edge.successorTaskId))
+    .map((edge) => ({
+      id: edge.id,
+      predecessorTaskId: edge.predecessorTaskId,
+      successorTaskId: edge.successorTaskId,
+      type: edge.type ?? "FINISH_TO_START",
+    }));
+}
+
+export function assertNoScheduleDatePropagation(input: {
+  propagateDates?: boolean;
+  shiftSuccessors?: boolean;
+  successorDueDate?: unknown;
+  predecessorDueDate?: unknown;
+}): void {
+  if (input.propagateDates || input.shiftSuccessors || input.successorDueDate != null || input.predecessorDueDate != null) {
+    throw new PlanningStateError("Date edits do not propagate to predecessors, successors, or parents", {
+      reason: "DEPENDENCY_DATE_SHIFT_REJECTED",
+    });
+  }
+}
+
+export function resolveGanttDateEdit(input: {
+  kind: ScheduleLaneKind;
+  propagate?: boolean;
+  shiftSuccessors?: boolean;
+}): { kind: "apply" } | { kind: "reject"; reason: PlanningRejectionReason; message: string } {
+  if (input.kind !== "TASK") {
+    return {
+      kind: "reject",
+      reason: "DEPENDENCY_DATE_SHIFT_REJECTED",
+      message: "Gantt date edits apply only to the Task aggregate.",
+    };
+  }
+  if (input.propagate || input.shiftSuccessors) {
+    return {
+      kind: "reject",
+      reason: "DEPENDENCY_DATE_SHIFT_REJECTED",
+      message: "Date edits do not propagate to predecessors, successors, or parents.",
+    };
+  }
+  return { kind: "apply" };
+}
+
+export interface ScheduleSourceRow {
+  id: string;
+  title: string;
+  code?: string | null;
+  start: Date | string | null;
+  end: Date | string | null;
+  status?: string | null;
+  recordedStatus?: string | null;
+  late?: boolean;
+  risk?: { code: string; text: string } | null;
+  version?: number | null;
+  sequence?: number;
+  phaseId?: string | null;
+  deliverableId?: string | null;
+  workPackageId?: string | null;
+}
+
+export interface PlanningScheduleLane {
+  kind: ScheduleLaneKind;
+  id: string;
+  domain: string;
+  sourceId: string;
+  title: string;
+  code: string | null;
+  parent: { kind: ScheduleLaneKind; id: string } | null;
+  depth: number;
+  start: string | null;
+  end: string | null;
+  status: string | null;
+  recordedStatus: string | null;
+  late: boolean;
+  risk: { code: string; text: string } | null;
+  version: number | null;
+}
+
+function isoOrNull(value: Date | string | null | undefined): string | null {
+  const ms = parseScheduleTime(value ?? null);
+  return ms == null ? null : new Date(ms).toISOString();
+}
+
+function sortSources(rows: readonly ScheduleSourceRow[]): ScheduleSourceRow[] {
+  return [...rows].sort((left, right) => {
+    const seq = (left.sequence ?? 0) - (right.sequence ?? 0);
+    if (seq !== 0) {
+      return seq;
+    }
+    return left.title.localeCompare(right.title) || left.id.localeCompare(right.id);
+  });
+}
+
+function toScheduleLane(
+  kind: ScheduleLaneKind,
+  row: ScheduleSourceRow,
+  parent: { kind: ScheduleLaneKind; id: string } | null,
+  depth: number,
+): PlanningScheduleLane {
+  return {
+    kind,
+    id: row.id,
+    domain: scheduleDomainFor(kind),
+    sourceId: row.id,
+    title: row.title,
+    code: row.code ?? null,
+    parent,
+    depth,
+    start: isoOrNull(row.start),
+    end: isoOrNull(row.end),
+    status: row.status ?? null,
+    recordedStatus: row.recordedStatus ?? null,
+    late: Boolean(row.late),
+    risk: row.risk ?? null,
+    version: row.version ?? null,
+  };
+}
+
+/**
+ * Stable hierarchy: Phase → Deliverable → WorkPackage → Task, plus Milestone markers.
+ * Missing parents are omitted (omit-not-leak) and the child is attached to the nearest authorized ancestor.
+ */
+export function buildScheduleLanes(input: {
+  phases: readonly ScheduleSourceRow[];
+  deliverables: readonly ScheduleSourceRow[];
+  workPackages: readonly ScheduleSourceRow[];
+  tasks: readonly ScheduleSourceRow[];
+  milestones: readonly ScheduleSourceRow[];
+}): PlanningScheduleLane[] {
+  const phases = sortSources(input.phases);
+  const deliverables = sortSources(input.deliverables);
+  const workPackages = sortSources(input.workPackages);
+  const tasks = sortSources(input.tasks);
+  const milestones = sortSources(input.milestones);
+  const phaseIds = new Set(phases.map((row) => row.id));
+  const deliverableIds = new Set(deliverables.map((row) => row.id));
+  const workPackageIds = new Set(workPackages.map((row) => row.id));
+  const used = {
+    deliverables: new Set<string>(),
+    workPackages: new Set<string>(),
+    tasks: new Set<string>(),
+    milestones: new Set<string>(),
+  };
+  const lanes: PlanningScheduleLane[] = [];
+
+  const emitTasks = (
+    predicate: (row: ScheduleSourceRow) => boolean,
+    parent: { kind: ScheduleLaneKind; id: string } | null,
+    depth: number,
+  ) => {
+    for (const row of tasks) {
+      if (used.tasks.has(row.id) || !predicate(row)) {
+        continue;
+      }
+      used.tasks.add(row.id);
+      lanes.push(toScheduleLane("TASK", row, parent, depth));
+    }
+  };
+  const emitMilestones = (
+    predicate: (row: ScheduleSourceRow) => boolean,
+    parent: { kind: ScheduleLaneKind; id: string } | null,
+    depth: number,
+  ) => {
+    for (const row of milestones) {
+      if (used.milestones.has(row.id) || !predicate(row)) {
+        continue;
+      }
+      used.milestones.add(row.id);
+      lanes.push(toScheduleLane("MILESTONE", row, parent, depth));
+    }
+  };
+  const emitWorkPackages = (
+    predicate: (row: ScheduleSourceRow) => boolean,
+    parent: { kind: ScheduleLaneKind; id: string } | null,
+    depth: number,
+  ) => {
+    for (const row of workPackages) {
+      if (used.workPackages.has(row.id) || !predicate(row)) {
+        continue;
+      }
+      used.workPackages.add(row.id);
+      const self = { kind: "WORK_PACKAGE" as const, id: row.id };
+      lanes.push(toScheduleLane("WORK_PACKAGE", row, parent, depth));
+      emitTasks((task) => task.workPackageId === row.id, self, depth + 1);
+    }
+  };
+  const emitDeliverables = (
+    predicate: (row: ScheduleSourceRow) => boolean,
+    parent: { kind: ScheduleLaneKind; id: string } | null,
+    depth: number,
+  ) => {
+    for (const row of deliverables) {
+      if (used.deliverables.has(row.id) || !predicate(row)) {
+        continue;
+      }
+      used.deliverables.add(row.id);
+      const self = { kind: "DELIVERABLE" as const, id: row.id };
+      lanes.push(toScheduleLane("DELIVERABLE", row, parent, depth));
+      emitWorkPackages((wp) => wp.deliverableId === row.id, self, depth + 1);
+      emitTasks((task) => task.deliverableId === row.id && !task.workPackageId, self, depth + 1);
+      emitMilestones((ms) => ms.deliverableId === row.id, self, depth + 1);
+    }
+  };
+
+  for (const phase of phases) {
+    const self = { kind: "PHASE" as const, id: phase.id };
+    lanes.push(toScheduleLane("PHASE", phase, null, 0));
+    emitDeliverables((row) => row.phaseId === phase.id, self, 1);
+    emitWorkPackages((row) => row.phaseId === phase.id && !row.deliverableId, self, 1);
+    emitTasks((row) => row.phaseId === phase.id && !row.deliverableId && !row.workPackageId, self, 1);
+    emitMilestones((row) => row.phaseId === phase.id && !row.deliverableId, self, 1);
+  }
+
+  emitDeliverables((row) => !row.phaseId || !phaseIds.has(row.phaseId), null, 0);
+  emitWorkPackages(
+    (row) =>
+      (!row.deliverableId || !deliverableIds.has(row.deliverableId)) && (!row.phaseId || !phaseIds.has(row.phaseId)),
+    null,
+    0,
+  );
+  emitTasks(
+    (row) =>
+      (!row.workPackageId || !workPackageIds.has(row.workPackageId)) &&
+      (!row.deliverableId || !deliverableIds.has(row.deliverableId)) &&
+      (!row.phaseId || !phaseIds.has(row.phaseId)),
+    null,
+    0,
+  );
+  emitMilestones(
+    (row) => (!row.deliverableId || !deliverableIds.has(row.deliverableId)) && (!row.phaseId || !phaseIds.has(row.phaseId)),
+    null,
+    0,
+  );
+
+  return lanes;
+}
+
 export function clampPlanningPageSize(value: number | undefined): number {
   if (!Number.isFinite(value) || value == null || value < 1) {
     return PLANNING_PAGE_SIZE_DEFAULT;

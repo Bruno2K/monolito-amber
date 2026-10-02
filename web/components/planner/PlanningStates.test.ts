@@ -36,6 +36,19 @@ describe("M4.2 planning system states", () => {
     expect(src).toMatch(/TaskInspector/);
   });
 
+  it("M4.6 Gantt is a projection over the same planner, not a coming-later placeholder", () => {
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "PlannerView.tsx"), "utf8");
+    expect(src).toMatch(/TaskGantt/);
+    expect(src).toMatch(/view === "gantt"/);
+    expect(src).not.toMatch(/Gantt em um marco posterior/);
+    const gantt = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "TaskGantt.tsx"), "utf8");
+    expect(gantt).toMatch(/Tabela de datas do cronograma/);
+    expect(gantt).toMatch(/Também deslocar sucessores/);
+    expect(gantt).toMatch(/resolveGanttDateEdit/);
+    expect(gantt).toMatch(/PATCH|method: "PATCH"/);
+    expect(gantt).not.toMatch(/Atualizar Cronograma|caminho crítico|critical path/i);
+  });
+
   it("M4.5 Kanban is a projection over the same planner, not a coming-later placeholder", () => {
     const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "PlannerView.tsx"), "utf8");
     expect(src).toMatch(/TaskKanban/);

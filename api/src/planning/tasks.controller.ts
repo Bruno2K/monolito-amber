@@ -11,7 +11,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsInt, IsOptional, IsString, Max, Min, MinLength, ValidateIf } from "class-validator";
+import { IsBoolean, IsInt, IsOptional, IsString, Max, Min, MinLength, ValidateIf } from "class-validator";
 import { AuthService } from "../auth/auth.service";
 import { CurrentSession } from "../auth/current-session.decorator";
 import { SessionGuard } from "../auth/session.guard";
@@ -178,6 +178,20 @@ class UpdateTaskDto {
   @IsInt()
   @Min(1)
   expectedVersion!: number;
+
+  @ApiPropertyOptional({
+    description: "Rejected. Gantt / date edits never propagate predecessor, successor, or parent dates.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  propagateDates?: boolean;
+
+  @ApiPropertyOptional({
+    description: "Rejected. Finish-to-start edges do not auto-shift successor dates.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  shiftSuccessors?: boolean;
 }
 
 class AssignTaskDto {

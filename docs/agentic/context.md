@@ -6,22 +6,28 @@
 
 **M3 — Project Operations is ACTIVE / LOCAL ONLY with Exit Gate FAIL — ACCEPTED.** Audit WI Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51) squash-merged to `main` @ `762c3f3ba85ff899623cf4c3682e6bddad062bab`. Disposition sync #52 brought `main` to `a3eaadcd61c8f8153f61c6a51f920e37b8f362a0`. Reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Independent Reviewer **PASS (audit WI only)**. Homologated Local RC narrative tip remains `6104276754607334c53c6864135d29c539db813e`. **This is not M3 COMPLETE.**
 
-**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** M4.1–M4.4 are MERGED (M4.4 @ `cd9a6caabae55bb173fd0a355ed3118d59543b85`). **M4.5** is in flight (Issue [#62](https://github.com/Bruno2K/monolito-amber/issues/62), branch `m4-5-kanban-projection`): Kanban projection. M4.6–M4.9 remain later WIs.
+**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** M4.1–M4.5 are MERGED (M4.5 @ `8c099c4b72ec240f65f9538b8b38350eee6b1cb0`). **M4.6** is in flight (Issue [#64](https://github.com/Bruno2K/monolito-amber/issues/64), branch `m4-6-gantt-projection`): Timeline / Gantt projection. M4.7–M4.9 remain later WIs.
 
 Authorization: Bruno runway M4.1→M4.9 autonomous; LOCAL ONLY. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring Exit Gate PASS or M3/M4 completion.
 
 Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (supported path = Docker Desktop + WSL2 + bash). M3 cloud residuals are **accepted debt**, not M4 scope.
 
-## M4.5 (IN FLIGHT — LOCAL ONLY)
+## M4.6 (IN FLIGHT — LOCAL ONLY)
 
-- Issue [#62](https://github.com/Bruno2K/monolito-amber/issues/62)
-- Branch `m4-5-kanban-projection` from `cd9a6caabae55bb173fd0a355ed3118d59543b85`
-- Canonical Notion: https://app.notion.com/p/3ec678e54c8d8188a9bdc7c33856c027
+- Issue [#64](https://github.com/Bruno2K/monolito-amber/issues/64)
+- Branch `m4-6-gantt-projection` from `8c099c4b72ec240f65f9538b8b38350eee6b1cb0`
+- Canonical Notion: https://app.notion.com/p/3ec678e54c8d81af9d70e89687b24143
 - Pack: https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7
-- Plan: `docs/domain/m4.5-requirement-to-change-plan.md`
-- Matrix: `docs/domain/m4.5-requirements-traceability.md`
+- Plan: `docs/domain/m4.6-requirement-to-change-plan.md`
+- Matrix: `docs/domain/m4.6-requirements-traceability.md`
+- Product: Timeline/Gantt projection over the unified Planning read-model
+- Non-goals: Gantt write model, auto date propagation, Milestone workflows, cloud/PaaS/M5
+
+## M4.5 (MERGED — LOCAL ONLY)
+
+- Issue [#62](https://github.com/Bruno2K/monolito-amber/issues/62) / PR [#63](https://github.com/Bruno2K/monolito-amber/pull/63)
+- Merge tip `8c099c4b72ec240f65f9538b8b38350eee6b1cb0`
 - Product: Kanban projection + command surface over accepted Task lifecycle
-- Non-goals: custom columns, WIP, swimlanes, Gantt, Milestone workflows, cloud/PaaS/M5
 
 ## M4.4 (MERGED — LOCAL ONLY)
 

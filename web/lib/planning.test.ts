@@ -9,7 +9,9 @@ import {
   dependencyStartExplanation,
   lateExplanation,
   plannerPath,
+  resolveGanttDateEdit,
   resolveKanbanColumnMove,
+  scheduleLaneKindLabel,
   taskStatusLabel,
   type PlanningTaskRow,
 } from "./planning";
@@ -51,6 +53,7 @@ describe("planner URL + labels", () => {
   it("keeps default List URL stable and records filters", () => {
     expect(plannerPath("abc")).toBe("/projects/abc/planner");
     expect(plannerPath("abc", { view: "list" })).toBe("/projects/abc/planner");
+    expect(plannerPath("abc", { view: "gantt" })).toBe("/projects/abc/planner?view=gantt");
     expect(plannerPath("abc", { view: "kanban", q: "grid", late: "true", page: 2, inspect: "t1" })).toBe(
       "/projects/abc/planner?view=kanban&q=grid&late=true&page=2&inspect=t1",
     );
@@ -124,5 +127,15 @@ describe("planner URL + labels", () => {
       /não é o estado Bloqueada/,
     );
     expect(taskStatusLabel("BLOCKED")).toBe("Bloqueada");
+  });
+
+  it("M4.6 Gantt date helper rejects successor propagation without inventing a write model", () => {
+    expect(scheduleLaneKindLabel("WORK_PACKAGE")).toBe("Pacote");
+    expect(resolveGanttDateEdit({ kind: "TASK" }).kind).toBe("apply");
+    expect(resolveGanttDateEdit({ kind: "TASK", shiftSuccessors: true })).toMatchObject({
+      kind: "reject",
+      reason: "DEPENDENCY_DATE_SHIFT_REJECTED",
+    });
+    expect(resolveGanttDateEdit({ kind: "PHASE" }).kind).toBe("reject");
   });
 });

@@ -1046,8 +1046,264 @@ button.btn {
   max-width: 1120px;
 }
 
-.planner-page.is-kanban {
+.planner-page.is-kanban,
+.planner-page.is-gantt {
   max-width: none;
+}
+
+.gantt-derived-note {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  font-size: 13px;
+}
+
+.gantt-alert {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+.gantt-status {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+}
+
+.gantt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.gantt-board-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid var(--header-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.gantt-board {
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) minmax(720px, 1fr);
+  min-width: 1000px;
+  align-items: start;
+}
+
+.gantt-hierarchy {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fff;
+  border-right: 1px solid var(--header-border);
+}
+
+.gantt-hierarchy-head,
+.gantt-scale {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--header-border);
+  background: #f9fafb;
+}
+
+.gantt-hierarchy-row,
+.gantt-row {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  position: relative;
+}
+
+.gantt-hierarchy-row.is-active {
+  background: #fffbeb;
+}
+
+.gantt-kind {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.gantt-title-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.gantt-title-btn:focus-visible,
+.gantt-bar:focus-visible,
+.gantt-diamond:focus-visible,
+.gantt-table input:focus-visible,
+.gantt-edit-actions select:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.gantt-timeline {
+  position: relative;
+  min-width: 720px;
+}
+
+.gantt-scale {
+  position: relative;
+  padding: 0;
+}
+
+.gantt-scale-cell {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px dashed #e5e7eb;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.gantt-rows {
+  position: relative;
+}
+
+.gantt-bar {
+  position: absolute;
+  top: 8px;
+  height: 24px;
+  border: 0;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #111827;
+  cursor: pointer;
+}
+
+.gantt-bar-phase {
+  background: #dbeafe;
+}
+
+.gantt-bar-deliverable {
+  background: #fef3c7;
+}
+
+.gantt-bar-work_package {
+  background: #e0e7ff;
+}
+
+.gantt-bar-task {
+  background: #bfdbfe;
+}
+
+.gantt-bar.is-late {
+  background: #fed7aa;
+}
+
+.gantt-diamond {
+  position: absolute;
+  top: 6px;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: #6b7280;
+  font-size: 16px;
+  transform: translateX(-50%);
+  cursor: default;
+}
+
+.gantt-undated {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.gantt-row-risk {
+  margin-left: auto;
+  font-size: 11px;
+  color: #9a3412;
+  max-width: 40%;
+}
+
+.gantt-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.gantt-link {
+  stroke: #9ca3af;
+  stroke-width: 1.5;
+  fill: none;
+}
+
+.gantt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin: 12px 0 16px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.gantt-table-wrap {
+  margin-top: 8px;
+}
+
+.gantt-domain {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.gantt-edit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.gantt-shift {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gantt-bar,
+  .gantt-diamond {
+    transition: none;
+  }
 }
 
 .kanban-derived-note {
