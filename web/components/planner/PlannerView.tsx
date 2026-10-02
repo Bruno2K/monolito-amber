@@ -129,9 +129,6 @@ export function PlannerView({ projectId }: { projectId: string }) {
     if (selectedId) {
       search.set("inspect", selectedId);
     }
-    if (selectedMilestoneId) {
-      search.set("milestone", selectedMilestoneId);
-    }
     const [planningResult, phaseResult] = await Promise.all([
       api<PlanningReadModel>(`/api/v1/projects/${projectId}/planning?${search.toString()}`),
       api<PhaseListResponse>(`/api/v1/projects/${projectId}/phases`),
@@ -147,7 +144,7 @@ export function PlannerView({ projectId }: { projectId: string }) {
     setModel(planningResult.body);
     setPhases(phaseResult.ok ? phaseResult.body.items : []);
     setLoading(false);
-  }, [lateFilter, order, page, phaseFilter, projectId, query, selectedId, selectedMilestoneId, sort, statusFilter, view]);
+  }, [lateFilter, order, page, phaseFilter, projectId, query, selectedId, sort, statusFilter, view]);
 
   useEffect(() => {
     void load();

@@ -42,6 +42,7 @@ describe("M4.2 planning system states", () => {
     expect(src).toMatch(/view === "milestones"/);
     expect(src).toMatch(/242:6853/);
     expect(src).not.toMatch(/Marcos em um marco posterior/);
+    expect(src).not.toMatch(/search\.set\("milestone"/);
     const board = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "MilestoneBoard.tsx"), "utf8");
     expect(board).toMatch(/milestoneKpis/);
     expect(board).toMatch(/Alcançar/);
