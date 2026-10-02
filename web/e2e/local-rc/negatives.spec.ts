@@ -68,7 +68,7 @@ test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
     await capture(page, testInfo, "negative-team-only");
   });
 
-  test("ADV-11/ADV-12 stale expectedVersion and duplicate Idempotency-Key", async ({ page }) => {
+  test("ADV-11/ADV-12 stale expectedVersion and duplicate Idempotency-Key", async ({ page }, testInfo) => {
     await signInToOrg(page, "coord-a", "Amber Demo Alpha");
     await page.getByRole("link", { name: "Alpha Tower" }).click();
     await page.waitForURL(`**/projects/${IDS.projectA1}/overview`);
@@ -80,26 +80,25 @@ test.describe("M3.8 local RC security negatives (real API + Postgres)", () => {
     expect(concept).toBeTruthy();
     const stale = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/phases/${concept!.id}/activate`, {
       data: { expectedVersion: 0 },
-      headers: { "Idempotency-Key": `stale-${Date.now()}` },
+      headers: { "Idempotency-Key": `stale-${testInfo.project.name}-${Date.now()}` },
     });
     expect(stale.status).toBeGreaterThanOrEqual(400);
 
-    const tag = Date.now();
-    const key = `idem-${tag}`;
+    const key = `idem-${testInfo.project.name}-${Date.now()}`;
     const first = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/phases`, {
-      data: { name: `Idempotent ${key}`, sequence: 70 + (tag % 20) },
+      data: { name: `Idempotent ${key}` },
       headers: { "Idempotency-Key": key },
     });
     expect(first.status).toBeLessThan(400);
     const second = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/phases`, {
-      data: { name: `Idempotent ${key}`, sequence: 70 + (tag % 20) },
+      data: { name: `Idempotent ${key}` },
       headers: { "Idempotency-Key": key },
     });
     expect(second.status).toBeLessThan(400);
     expect(second.body.id).toBe(first.body.id);
 
     const clash = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/phases`, {
-      data: { name: `Idempotent clash ${key}`, sequence: 91 },
+      data: { name: `Idempotent clash ${key}` },
       headers: { "Idempotency-Key": key },
     });
     expect(clash.status).toBeGreaterThanOrEqual(400);

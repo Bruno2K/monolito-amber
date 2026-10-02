@@ -221,10 +221,17 @@ describe("M4.2 unified Planning read-model", () => {
     expect(JSON.stringify(cross.body)).not.toContain("Update grid");
     expect(JSON.stringify(cross.body)).not.toMatch(/"total":\s*[1-9]/);
 
+    const foreign = await ownerB
+      .post(`/api/v1/projects/${projectB}/tasks`)
+      .set("Idempotency-Key", `task-b-${suffix}`)
+      .send({ title: `Hidden B ${suffix}` });
+    expect(foreign.status).toBeLessThan(400);
+
     const globalCount = await prisma.task.count();
     const viewerRead = await viewer.get(`/api/v1/projects/${projectA}/planning`);
     expect(viewerRead.status).toBe(200);
     expect(viewerRead.body.counts.total).toBeLessThan(globalCount);
+    expect(JSON.stringify(viewerRead.body)).not.toContain(`Hidden B ${suffix}`);
 
     const inspect = await ownerB.get(`/api/v1/projects/${projectB}/planning?inspect=${taskId}`);
     expect(inspect.status).toBe(200);
