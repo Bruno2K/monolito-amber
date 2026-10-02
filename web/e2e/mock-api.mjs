@@ -375,51 +375,58 @@ function decorateMilestone(row) {
   return { ...row, status: risk.status, risk };
 }
 
+const SEED_MILESTONES = [
+  {
+    id: "ms-concept",
+    organizationId: ORG_A,
+    projectId: PROJECT_A,
+    title: "Concept freeze",
+    description: "",
+    recordedStatus: "PLANNED",
+    status: "PLANNED",
+    targetDate: "2026-12-01T00:00:00.000Z",
+    phaseId: "phase-concept",
+    deliverableId: "del-arch-001",
+    version: 1,
+  },
+  {
+    id: "ms-missed",
+    organizationId: ORG_A,
+    projectId: PROJECT_A,
+    title: "Survey package",
+    description: "",
+    recordedStatus: "PLANNED",
+    status: "MISSED",
+    targetDate: "2020-01-01T00:00:00.000Z",
+    phaseId: "phase-concept",
+    deliverableId: null,
+    version: 1,
+  },
+  {
+    id: "ms-done",
+    organizationId: ORG_A,
+    projectId: PROJECT_A,
+    title: "Brief approved",
+    description: "",
+    recordedStatus: "ACHIEVED",
+    status: "ACHIEVED",
+    targetDate: "2025-06-01T00:00:00.000Z",
+    phaseId: "phase-brief",
+    deliverableId: null,
+    version: 2,
+  },
+];
+
+function restoreSeedMilestones() {
+  mockMilestones.length = 0;
+  mockMilestones.push(...SEED_MILESTONES.map((row) => ({ ...row })));
+}
+
 function seedMockMilestones() {
   if (mockMilestones.length > 0) {
     return;
   }
-  mockMilestones.push(
-    {
-      id: "ms-concept",
-      organizationId: ORG_A,
-      projectId: PROJECT_A,
-      title: "Concept freeze",
-      description: "",
-      recordedStatus: "PLANNED",
-      status: "PLANNED",
-      targetDate: "2026-12-01T00:00:00.000Z",
-      phaseId: "phase-concept",
-      deliverableId: "del-arch-001",
-      version: 1,
-    },
-    {
-      id: "ms-missed",
-      organizationId: ORG_A,
-      projectId: PROJECT_A,
-      title: "Survey package",
-      description: "",
-      recordedStatus: "PLANNED",
-      status: "MISSED",
-      targetDate: "2020-01-01T00:00:00.000Z",
-      phaseId: "phase-concept",
-      deliverableId: null,
-      version: 1,
-    },
-    {
-      id: "ms-done",
-      organizationId: ORG_A,
-      projectId: PROJECT_A,
-      title: "Brief approved",
-      description: "",
-      recordedStatus: "ACHIEVED",
-      status: "ACHIEVED",
-      targetDate: "2025-06-01T00:00:00.000Z",
-      phaseId: "phase-brief",
-      deliverableId: null,
-      version: 2,
-    },
-  );
+  restoreSeedMilestones();
 }
 
 function seedMockTasks() {
@@ -850,6 +857,11 @@ const server = http.createServer(async (req, res) => {
   seedMockMilestones();
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   const path = url.pathname;
+  if (path === "/api/v1/e2e/reset-milestones" && req.method === "POST") {
+    restoreSeedMilestones();
+    json(res, 200, { ok: true });
+    return;
+  }
   const token = cookieToken(req);
   const session = token ? sessions.get(token) : undefined;
 

@@ -283,9 +283,10 @@ test.describe("M4.2 Local RC Planning List", () => {
     await page.screenshot({ path: path.join(EVIDENCE_M47, `marcos-${tag}.png`), fullPage: true });
     await capture(page, testInfo, "planner-marcos");
 
-    await page.getByRole("button", { name: new RegExp(title) }).first().click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.getByText(/LINKED_TASK_LATE|late/i)).toBeVisible();
+    await page.getByRole("button", { name: title, exact: true }).click();
+    const inspector = page.getByRole("dialog");
+    await expect(inspector).toBeVisible();
+    await expect(inspector.getByText("LINKED_TASK_LATE")).toBeVisible();
 
     const entity = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/milestones/${created.body.id}`);
     const list = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/planning?view=list`);
@@ -300,9 +301,9 @@ test.describe("M4.2 Local RC Planning List", () => {
     expect(listed?.risk?.explanation).toBe(entity.body.risk.explanation);
     expect(lane?.risk?.text).toContain("late");
 
-    await page.getByRole("button", { name: "Alcançar" }).click();
-    await page.getByRole("button", { name: "Confirmar alcance" }).click();
-    await expect(page.getByText(/Armazenado Concluído/i)).toBeVisible();
+    await inspector.getByRole("button", { name: "Alcançar" }).click();
+    await inspector.getByRole("button", { name: "Confirmar alcance" }).click();
+    await expect(inspector.getByText(/Armazenado Concluído/i)).toBeVisible();
     const after = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/milestones/${created.body.id}`);
     expect(after.body.recordedStatus).toBe("ACHIEVED");
     expect(after.body.status).toBe("ACHIEVED");

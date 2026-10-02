@@ -243,25 +243,27 @@ test.describe("M4.2 Planning List", () => {
 
   test("M4.7-UI Marcos KPIs, derived chips, explicit achieve, and evidence", async ({ page }, testInfo) => {
     await signIn(page);
+    await page.request.post("/api/v1/e2e/reset-milestones");
     mkdirSync(EVIDENCE_M47, { recursive: true });
     await page.goto(`/projects/${PROJECT_A}/planner?view=milestones`);
     await expect(page.getByRole("tab", { name: "Marcos" })).toHaveAttribute("aria-selected", "true");
     await expect(page.locator('[data-node-id="242:6853"]')).toBeVisible();
     await expect(page.getByRole("heading", { name: "Próximo marco" })).toBeVisible();
     await expect(page.getByText(/não são controles de status/i)).toBeVisible();
-    await expect(page.getByText("Concept freeze")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Concept freeze", exact: true })).toBeVisible();
     await expect(page.getByText("Em risco").first()).toBeVisible();
     const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
     await page.screenshot({ path: path.join(EVIDENCE_M47, `marcos-${tag}.png`), fullPage: true });
 
-    await page.getByRole("button", { name: /Concept freeze/ }).first().click();
-    await expect(page.getByRole("dialog")).toBeVisible();
-    await expect(page.getByText(/LINKED_TASK_LATE|atrasada/i)).toBeVisible();
-    await expect(page.getByText(/Issue permanece fora da posse/i)).toBeVisible();
-    await expect(page.locator('select[name="status"]')).toHaveCount(0);
-    await page.getByRole("button", { name: "Alcançar" }).click();
-    await page.getByRole("button", { name: "Confirmar alcance" }).click();
-    await expect(page.getByText(/Armazenado Concluído/i)).toBeVisible();
+    await page.getByRole("button", { name: "Concept freeze", exact: true }).click();
+    const inspector = page.getByRole("dialog");
+    await expect(inspector).toBeVisible();
+    await expect(inspector.getByText("LINKED_TASK_LATE")).toBeVisible();
+    await expect(inspector.getByText(/Issue permanece fora da posse/i)).toBeVisible();
+    await expect(inspector.locator('select[name="status"]')).toHaveCount(0);
+    await inspector.getByRole("button", { name: "Alcançar" }).click();
+    await inspector.getByRole("button", { name: "Confirmar alcance" }).click();
+    await expect(inspector.getByText(/Armazenado Concluído/i)).toBeVisible();
 
     const list = await page.request.get(`/api/v1/projects/${PROJECT_A}/planning?view=list`);
     const gantt = await page.request.get(`/api/v1/projects/${PROJECT_A}/planning?view=gantt`);
