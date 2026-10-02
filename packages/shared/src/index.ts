@@ -38,4 +38,5 @@ export * from "./calendar.js";
 export * from "./messaging.js";
 export * from "./m5-routes.js";
 export * from "./m5-seed-design.js";
+export * from "./m55-demo-seed-design.js";
 export * from "./m51-scope.js";

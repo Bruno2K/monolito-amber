@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { M3_SEED_ORGANIZATIONS, M3_SEED_PROJECTS, M3_SEED_USERS } from "../../packages/shared/src/m3-seed-design.ts";
 import { M4_SEED_MILESTONES, M4_SEED_PRE_M4_TASK, M4_SEED_TASKS } from "../../packages/shared/src/m4-seed-design.ts";
 import { M5_SEED_CALENDARS, M5_SEED_CONVERSATIONS } from "../../packages/shared/src/m5-seed-design.ts";
+import { M55_DEMO_CONVERSATIONS, M55_DEMO_PROJECTS, demoSeedUuid } from "../../packages/shared/src/m55-demo-seed-design.ts";
 
 function seedUuid(namespace: string, key: string): string {
   const digest = createHash("sha256").update(`${namespace}${key}`).digest("hex");
@@ -100,9 +101,21 @@ async function main(): Promise<void> {
   if (!conversation || conversation.kind !== "DIRECT") {
     throw new Error(`M5 dm-coord-contributor missing or kind mismatch (expected ${expectedConversation})`);
   }
+  const expectedDemoProject = demoSeedUuid("project:demo-hospital");
+  const demoProject = await prisma.project.findUnique({ where: { id: expectedDemoProject } });
+  if (!demoProject || demoProject.name !== M55_DEMO_PROJECTS[0].name) {
+    throw new Error(`demo hospital missing or name mismatch (expected ${expectedDemoProject})`);
+  }
+  const suspended = await prisma.organizationMembership.findFirst({
+    where: { id: m3Id("orgmem:org-a:suspended-a"), status: "SUSPENDED" },
+  });
+  if (!suspended) {
+    throw new Error("suspended-a must remain suspended");
+  }
   const conversationCount = await prisma.conversation.count();
-  if (conversationCount !== M5_SEED_CONVERSATIONS.length) {
-    throw new Error(`expected ${M5_SEED_CONVERSATIONS.length} M5 seed conversations, found ${conversationCount}`);
+  const expectedConversations = M5_SEED_CONVERSATIONS.length + M55_DEMO_CONVERSATIONS.length;
+  if (conversationCount !== expectedConversations) {
+    throw new Error(`expected ${expectedConversations} seed conversations, found ${conversationCount}`);
   }
   console.log(`seed_org_a=${expectedOrgA}`);
   console.log(`seed_org_b=${expectedOrgB}`);

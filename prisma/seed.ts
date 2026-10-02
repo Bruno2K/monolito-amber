@@ -10,6 +10,7 @@ import { seedM3Dataset } from "./m3-seed.ts";
 import { seedM4PlanningDataset } from "./m4-seed.ts";
 import { seedM5CalendarDataset } from "./m5-seed.ts";
 import { seedM5MessagingDataset } from "./m5-messaging-seed.ts";
+import { seedM55DemoDataset } from "./m55-demo-seed.ts";
 
 const prisma = new PrismaClient();
 
@@ -121,10 +122,14 @@ async function main() {
   }
 
   if (process.env.AMBER_SEED_M3 === "1") {
+    if (process.env.NODE_ENV === "production" || process.env.AMBER_ENV === "production") {
+      throw new Error("AMBER_SEED_M3 is local/demo only and must not run in production");
+    }
     await seedM3Dataset(prisma);
     await seedM4PlanningDataset(prisma);
     await seedM5CalendarDataset(prisma);
     await seedM5MessagingDataset(prisma);
+    await seedM55DemoDataset(prisma);
   }
 }
 
