@@ -15,10 +15,10 @@ import { FIGMA_PROTOTYPE_ROUTE_MAP } from "./m3-routes.js";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 describe("M5 planned routes", () => {
-  it("keeps planned UI unique and does not ship Next product pages yet", () => {
+  it("keeps planned UI unique and ships Calendar product pages only", () => {
     const paths = M5_PLANNED_UI_ROUTES.map((row) => row.path);
     expect(new Set(paths).size).toBe(paths.length);
-    expect(existsSync(join(ROOT, "web/app/calendars"))).toBe(false);
+    expect(existsSync(join(ROOT, "web/app/calendars/page.tsx"))).toBe(true);
     expect(existsSync(join(ROOT, "web/app/messages"))).toBe(false);
     expect(existsSync(join(ROOT, "web/app/calendarios"))).toBe(false);
     expect(existsSync(join(ROOT, "web/app/mensagens"))).toBe(false);

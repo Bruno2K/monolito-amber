@@ -1,7 +1,7 @@
 import { isSessionTerminal } from "./errors";
 import type { AmberProblem, SessionView } from "./types";
 
-const SAFE_NEXT = /^\/(projects|org-switch)(\/|$)/;
+const SAFE_NEXT = /^\/(projects|org-switch|calendars)(\/|$)/;
 
 export function postAuthDestination(session: SessionView): string {
   if (!session.authenticated) {
