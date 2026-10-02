@@ -281,6 +281,15 @@ export const M5_PLANNED_MESSAGING_API_ROUTES: readonly M5ApiRoutePlan[] = [
   },
   {
     method: "GET",
+    path: "/api/v1/conversations/direct-candidates",
+    auth: "session Organization; peers limited to the actor's authorized projects with ACTIVE Organization membership",
+    idempotency: false,
+    cas: false,
+    purpose: "Direct discovery. Not an Organization-wide directory and not ProjectMembership status.",
+    implementedIn: "m5.5",
+  },
+  {
+    method: "GET",
     path: "/api/v1/conversations/search",
     auth: "currently authorized conversations only",
     idempotency: false,

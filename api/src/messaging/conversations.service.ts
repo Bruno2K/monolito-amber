@@ -263,6 +263,55 @@ export class ConversationsService {
     };
   }
 
+  async directCandidates(session: RequestSession, q?: string) {
+    const actor = await this.access.requireActor(session);
+    const ownProjects = await this.prisma.projectMembership.findMany({
+      where: {
+        organizationMembershipId: actor.membershipId,
+        status: "ACTIVE",
+        project: { organizationId: actor.organizationId },
+      },
+      select: { projectId: true },
+    });
+    const projectIds = ownProjects.map((row) => row.projectId);
+    if (projectIds.length === 0) {
+      return { items: [] as Array<{ id: string; displayName: string }> };
+    }
+    const peers = await this.prisma.projectMembership.findMany({
+      where: {
+        projectId: { in: projectIds },
+        status: "ACTIVE",
+        organizationMembership: {
+          organizationId: actor.organizationId,
+          status: "ACTIVE",
+          id: { not: actor.membershipId },
+        },
+      },
+      include: { organizationMembership: { include: { user: { select: { displayName: true } } } } },
+    });
+    const query = q?.trim().toLowerCase() ?? "";
+    const byId = new Map<string, { id: string; displayName: string }>();
+    for (const row of peers) {
+      const membership = row.organizationMembership;
+      if (membership.status !== "ACTIVE" || membership.organizationId !== actor.organizationId) {
+        continue;
+      }
+      if (membership.id === actor.membershipId) {
+        continue;
+      }
+      const displayName = membership.user.displayName;
+      if (query && !displayName.toLowerCase().includes(query)) {
+        continue;
+      }
+      if (!byId.has(membership.id)) {
+        byId.set(membership.id, { id: membership.id, displayName });
+      }
+    }
+    return {
+      items: [...byId.values()].sort((left, right) => left.displayName.localeCompare(right.displayName, "pt")),
+    };
+  }
+
   private async ensureActorTeamConversations(actor: ActorBinding): Promise<void> {
     const memberships = await this.prisma.teamMembership.findMany({
       where: {

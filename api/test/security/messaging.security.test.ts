@@ -180,13 +180,16 @@ describe("M5.4 Messaging ADV", () => {
     const alicePreview = sent.body.resourcePreviews.find((row: { id: string }) => row.id === taskA);
     expect(alicePreview.authorized).toBe(true);
     expect(alicePreview.title).toBe("Secret schedule title");
+    expect(alicePreview.projectId).toBe(projectA);
 
     const bobPage = await bob.get(`/api/v1/conversations/${directId}/messages`);
     const bobMessage = bobPage.body.items.find((row: { id: string }) => row.id === sent.body.id);
     const bobPreview = bobMessage.resourcePreviews.find((row: { id: string }) => row.id === taskA);
     expect(bobPreview.authorized).toBe(false);
     expect(bobPreview.title).toBeUndefined();
+    expect(bobPreview.projectId).toBeUndefined();
     expect(JSON.stringify(bobPreview)).not.toContain("Secret schedule title");
+    expect(JSON.stringify(bobPreview)).not.toContain(projectA);
 
     const cross = await alice
       .post("/api/v1/conversations/direct")
@@ -196,5 +199,26 @@ describe("M5.4 Messaging ADV", () => {
     const foreign = await alice.get(`/api/v1/conversations/${randomUUID()}`);
     expect(foreign.status).toBe(403);
     void orgB;
+  });
+
+  it("direct candidates require an ACTIVE Organization membership inside an authorized project", async () => {
+    const added = await ownerA
+      .post(`/api/v1/projects/${projectA}/members`)
+      .send({ organizationMembershipId: bobMembershipId });
+    expect(added.status).toBeLessThan(300);
+    const before = await alice.get("/api/v1/conversations/direct-candidates");
+    expect(before.status).toBe(200);
+    const beforeIds = (before.body.items as Array<{ id: string; displayName: string }>).map((row) => row.id);
+    expect(beforeIds).toContain(bobMembershipId);
+    expect(beforeIds).not.toContain(aliceMembershipId);
+    expect(beforeIds).not.toContain(ownerBMembershipId);
+    expect(JSON.stringify(before.body)).not.toContain("@");
+    await prisma.organizationMembership.update({ where: { id: bobMembershipId }, data: { status: "SUSPENDED" } });
+    const suspended = await alice.get("/api/v1/conversations/direct-candidates");
+    expect((suspended.body.items as Array<{ id: string }>).map((row) => row.id)).not.toContain(bobMembershipId);
+    await prisma.organizationMembership.update({ where: { id: bobMembershipId }, data: { status: "REMOVED" } });
+    const removed = await alice.get("/api/v1/conversations/direct-candidates");
+    expect((removed.body.items as Array<{ id: string }>).map((row) => row.id)).not.toContain(bobMembershipId);
+    await prisma.organizationMembership.update({ where: { id: bobMembershipId }, data: { status: "ACTIVE" } });
   });
 });

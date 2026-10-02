@@ -92,6 +92,7 @@ export interface ResourcePreview {
   id: string;
   authorized: boolean;
   title?: string;
+  projectId?: string;
 }
 
 export interface SearchHit {
@@ -102,11 +103,21 @@ export interface SearchHit {
   snippet: string;
 }
 
+export type PendingLifecycle = "pending" | "failed" | "retrying";
+
 export interface PendingSend {
   localId: string;
   key: string;
   body: string;
   conversationId: string;
+  lifecycle: PendingLifecycle;
+}
+
+export interface SendLock {
+  conversationId: string;
+  generation: number;
+  localId: string;
+  key: string;
 }
 
 const COLLABORATION_CAPTION = "Vínculo de colaboração. Não é uma decisão governada.";
@@ -329,17 +340,68 @@ export function authorLabel(
   return members?.find((member) => member.id === authorMembershipId)?.displayName || "Participante";
 }
 
+const RESOURCE_ROUTES: Record<string, (projectId: string) => string> = {
+  PROJECT: (projectId) => `/projects/${projectId}/overview`,
+  TASK: (projectId) => `/projects/${projectId}/planner`,
+  MILESTONE: (projectId) => `/projects/${projectId}/planner`,
+  DELIVERABLE: (projectId) => `/projects/${projectId}/deliverables`,
+};
+
 export function resourcePresentation(preview: ResourcePreview): { name: string; caption: string; href: string | null } {
   if (!preview.authorized) {
     return { name: "Recurso protegido", caption: COLLABORATION_CAPTION, href: null };
   }
   const kind = LINK_TYPE_LABEL[preview.type] ?? "Recurso";
   const title = preview.title?.trim();
+  const projectId = preview.type === "PROJECT" ? preview.id : preview.projectId;
+  const build = RESOURCE_ROUTES[preview.type];
+  const href = projectId && build ? build(projectId) : null;
   return {
     name: title ? `${kind}: ${title}` : kind,
-    caption: COLLABORATION_CAPTION,
-    href: preview.type === "PROJECT" ? `/projects/${preview.id}/overview` : null,
+    caption: href
+      ? COLLABORATION_CAPTION
+      : "Vínculo de colaboração. Não é uma decisão governada e não abre uma rota de produto.",
+    href,
   };
+}
+
+export function activeConversationMissing(conversationId: string | null, authorizedIds: ReadonlySet<string>): boolean {
+  return Boolean(conversationId && !authorizedIds.has(conversationId));
+}
+
+export function beginLockedSend(current: SendLock | null, next: SendLock, body: string): { lock: SendLock | null; started: boolean } {
+  if (current || body.trim().length === 0) {
+    return { lock: current, started: false };
+  }
+  return { lock: next, started: true };
+}
+
+export function releaseSendLock(current: SendLock | null, finished: SendLock): SendLock | null {
+  if (
+    current &&
+    current.conversationId === finished.conversationId &&
+    current.generation === finished.generation &&
+    current.localId === finished.localId &&
+    current.key === finished.key
+  ) {
+    return null;
+  }
+  return current;
+}
+
+export function mergeTranscriptByVersion(current: readonly MessageRecord[], incoming: readonly MessageRecord[]): MessageRecord[] {
+  const map = new Map(current.map((message) => [message.id, message]));
+  for (const message of incoming) {
+    const existing = map.get(message.id);
+    if (!existing || message.version > existing.version) {
+      map.set(message.id, message);
+    }
+  }
+  return [...map.values()].sort(compareMessages);
+}
+
+export function discardFailedSends(rows: readonly PendingSend[]): PendingSend[] {
+  return rows.filter((row) => row.lifecycle !== "failed");
 }
 
 export function reuseSendKey(previous: { key: string; body: string } | null, body: string): string | null {

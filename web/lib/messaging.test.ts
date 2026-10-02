@@ -6,6 +6,8 @@ import {
   appendUniqueMessage,
   authorizedSearchHits,
   authorizedUnreadTotal,
+  activeConversationMissing,
+  beginLockedSend,
   beginSend,
   buildInboxViews,
   canEditOwnMessage,
@@ -13,17 +15,20 @@ import {
   canTombstoneOwnMessage,
   composerKeyAction,
   contentFits,
+  discardFailedSends,
   conversationFailure,
   eligibleDirectPeers,
   filterInbox,
   inboxPageDisposition,
   inboxSurface,
+  mergeTranscriptByVersion,
   membersFromProjectRows,
   nextInboxIndex,
   nextTranscriptCursor,
   peersFromProjectMembers,
   peerMembershipId,
   privacySafeSnippet,
+  releaseSendLock,
   resourcePresentation,
   reuseSendKey,
   transcriptBody,
@@ -161,7 +166,11 @@ describe("M5.5 messaging presentation", () => {
     expect(reuseSendKey({ key: "same", body: "oi" }, "oi")).toBe("same");
     expect(reuseSendKey({ key: "same", body: "oi" }, "outro")).toBeNull();
     expect(
-      visiblePendingSends([{ localId: "local", key: "same", body: "oi", conversationId: "c" }], new Set(["m1"]), new Map([["local", "m1"]])),
+      visiblePendingSends(
+        [{ localId: "local", key: "same", body: "oi", conversationId: "c", lifecycle: "pending" }],
+        new Set(["m1"]),
+        new Map([["local", "m1"]]),
+      ),
     ).toHaveLength(0);
     expect(transcriptBody({ body: "segredo", lifecycle: "TOMBSTONED", deletedAt: "2026-10-02T12:00:00.000Z" })).toBeNull();
     expect(
@@ -213,7 +222,23 @@ describe("M5.5 messaging presentation", () => {
     });
     expect(resourcePresentation({ type: "PROJECT", id: "p1", authorized: true, title: "Aurora" }).href).toBe("/projects/p1/overview");
     expect(resourcePresentation({ type: "TASK", id: "t1", authorized: true, title: "Tarefa" }).href).toBeNull();
-    expect(resourcePresentation({ type: "TASK", id: "t1", authorized: true, title: "Tarefa" }).caption).toContain("colaboração");
+    expect(resourcePresentation({ type: "TASK", id: "t1", authorized: true, title: "Tarefa" }).caption).toContain("não abre uma rota");
+    expect(resourcePresentation({ type: "TASK", id: "t1", authorized: true, title: "Tarefa", projectId: "p1" }).href).toBe(
+      "/projects/p1/planner",
+    );
+    expect(resourcePresentation({ type: "MILESTONE", id: "m1", authorized: true, projectId: "p1" }).href).toBe("/projects/p1/planner");
+    expect(resourcePresentation({ type: "DELIVERABLE", id: "d1", authorized: true, projectId: "p1" }).href).toBe(
+      "/projects/p1/deliverables",
+    );
+    expect(resourcePresentation({ type: "GATE", id: "g1", authorized: true, title: "Gate", projectId: "p1" }).href).toBeNull();
+    expect(resourcePresentation({ type: "DOCUMENT", id: "doc", authorized: true, title: "Doc", projectId: "p1" }).href).toBeNull();
+    expect(
+      resourcePresentation({ type: "TASK", id: "t1", authorized: false, title: "Sigiloso", projectId: "p1" }),
+    ).toEqual({
+      name: "Recurso protegido",
+      caption: "Vínculo de colaboração. Não é uma decisão governada.",
+      href: null,
+    });
   });
 
   it("fits the narrow desktop and exposes keyboard actions", () => {
@@ -272,6 +297,53 @@ describe("M5.5 messaging presentation", () => {
     expect(started).toBe(1);
     expect(reuseSendKey({ key: "same", body: "oi" }, "oi")).toBe("same");
     expect(reuseSendKey({ key: "same", body: "oi" }, "alterado")).toBeNull();
+  });
+
+  it("revokes an open conversation omitted by a complete inbox and ignores an incomplete set", () => {
+    const allowed = new Set(["kept"]);
+    expect(activeConversationMissing("open", allowed)).toBe(true);
+    expect(activeConversationMissing("kept", allowed)).toBe(false);
+    expect(activeConversationMissing(null, allowed)).toBe(false);
+  });
+
+  it("releases only the matching send lock after A resolves while B is pending", () => {
+    const lockA = { conversationId: "A", generation: 1, localId: "local-a", key: "key-a" };
+    const lockB = { conversationId: "B", generation: 4, localId: "local-b", key: "key-b" };
+    const startedA = beginLockedSend(null, lockA, "from A");
+    expect(startedA.started).toBe(true);
+    const startedB = beginLockedSend(lockB, lockA, "late");
+    expect(startedB).toEqual({ lock: lockB, started: false });
+    expect(releaseSendLock(lockB, lockA)).toBe(lockB);
+    const repeated = beginLockedSend(lockB, { ...lockB, key: "other" }, "again");
+    expect(repeated.started).toBe(false);
+    expect(releaseSendLock(lockB, lockB)).toBeNull();
+    expect(reuseSendKey({ key: "key-b", body: "again" }, "again")).toBe("key-b");
+  });
+
+  it("keeps a newer mutation when an older poll snapshot arrives", () => {
+    const sent = message(1);
+    const edited = { ...message(2), version: 3, body: "editada" };
+    const tombstoned = { ...message(3), version: 2, lifecycle: "TOMBSTONE" as const, body: null, deletedAt: "2026-10-02T13:00:00.000Z" };
+    const current = [sent, edited, tombstoned];
+    const olderPoll = [
+      { ...sent, version: 1 },
+      { ...edited, version: 1, body: "antiga" },
+      { ...tombstoned, version: 1, lifecycle: "VISIBLE" as const, body: "visível", deletedAt: null },
+    ];
+    const merged = mergeTranscriptByVersion(current, olderPoll);
+    expect(merged.find((row) => row.id === edited.id)?.body).toBe("editada");
+    expect(merged.find((row) => row.id === tombstoned.id)?.lifecycle).toBe("TOMBSTONE");
+    expect(merged.find((row) => row.id === sent.id)?.id).toBe(sent.id);
+    expect(merged).toHaveLength(3);
+  });
+
+  it("discards a failed send when the draft changes and keeps it retryable otherwise", () => {
+    const failed = { localId: "p1", key: "same-key", body: "oi", conversationId: "A", lifecycle: "failed" as const };
+    expect(discardFailedSends([failed, { ...failed, localId: "p2", lifecycle: "pending" }])).toEqual([
+      { ...failed, localId: "p2", lifecycle: "pending" },
+    ]);
+    expect(reuseSendKey({ key: failed.key, body: failed.body }, failed.body)).toBe("same-key");
+    expect(reuseSendKey({ key: failed.key, body: failed.body }, "novo texto")).toBeNull();
   });
 
   it("discovers active project peers and keeps suspended people out of the picker", () => {

@@ -6107,6 +6107,26 @@
         ]
       }
     },
+    "/api/v1/conversations/direct-candidates": {
+      "get": {
+        "operationId": "ConversationsController_directCandidates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Direct peers in the session Organization who already share an authorized project and have an ACTIVE Organization membership. Not an org-wide directory.",
+        "tags": [
+          "messaging"
+        ]
+      }
+    },
     "/api/v1/conversations/{conversationId}": {
       "get": {
         "operationId": "ConversationsController_get",
@@ -6138,6 +6158,7 @@
     },
     "/api/v1/conversations/{conversationId}/messages": {
       "get": {
+        "description": "Authorized resource previews include projectId only after an independent target authorization. Unauthorized previews omit title and projectId. Conversation access does not grant Project access.",
         "operationId": "MessagesController_list",
         "parameters": [
           {

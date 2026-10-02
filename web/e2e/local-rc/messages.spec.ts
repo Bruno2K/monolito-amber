@@ -12,6 +12,14 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     const edited = `M55 editada ${stamp}`;
 
     await signInToOrg(page, "coord-a", "Amber Demo Alpha");
+    const candidates = await apiJson(page, "GET", "/api/v1/conversations/direct-candidates");
+    expect(candidates.status).toBe(200);
+    const candidateNames = (candidates.body.items as Array<{ displayName: string }>).map((row) => row.displayName);
+    expect(candidateNames).toContain("Seed Contributor A");
+    expect(candidateNames).not.toContain("Seed Suspended Member A");
+    expect(candidateNames).not.toContain("Seed Removed Member A");
+    expect(candidateNames).not.toContain("Seed Coordinator B");
+    expect(JSON.stringify(candidates.body)).not.toContain("@");
     const first = await apiJson(page, "POST", "/api/v1/conversations/direct", {
       headers: { "Idempotency-Key": `m55-direct-a-${stamp}` },
       data: { organizationMembershipId: CALENDAR_IDS.memContributorA },
@@ -58,11 +66,11 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     await page.waitForURL(`**/messages/${DIRECT_ID}`);
     await expect(page.getByText(`referência ${stamp}`)).toBeVisible();
     await expect(page.getByText("Vínculo de colaboração. Não é uma decisão governada.").first()).toBeVisible();
-    await expect(page.getByRole("link", { name: "Abrir projeto" })).toBeVisible();
+    await expect(page.locator(".messages-transcript").getByRole("link", { name: "Abrir projeto" })).toBeVisible();
     await expect(page.getByText("Recurso protegido").first()).toBeVisible();
     await expect(page.getByText("Beta Campus")).toHaveCount(0);
 
-    const composer = page.getByLabel("Mensagem");
+    const composer = page.getByRole("textbox", { name: "Mensagem", exact: true });
     await composer.fill(body);
     await page.route(`**/api/v1/conversations/${DIRECT_ID}/messages`, async (route) => {
       if (route.request().method() === "POST") {
@@ -73,10 +81,28 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     });
     await page.getByRole("button", { name: "Enviar" }).click();
     await expect(page.getByRole("alert")).toContainText("falha temporária");
-    await expect(page.getByText(body)).toHaveCount(1);
+    await expect(page.getByText("Falha ao enviar")).toBeVisible();
+    await expect(page.getByText("Enviando")).toHaveCount(0);
+    const rewritten = `${body} novo`;
+    await composer.fill(rewritten);
+    await expect(page.getByText("Falha ao enviar")).toHaveCount(0);
+    await page.unroute(`**/api/v1/conversations/${DIRECT_ID}/messages`);
+    await page.getByRole("button", { name: "Enviar" }).click();
+    await expect(page.getByText(rewritten)).toBeVisible();
+    await page.route(`**/api/v1/conversations/${DIRECT_ID}/messages`, async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ detail: "falha temporária" }) });
+        return;
+      }
+      await route.continue();
+    });
+    const retryBody = `${body} retry`;
+    await composer.fill(retryBody);
+    await page.getByRole("button", { name: "Enviar" }).click();
+    await expect(page.getByText("Falha ao enviar")).toBeVisible();
     await page.unroute(`**/api/v1/conversations/${DIRECT_ID}/messages`);
     await page.getByRole("button", { name: "Tentar novamente" }).click();
-    await expect(page.getByText(body)).toHaveCount(1);
+    await expect(page.getByText(retryBody, { exact: true })).toBeVisible();
     await expect(page.locator("[data-pending='true']")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Editar a sua mensagem" }).last().click();
@@ -108,7 +134,7 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     await page.reload();
     await expect(page.getByRole("heading", { name: "Conversa indisponível" })).toBeVisible();
     await expect(page.getByRole("log")).toHaveCount(0);
-    await expect(page.getByLabel("Mensagem")).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "Mensagem", exact: true })).toHaveCount(0);
     await page.unroute(`**/api/v1/conversations/${DIRECT_ID}**`);
 
     await clearBrowserToSignIn(page);
@@ -120,7 +146,7 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     expect(teamItems.some((item) => item.id === TEAM_ID && item.kind === "TEAM")).toBe(true);
     expect(teamItems.some((item) => item.id === DIRECT_ID)).toBe(false);
     await page.locator(".messages-row", { hasText: /Alpha Structure Team|^Equipe/ }).first().click();
-    await expect(page.getByLabel("Mensagem")).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Mensagem", exact: true })).toBeVisible();
 
     await page.route(`**/api/v1/conversations/${TEAM_ID}`, async (route) => {
       const response = await route.fetch();
@@ -131,7 +157,7 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     });
     await page.reload();
     await expect(page.getByText("Somente leitura")).toBeVisible();
-    await expect(page.getByLabel("Mensagem")).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "Mensagem", exact: true })).toHaveCount(0);
 
     await clearBrowserToSignIn(page);
     await signInToOrg(page, "coord-b", "Amber Demo Beta");
@@ -155,7 +181,7 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     });
     expect(direct.status).toBeLessThan(300);
     const conversationId = String(direct.body.id);
-    for (let index = 1; index <= 101; index += 1) {
+    for (let index = 1; index <= 100; index += 1) {
       const sent = await apiJson(page, "POST", `/api/v1/conversations/${conversationId}/messages`, {
         headers: { "Idempotency-Key": `m55b-page-${stamp}-${index}` },
         data: { body: `${stamp} #${index}` },
@@ -165,6 +191,13 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     const other = await browser.newContext();
     const otherPage = await other.newPage();
     await signInToOrg(otherPage, "contributor-a", "Amber Demo Alpha");
+    const peerSent = await apiJson(otherPage, "POST", `/api/v1/conversations/${conversationId}/messages`, {
+      headers: { "Idempotency-Key": `m55b-peer-${stamp}` },
+      data: { body: `${stamp} #101` },
+    });
+    expect(peerSent.status).toBeLessThan(300);
+    const beforeOpen = await apiJson(page, "GET", "/api/v1/conversations?pageSize=100");
+    expect(unreadFor(beforeOpen.body.items, conversationId)).toBeGreaterThan(0);
     const otherBefore = await apiJson(otherPage, "GET", "/api/v1/conversations?pageSize=100");
     const otherUnreadBefore = unreadFor(otherBefore.body.items, conversationId);
 
@@ -174,11 +207,11 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     await transcript.evaluate((node) => {
       node.scrollTop = node.scrollHeight;
     });
-    await expect(page.getByText(`${stamp} #101`, { exact: true })).toBeVisible();
+    await expect(transcript.getByText(`${stamp} #101`, { exact: true })).toBeVisible();
     await transcript.evaluate((node) => {
       node.scrollTop = 0;
     });
-    await expect(page.getByText(`${stamp} #1`, { exact: true })).toBeVisible();
+    await expect(transcript.getByText(`${stamp} #1`, { exact: true })).toBeVisible();
     const coordAfter = await apiJson(page, "GET", "/api/v1/conversations?pageSize=100");
     expect(unreadFor(coordAfter.body.items, conversationId)).toBe(0);
     const otherAfter = await apiJson(otherPage, "GET", "/api/v1/conversations?pageSize=100");
@@ -200,7 +233,7 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
       await gate;
       await route.continue();
     });
-    const composer = page.getByLabel("Mensagem");
+    const composer = page.getByRole("textbox", { name: "Mensagem", exact: true });
     await composer.fill(once);
     await composer.press("Enter");
     await composer.press("Enter");
@@ -220,8 +253,8 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     await composer.fill("rascunho da conversa A");
     await page.goto(`/messages/${secondId}`);
     await expect(page.getByText("Carregando conversa")).toBeHidden();
-    await expect(page.getByLabel("Mensagem")).toHaveValue("");
-    await expect(page.getByText(`${stamp} #101`, { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "Mensagem", exact: true })).toHaveValue("");
+    await expect(page.locator(".messages-transcript").getByText(`${stamp} #101`, { exact: true })).toHaveCount(0);
     await expect(page.getByText("rascunho da conversa A")).toHaveCount(0);
 
     await page.goto(`/messages/${conversationId}`);
@@ -235,7 +268,7 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     });
     await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
     await expect(page.getByRole("heading", { name: "Conversa indisponível" })).toBeVisible();
-    await expect(page.getByText(`${stamp} #101`, { exact: true })).toHaveCount(0);
+    await expect(page.locator(".messages-transcript")).toHaveCount(0);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
     expect(overflow).toBe(true);
     await expect(page.getByRole("button", { name: "Nova conversa" })).toBeVisible();

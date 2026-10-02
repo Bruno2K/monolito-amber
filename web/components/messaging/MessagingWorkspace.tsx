@@ -3,18 +3,19 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "../../lib/api";
-import type { ApiResult, ProjectRow } from "../../lib/types";
+import type { ApiResult } from "../../lib/types";
 import {
   FIGMA_MESSAGE_NODES,
   MESSAGE_POLL_MS,
   acceptAsyncResult,
+  activeConversationMissing,
   appendInboxItems,
   appendTranscriptPage,
   appendUniqueMessage,
   authorLabel,
   authorizedSearchHits,
   authorizedUnreadTotal,
-  beginSend,
+  beginLockedSend,
   buildInboxViews,
   canEditOwnMessage,
   canSendMessage,
@@ -27,10 +28,12 @@ import {
   inboxPageDisposition,
   inboxSurface,
   isAuthorizationMiss,
+  discardFailedSends,
   isReadOnlyConversation,
+  mergeTranscriptByVersion,
   nextInboxIndex,
   nextTranscriptCursor,
-  membersFromProjectRows,
+  releaseSendLock,
   resourcePresentation,
   reuseSendKey,
   transcriptBody,
@@ -42,8 +45,8 @@ import {
   type MessagingKindFilter,
   type MessagingSurface,
   type PendingSend,
-  type ProjectPeerRow,
   type SearchHit,
+  type SendLock,
   type TeamName,
 } from "../../lib/messaging";
 import { newIdempotencyKey } from "../../lib/planning";
@@ -64,6 +67,7 @@ type DialogMode =
   | { type: "create" }
   | { type: "edit"; message: MessageRecord }
   | { type: "tombstone"; message: MessageRecord; key: string }
+  | { type: "edit-conflict"; messageId: string; detail: string }
   | null;
 
 type DirectoryState =
@@ -111,7 +115,6 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
   const orgId = shell.session?.activeOrganizationId ?? null;
   const actorMembershipId =
     shell.organizations.find((org) => org.id === orgId)?.membershipId ?? shell.session?.membership?.id ?? null;
-  const projectKey = shell.projects.map((project) => project.id).join(",");
   const titleId = useId();
   const liveId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -124,11 +127,9 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
   const directoryGen = useRef(0);
   const conversationRef = useRef<string | null>(conversationId);
   const inboxRef = useRef<InboxItem[]>([]);
-  const sendingRef = useRef(false);
+  const sendLock = useRef<SendLock | null>(null);
   const inboxCommitted = useRef(false);
   const seenOrg = useRef<string | null | undefined>(undefined);
-  const projectsRef = useRef<ProjectRow[]>(shell.projects);
-  projectsRef.current = shell.projects;
   conversationRef.current = conversationId;
 
   const [inbox, setInbox] = useState<InboxItem[]>([]);
@@ -164,10 +165,61 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
   const [threadNonce, setThreadNonce] = useState(0);
   const [searchNonce, setSearchNonce] = useState(0);
   const watermarkSent = useRef<string | null>(null);
+  const [scopeOrg, setScopeOrg] = useState(orgId);
+  if (scopeOrg !== orgId) {
+    setScopeOrg(orgId);
+    inboxGen.current += 1;
+    threadGen.current += 1;
+    searchGen.current += 1;
+    directoryGen.current += 1;
+    sendLock.current = null;
+    inboxCommitted.current = false;
+    inboxRef.current = [];
+    setInbox([]);
+    setSearchHits([]);
+    setMessages([]);
+    setActive(null);
+    setPending([]);
+    setDraft("");
+    setDirectory({ kind: "loading" });
+    setTeams([]);
+    setDialog(null);
+    setSendError(null);
+    setFailedSend(null);
+    setSending(false);
+    setRefreshError(null);
+    setThreadState(conversationId ? "loading" : "idle");
+  }
 
   function rememberInbox(next: InboxItem[]) {
     inboxRef.current = next;
     setInbox(next);
+  }
+
+  function commitAuthorizedInbox(items: InboxItem[]) {
+    inboxCommitted.current = true;
+    rememberInbox(items);
+    setInboxCursor(null);
+    setInboxStatus(200);
+    setInboxDetail(undefined);
+    setInboxWarning(null);
+    const allowed = new Set(items.map((item) => item.id));
+    setSearchHits((hits) => hits.filter((hit) => allowed.has(hit.conversationId)));
+    const id = conversationRef.current;
+    if (activeConversationMissing(id, allowed)) {
+      revokeThread(threadGen.current, id as string, "A conversa não está mais na caixa autorizada.");
+    }
+  }
+
+  function finishSend(lock: SendLock) {
+    const next = releaseSendLock(sendLock.current, lock);
+    if (next === sendLock.current && next !== null) {
+      return;
+    }
+    sendLock.current = next;
+    if (next === null) {
+      setSending(false);
+    }
   }
 
   function threadIsCurrent(generation: number, id: string): boolean {
@@ -196,7 +248,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     setSendError(null);
     setFailedSend(null);
     setSending(false);
-    sendingRef.current = false;
+    sendLock.current = null;
     setRefreshError(null);
     setThreadState("revoked");
     setThreadDetail(detail);
@@ -266,12 +318,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
         setInboxDetail("A caixa de entrada não foi carregada por completo.");
         return;
       }
-      inboxCommitted.current = true;
-      rememberInbox(collected);
-      setInboxCursor(null);
-      setInboxStatus(200);
-      setInboxDetail(undefined);
-      setInboxWarning(null);
+      commitAuthorizedInbox(collected);
     })();
 
     return () => controller.abort();
@@ -288,55 +335,34 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
         }
         return;
       }
-      const [memberResult, teamResult] = await Promise.all([
-        request<DirectoryMember[]>(`/api/v1/organizations/${orgId}/members`, controller.signal),
+      const [candidateResult, teamResult] = await Promise.all([
+        request<{ items: Array<{ id: string; displayName: string }> }>("/api/v1/conversations/direct-candidates", controller.signal),
         request<{ items: TeamName[] }>(`/api/v1/organizations/${orgId}/teams`, controller.signal),
       ]);
-      if (memberResult === "aborted" || teamResult === "aborted" || generation !== directoryGen.current) {
+      if (candidateResult === "aborted" || teamResult === "aborted" || generation !== directoryGen.current) {
         return;
       }
-      if (teamResult.ok) {
-        setTeams(teamResult.body.items);
-      } else if (!isAuthorizationMiss(teamResult.status)) {
-        setTeams([]);
-      } else {
-        setTeams([]);
-      }
-      if (memberResult.ok) {
+      setTeams(teamResult.ok ? teamResult.body.items : []);
+      if (!candidateResult.ok) {
         setDirectory({
-          kind: "ready",
-          peers: memberResult.body.map((peer) => ({
-            id: peer.id,
-            displayName: peer.displayName,
-            status: peer.status,
-          })),
+          kind: "error",
+          detail: isAuthorizationMiss(candidateResult.status)
+            ? "Pessoas elegíveis indisponíveis para esta sessão."
+            : candidateResult.problem.detail,
         });
         return;
       }
-      if (!isAuthorizationMiss(memberResult.status)) {
-        setDirectory({ kind: "error", detail: memberResult.problem.detail });
-        return;
-      }
-      const rows: ProjectPeerRow[] = [];
-      for (const project of projectsRef.current) {
-        const listed = await request<ProjectPeerRow[]>(`/api/v1/projects/${project.id}/members`, controller.signal);
-        if (listed === "aborted" || generation !== directoryGen.current) {
-          return;
-        }
-        if (listed.ok) {
-          rows.push(...listed.body);
-          continue;
-        }
-        if (isAuthorizationMiss(listed.status)) {
-          continue;
-        }
-        setDirectory({ kind: "error", detail: listed.problem.detail });
-        return;
-      }
-      setDirectory({ kind: "ready", peers: membersFromProjectRows(rows, actorMembershipId) });
+      setDirectory({
+        kind: "ready",
+        peers: candidateResult.body.items.map((peer) => ({
+          id: peer.id,
+          displayName: peer.displayName,
+          status: "ACTIVE",
+        })),
+      });
     })();
     return () => controller.abort();
-  }, [orgId, actorMembershipId, projectKey, directoryNonce]);
+  }, [orgId, actorMembershipId, directoryNonce]);
 
   useEffect(() => {
     const generation = ++threadGen.current;
@@ -350,7 +376,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     setSendError(null);
     setFailedSend(null);
     setSending(false);
-    sendingRef.current = false;
+    sendLock.current = null;
     setRefreshError(null);
     setDialog(null);
     setDialogError(null);
@@ -365,27 +391,27 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     const controller = new AbortController();
     void loadTranscript(conversationId, generation, controller.signal, "replace");
     return () => controller.abort();
-  }, [conversationId, threadNonce]);
+  }, [conversationId, threadNonce, orgId]);
 
-  async function loadTranscript(id: string, generation: number, signal: AbortSignal, mode: "replace" | "refresh") {
+  async function loadTranscript(id: string, generation: number, signal: AbortSignal, mode: "replace" | "refresh"): Promise<boolean> {
     const conversationResult = await request<InboxItem>(`/api/v1/conversations/${id}`, signal);
     if (conversationResult === "aborted" || !threadIsCurrent(generation, id)) {
-      return;
+      return false;
     }
     if (!conversationResult.ok) {
       if (isAuthorizationMiss(conversationResult.status)) {
         revokeThread(generation, id, conversationResult.problem.detail);
-        return;
+        return false;
       }
       if (mode === "refresh") {
         setRefreshError(conversationResult.problem.detail);
-        return;
+        return false;
       }
       setThreadState(conversationFailure(conversationResult.status));
       setThreadDetail(conversationResult.problem.detail);
       setMessages([]);
       setActive(null);
-      return;
+      return false;
     }
     let transcript: MessageRecord[] = [];
     let cursor: string | null = null;
@@ -394,22 +420,22 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
       const path = `/api/v1/conversations/${id}/messages?pageSize=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
       const pageResult = await request<MessagePage>(path, signal);
       if (pageResult === "aborted" || !threadIsCurrent(generation, id)) {
-        return;
+        return false;
       }
       if (!pageResult.ok) {
         if (isAuthorizationMiss(pageResult.status)) {
           revokeThread(generation, id, pageResult.problem.detail);
-          return;
+          return false;
         }
         if (mode === "refresh") {
           setRefreshError(pageResult.problem.detail);
-          return;
+          return false;
         }
         setThreadState("error");
         setThreadDetail(pageResult.problem.detail);
         setMessages([]);
         setActive(null);
-        return;
+        return false;
       }
       const appended = appendTranscriptPage(transcript, pageResult.body.items);
       transcript = appended.messages;
@@ -420,45 +446,46 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
       }
     }
     if (!threadIsCurrent(generation, id)) {
-      return;
+      return false;
     }
     if (cursor) {
       if (mode === "refresh") {
         setRefreshError("A transcrição não foi carregada por completo.");
-        return;
+        return false;
       }
       setThreadState("error");
       setThreadDetail("A transcrição não foi carregada por completo.");
       setMessages([]);
       setActive(null);
-      return;
+      return false;
     }
     setActive(conversationResult.body);
-    setMessages(transcript);
+    setMessages((current) => (mode === "refresh" ? mergeTranscriptByVersion(current, transcript) : transcript));
     setThreadState("ready");
     setThreadDetail(undefined);
     setRefreshError(null);
     const target = watermarkTarget(transcript);
     if (!target || watermarkSent.current === `${id}:${target}`) {
-      return;
+      return true;
     }
     const read = await request(`/api/v1/conversations/${id}/read-state`, signal, {
       method: "PUT",
       body: JSON.stringify({ lastReadMessageId: target }),
     });
     if (read === "aborted" || !threadIsCurrent(generation, id)) {
-      return;
+      return true;
     }
     if (!read.ok) {
       if (isAuthorizationMiss(read.status)) {
         revokeThread(generation, id, read.problem.detail);
-        return;
+        return false;
       }
       setRefreshError(read.problem.detail);
-      return;
+      return true;
     }
     watermarkSent.current = `${id}:${target}`;
     rememberInbox(inboxRef.current.map((row) => (row.id === id ? { ...row, unreadCount: 0 } : row)));
+    return true;
   }
 
   useEffect(() => {
@@ -502,10 +529,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
         if (inboxGeneration !== inboxGen.current || cursor) {
           return;
         }
-        inboxCommitted.current = true;
-        rememberInbox(collected);
-        setInboxStatus(200);
-        setInboxWarning(null);
+        commitAuthorizedInbox(collected);
       })();
       const id = conversationRef.current;
       if (id && threadStateRef.current === "ready") {
@@ -680,35 +704,38 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     await openConversation(result.body.id);
   }
 
-  async function send(targetId: string, generation: number, body: string, key: string, localId: string) {
+  async function send(lock: SendLock, body: string) {
     const controller = new AbortController();
     setSendError(null);
-    setPending((rows) =>
-      rows.some((row) => row.localId === localId) ? rows : [...rows, { localId, key, body, conversationId: targetId }],
-    );
-    const result = await request<MessageRecord>(`/api/v1/conversations/${targetId}/messages`, controller.signal, {
+    setPending((rows) => {
+      if (rows.some((row) => row.localId === lock.localId)) {
+        return rows.map((row) => (row.localId === lock.localId ? { ...row, lifecycle: "retrying" } : row));
+      }
+      return [...rows, { localId: lock.localId, key: lock.key, body, conversationId: lock.conversationId, lifecycle: "pending" }];
+    });
+    const result = await request<MessageRecord>(`/api/v1/conversations/${lock.conversationId}/messages`, controller.signal, {
       method: "POST",
-      headers: { "Idempotency-Key": key },
+      headers: { "Idempotency-Key": lock.key },
       body: JSON.stringify({ body }),
     });
-    sendingRef.current = false;
-    setSending(false);
-    if (result === "aborted" || !threadIsCurrent(generation, targetId)) {
-      setPending((rows) => rows.filter((row) => row.conversationId === conversationRef.current));
+    finishSend(lock);
+    if (result === "aborted" || !threadIsCurrent(lock.generation, lock.conversationId)) {
+      setPending((rows) => rows.filter((row) => row.conversationId === conversationRef.current && row.localId !== lock.localId));
       return;
     }
     if (!result.ok) {
       if (isAuthorizationMiss(result.status)) {
-        revokeThread(generation, targetId, result.problem.detail);
+        revokeThread(lock.generation, lock.conversationId, result.problem.detail);
         return;
       }
-      setFailedSend({ key, body });
+      setPending((rows) => rows.map((row) => (row.localId === lock.localId ? { ...row, lifecycle: "failed" } : row)));
+      setFailedSend({ key: lock.key, body });
       setSendError(result.problem.detail || "Não foi possível enviar.");
       setAnnounce("Falha ao enviar. Você pode tentar de novo sem duplicar a mensagem.");
       return;
     }
-    setPending((rows) => rows.filter((row) => row.localId !== localId));
-    setResolvedIds((current) => new Map(current).set(localId, result.body.id));
+    setPending((rows) => rows.filter((row) => row.localId !== lock.localId));
+    setResolvedIds((current) => new Map(current).set(lock.localId, result.body.id));
     setMessages((rows) => appendUniqueMessage(rows, result.body));
     setFailedSend(null);
     setDraft("");
@@ -718,14 +745,23 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
 
   function submitDraft() {
     const body = draft.trim();
-    const decision = beginSend(sendingRef.current, body);
-    if (!decision.started || !conversationId || !canSendMessage(active)) {
+    if (!conversationId || !canSendMessage(active)) {
       return;
     }
-    sendingRef.current = true;
-    setSending(true);
     const key = reuseSendKey(failedSend, body) ?? newIdempotencyKey("msg");
-    void send(conversationId, threadGen.current, body, key, `pending-${key}`);
+    const lock: SendLock = {
+      conversationId,
+      generation: threadGen.current,
+      localId: `pending-${key}`,
+      key,
+    };
+    const decision = beginLockedSend(sendLock.current, lock, body);
+    if (!decision.started || !decision.lock) {
+      return;
+    }
+    sendLock.current = decision.lock;
+    setSending(true);
+    void send(decision.lock, body);
   }
 
   async function saveEdit() {
@@ -753,6 +789,24 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
       if (isAuthorizationMiss(result.status)) {
         closeDialog();
         revokeThread(generation, targetId, result.problem.detail);
+        return;
+      }
+      if (result.status === 409 || result.status === 0) {
+        const detail =
+          result.status === 0
+            ? "A resposta da edição não foi confirmada."
+            : result.problem.detail || "A versão da mensagem mudou.";
+        setDialogPending(true);
+        const reconciled = await loadTranscript(targetId, generation, new AbortController().signal, "refresh");
+        setDialogPending(false);
+        if (!threadIsCurrent(generation, targetId)) {
+          return;
+        }
+        if (!reconciled) {
+          setDialogError(`${detail} A versão atual não foi carregada, então a edição antiga não será reenviada.`);
+          return;
+        }
+        setDialog({ type: "edit-conflict", messageId: dialog.message.id, detail });
         return;
       }
       setDialogError(result.problem.detail || "Não foi possível editar.");
@@ -1055,39 +1109,42 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
                   );
                 })}
                 {shownPending.map((row) => (
-                  <article key={row.localId} className="messages-bubble is-own is-pending" aria-busy="true" data-pending="true">
+                  <article
+                    key={row.localId}
+                    className={`messages-bubble is-own${row.lifecycle === "failed" ? "" : " is-pending"}`}
+                    aria-busy={row.lifecycle === "failed" ? undefined : true}
+                    data-pending={row.lifecycle === "failed" ? undefined : "true"}
+                    data-send-state={row.lifecycle}
+                  >
                     <header>
                       <span className="messages-author">Você</span>
-                      <span>Enviando</span>
+                      <span>{row.lifecycle === "failed" ? "Falha ao enviar" : "Enviando"}</span>
                     </header>
                     <p className="messages-body">{row.body}</p>
+                    {row.lifecycle === "failed" ? (
+                      <div className="messages-actions">
+                        <button type="button" className="btn" onClick={() => submitDraft()}>
+                          Tentar novamente
+                        </button>
+                        <button
+                          type="button"
+                          className="btn secondary"
+                          onClick={() => {
+                            setPending((rows) => rows.filter((item) => item.localId !== row.localId));
+                            setFailedSend(null);
+                            setSendError(null);
+                          }}
+                        >
+                          Descartar
+                        </button>
+                      </div>
+                    ) : null}
                   </article>
                 ))}
               </div>
               {sendError ? (
                 <p className="messages-inline-error" role="alert">
-                  {sendError}{" "}
-                  {failedSend ? (
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() => {
-                        if (!conversationId) {
-                          return;
-                        }
-                        const decision = beginSend(sendingRef.current, failedSend.body);
-                        if (!decision.started) {
-                          return;
-                        }
-                        sendingRef.current = true;
-                        setSending(true);
-                        setDraft(failedSend.body);
-                        void send(conversationId, threadGen.current, failedSend.body, failedSend.key, `pending-${failedSend.key}`);
-                      }}
-                    >
-                      Tentar novamente
-                    </button>
-                  ) : null}
+                  {sendError}
                 </p>
               ) : null}
               {canSendMessage(active) ? (
@@ -1108,9 +1165,12 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
                     aria-keyshortcuts="Enter Shift+Enter"
                     aria-describedby="composer-hint"
                     onChange={(event) => {
-                      setDraft(event.target.value);
-                      if (failedSend && event.target.value.trim() !== failedSend.body) {
+                      const next = event.target.value;
+                      setDraft(next);
+                      if (failedSend && next.trim() !== failedSend.body) {
+                        setPending((rows) => discardFailedSends(rows));
                         setFailedSend(null);
+                        setSendError(null);
                       }
                     }}
                     onKeyDown={(event) => {
@@ -1193,6 +1253,31 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
               ))}
             </ul>
             {teamChats.length === 0 ? <p>Nenhuma equipe acessível.</p> : null}
+          </>
+        ) : null}
+        {dialog?.type === "edit-conflict" ? (
+          <>
+            <h2 id="messages-dialog-title">Edição não confirmada</h2>
+            <p>{dialog.detail} A versão antiga não será reenviada.</p>
+            <div className="messages-dialog-actions">
+              <button type="button" className="btn secondary" onClick={closeDialog}>
+                Fechar
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  const latest = messages.find((message) => message.id === dialog.messageId);
+                  if (latest && transcriptBody(latest) !== null) {
+                    openDialog({ type: "edit", message: latest }, openerRef.current);
+                    return;
+                  }
+                  closeDialog();
+                }}
+              >
+                Editar versão atual
+              </button>
+            </div>
           </>
         ) : null}
         {dialog?.type === "edit" ? (
