@@ -64,10 +64,12 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     await expect(dialog.getByText("Seed Coordinator B")).toHaveCount(0);
     await dialog.getByRole("button", { name: /Seed Contributor A/ }).click();
     await page.waitForURL(`**/messages/${DIRECT_ID}`);
-    await expect(page.getByText(`referência ${stamp}`)).toBeVisible();
-    await expect(page.getByText("Vínculo de colaboração. Não é uma decisão governada.").first()).toBeVisible();
-    await expect(page.locator(".messages-transcript").getByRole("link", { name: "Abrir projeto" })).toBeVisible();
-    await expect(page.getByText("Recurso protegido").first()).toBeVisible();
+    const transcript = page.locator(".messages-transcript");
+    const linkedBubble = transcript.locator("article", { hasText: `referência ${stamp}` });
+    await expect(linkedBubble).toBeVisible();
+    await expect(linkedBubble.getByText("Vínculo de colaboração. Não é uma decisão governada.")).toBeVisible();
+    await expect(linkedBubble.getByRole("link", { name: "Abrir projeto" })).toHaveCount(1);
+    await expect(linkedBubble.getByText("Recurso protegido")).toBeVisible();
     await expect(page.getByText("Beta Campus")).toHaveCount(0);
 
     const composer = page.getByRole("textbox", { name: "Mensagem", exact: true });
@@ -88,7 +90,7 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     await expect(page.getByText("Falha ao enviar")).toBeVisible();
     await page.unroute(`**/api/v1/conversations/${DIRECT_ID}/messages`);
     await page.getByRole("button", { name: "Enviar" }).click();
-    await expect(page.getByText(rewritten)).toBeVisible();
+    await expect(transcript.getByText(rewritten, { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Descartar" }).click();
     await expect(page.getByText("Falha ao enviar")).toHaveCount(0);
     await page.route(`**/api/v1/conversations/${DIRECT_ID}/messages`, async (route) => {
@@ -104,19 +106,19 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     await expect(page.getByText("Falha ao enviar")).toBeVisible();
     await page.unroute(`**/api/v1/conversations/${DIRECT_ID}/messages`);
     await page.getByRole("button", { name: "Tentar novamente" }).click();
-    await expect(page.getByText(retryBody, { exact: true })).toBeVisible();
+    await expect(transcript.getByText(retryBody, { exact: true })).toBeVisible();
     await expect(page.locator("[data-pending='true']")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Editar a sua mensagem" }).last().click();
     await page.getByLabel("Texto da mensagem").fill(edited);
     await page.getByRole("button", { name: "Salvar" }).click();
-    await expect(page.getByText(edited)).toBeVisible();
-    await expect(page.getByText("Editada").last()).toBeVisible();
+    await expect(transcript.getByText(edited, { exact: true })).toBeVisible();
+    await expect(transcript.getByText("Editada").last()).toBeVisible();
 
     await page.getByRole("button", { name: "Remover a sua mensagem" }).last().click();
     await page.getByRole("button", { name: "Remover", exact: true }).click();
-    await expect(page.getByText("Mensagem removida").last()).toBeVisible();
-    await expect(page.getByText(edited)).toHaveCount(0);
+    await expect(transcript.getByText("Mensagem removida").last()).toBeVisible();
+    await expect(transcript.getByText(edited)).toHaveCount(0);
 
     await page.getByLabel("Filtrar conversas autorizadas").focus();
     await page.keyboard.press("Tab");
