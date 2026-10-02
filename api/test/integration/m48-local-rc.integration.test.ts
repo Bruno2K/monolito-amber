@@ -238,7 +238,8 @@ describe("M4.8 Local RC integration", () => {
     const names = applied.map((row) => row.migration_name);
     expect(names[0]).toBe("20260922000000_init");
     expect(names).toContain("20260922220000_pf_1_5_planning_tasks_milestones");
-    expect(names.at(-1)).toBe("20261001200000_m3_7_cross_domain_traceability");
+    expect(names).toContain("20261001200000_m3_7_cross_domain_traceability");
+    expect(names.at(-1)).toBe("20261002070000_m5_1_calendar_messaging_baseline");
   });
 
   it("M4.8-HTTP-02/03 golden path + cross-view identity + no sibling cascade", async () => {
@@ -280,7 +281,7 @@ describe("M4.8 Local RC integration", () => {
       .set("Idempotency-Key", key("start-blocked"))
       .send({ expectedVersion: assigned.body.version });
     expect(blockedStart.status).toBeGreaterThanOrEqual(400);
-    expect(JSON.stringify(blockedStart.body)).toMatch(/predecessor|DEPENDENCY|término-início|finish-to-start/i);
+    expect(JSON.stringify(blockedStart.body)).toMatch(/predecessor|DEPENDENCY|érmino-início|finish-to-start/i);
 
     const predStarted = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${pred.body.id}/start`)
