@@ -821,9 +821,18 @@ button.btn {
 .structure-overlay {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: 80;
+  isolation: isolate;
   display: flex;
   justify-content: flex-end;
+}
+
+body[data-drawer-open] {
+  overflow: hidden;
+}
+
+body[data-drawer-open] .shell-content {
+  overflow: hidden;
 }
 
 .structure-backdrop {
@@ -1225,6 +1234,17 @@ button.btn {
 .milestone-diamond-btn:focus-visible {
   border-color: #d97706;
   outline: 2px solid #d97706;
+}
+
+.milestone-diamond-btn .gantt-diamond {
+  position: static;
+  transform: none;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  background: #6b7280;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
 }
 
 .milestone-reasons {
@@ -1635,11 +1655,26 @@ button.btn {
 }
 
 .kanban-block-prompt {
-  margin: 0 0 12px;
-  padding: 12px;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 85;
+  isolation: isolate;
+  width: min(420px, calc(100vw - 48px));
+  margin: 0;
+  padding: 16px;
   border-radius: 8px;
   border: 1px solid #fdba74;
   background: #fff7ed;
+}
+
+.kanban-block-prompt::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(17, 24, 39, 0.28);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1905,7 +1940,8 @@ button.btn {
   }
 
   .deliverables-inspector-shell .structure-inspector {
-    width: min(100%, 100vw);
+    width: min(100%, calc(100vw - var(--sidebar-width)));
+    max-width: calc(100vw - var(--sidebar-width-collapsed));
   }
 
   .hub-grid {

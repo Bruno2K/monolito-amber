@@ -7,6 +7,7 @@ import { TraceabilityContextPanel } from "../operations/TraceabilityContextPanel
 import { api } from "../../lib/api";
 import { classifyProblem } from "../../lib/errors";
 import { useInspectorEscape } from "../../lib/use-inspector-escape";
+import { Drawer } from "../ui";
 import {
   canApproveDeliverable,
   canAssignDeliverable,
@@ -432,13 +433,7 @@ export function DeliverablesView({ projectId }: { projectId: string }) {
         )}
 
         {inspectorOpen ? (
-          <div className="structure-overlay deliverables-inspector-shell" role="presentation">
-            <button
-              type="button"
-              className="structure-backdrop"
-              aria-label="Fechar inspetor"
-              onClick={() => openItem(null)}
-            />
+          <Drawer open className="deliverables-inspector-shell" onClose={() => openItem(null)}>
             <aside
               className="structure-inspector"
               role="dialog"
@@ -765,7 +760,7 @@ export function DeliverablesView({ projectId }: { projectId: string }) {
                 />
               ) : null}
             </aside>
-          </div>
+          </Drawer>
         ) : null}
       </div>
     </section>
