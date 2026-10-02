@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptAsyncResult,
+  acceptCreateResult,
+  applySendFailure,
   appendInboxItems,
   appendTranscriptPage,
   appendUniqueMessage,
@@ -15,6 +17,7 @@ import {
   canTombstoneOwnMessage,
   composerKeyAction,
   contentFits,
+  draftAfterSuccessfulSend,
   discardFailedSends,
   conversationFailure,
   eligibleDirectPeers,
@@ -28,6 +31,7 @@ import {
   peersFromProjectMembers,
   peerMembershipId,
   privacySafeSnippet,
+  reconciledTombstone,
   releaseSendLock,
   resourcePresentation,
   reuseSendKey,
@@ -219,17 +223,22 @@ describe("M5.5 messaging presentation", () => {
       name: "Recurso protegido",
       caption: "Vínculo de colaboração. Não é uma decisão governada.",
       href: null,
+      openLabel: null,
     });
-    expect(resourcePresentation({ type: "PROJECT", id: "p1", authorized: true, title: "Aurora" }).href).toBe("/projects/p1/overview");
+    const project = resourcePresentation({ type: "PROJECT", id: "p1", authorized: true, title: "Aurora" });
+    expect(project.href).toBe("/projects/p1/overview");
+    expect(project.openLabel).toBe("Abrir projeto");
     expect(resourcePresentation({ type: "TASK", id: "t1", authorized: true, title: "Tarefa" }).href).toBeNull();
-    expect(resourcePresentation({ type: "TASK", id: "t1", authorized: true, title: "Tarefa" }).caption).toContain("não abre uma rota");
-    expect(resourcePresentation({ type: "TASK", id: "t1", authorized: true, title: "Tarefa", projectId: "p1" }).href).toBe(
-      "/projects/p1/planner",
-    );
-    expect(resourcePresentation({ type: "MILESTONE", id: "m1", authorized: true, projectId: "p1" }).href).toBe("/projects/p1/planner");
-    expect(resourcePresentation({ type: "DELIVERABLE", id: "d1", authorized: true, projectId: "p1" }).href).toBe(
-      "/projects/p1/deliverables",
-    );
+    expect(resourcePresentation({ type: "TASK", id: "t1", authorized: true, title: "Tarefa" }).openLabel).toBeNull();
+    const task = resourcePresentation({ type: "TASK", id: "t1", authorized: true, title: "Tarefa", projectId: "p1" });
+    expect(task.href).toBe("/projects/p1/planner?inspect=t1");
+    expect(task.openLabel).toBe("Abrir tarefa");
+    const milestone = resourcePresentation({ type: "MILESTONE", id: "m1", authorized: true, projectId: "p1" });
+    expect(milestone.href).toBe("/projects/p1/planner?view=milestones&milestone=m1");
+    expect(milestone.openLabel).toBe("Abrir marco");
+    const deliverable = resourcePresentation({ type: "DELIVERABLE", id: "d1", authorized: true, projectId: "p1" });
+    expect(deliverable.href).toBe("/projects/p1/deliverables?inspect=d1");
+    expect(deliverable.openLabel).toBe("Abrir entrega");
     expect(resourcePresentation({ type: "GATE", id: "g1", authorized: true, title: "Gate", projectId: "p1" }).href).toBeNull();
     expect(resourcePresentation({ type: "DOCUMENT", id: "doc", authorized: true, title: "Doc", projectId: "p1" }).href).toBeNull();
     expect(
@@ -238,6 +247,7 @@ describe("M5.5 messaging presentation", () => {
       name: "Recurso protegido",
       caption: "Vínculo de colaboração. Não é uma decisão governada.",
       href: null,
+      openLabel: null,
     });
   });
 
@@ -307,8 +317,8 @@ describe("M5.5 messaging presentation", () => {
   });
 
   it("releases only the matching send lock after A resolves while B is pending", () => {
-    const lockA = { conversationId: "A", generation: 1, localId: "local-a", key: "key-a" };
-    const lockB = { conversationId: "B", generation: 4, localId: "local-b", key: "key-b" };
+    const lockA = { conversationId: "A", organizationId: "org-a", generation: 1, localId: "local-a", key: "key-a" };
+    const lockB = { conversationId: "B", organizationId: "org-a", generation: 4, localId: "local-b", key: "key-b" };
     const startedA = beginLockedSend(null, lockA, "from A");
     expect(startedA.started).toBe(true);
     const startedB = beginLockedSend(lockB, lockA, "late");
@@ -335,6 +345,86 @@ describe("M5.5 messaging presentation", () => {
     expect(merged.find((row) => row.id === tombstoned.id)?.lifecycle).toBe("TOMBSTONE");
     expect(merged.find((row) => row.id === sent.id)?.id).toBe(sent.id);
     expect(merged).toHaveLength(3);
+  });
+
+  it("refreshes authorization previews at the same version without rolling back a newer mutation", () => {
+    const authorized = {
+      ...message(1),
+      resourcePreviews: [{ type: "TASK", id: "t1", authorized: true, title: "Secreto", projectId: "p1" }],
+    };
+    const unauthorized = {
+      ...authorized,
+      resourcePreviews: [{ type: "TASK", id: "t1", authorized: false }],
+    };
+    const revoked = mergeTranscriptByVersion([authorized], [unauthorized]);
+    expect(revoked[0]?.resourcePreviews).toEqual([{ type: "TASK", id: "t1", authorized: false }]);
+    expect(revoked[0]?.body).toBe(authorized.body);
+    const granted = mergeTranscriptByVersion([unauthorized], [authorized]);
+    expect(granted[0]?.resourcePreviews[0]?.authorized).toBe(true);
+    const edited = { ...authorized, version: 4, body: "editada", resourcePreviews: [] as MessageRecord["resourcePreviews"] };
+    const olderAuthorized = { ...authorized, version: 2, body: "antiga" };
+    const kept = mergeTranscriptByVersion([edited], [olderAuthorized]);
+    expect(kept[0]?.body).toBe("editada");
+    expect(kept[0]?.version).toBe(4);
+    expect(kept[0]?.resourcePreviews).toEqual([]);
+    const tombstoned = { ...message(2), version: 3, lifecycle: "TOMBSTONED", body: null, deletedAt: "2026-10-02T13:00:00.000Z" };
+    const restored = mergeTranscriptByVersion([tombstoned], [{ ...tombstoned, version: 1, lifecycle: "VISIBLE", body: "visível", deletedAt: null }]);
+    expect(restored[0]?.body).toBeNull();
+    expect(restored[0]?.lifecycle).toBe("TOMBSTONED");
+    const mixed = mergeTranscriptByVersion([edited, tombstoned], [unauthorized, { ...tombstoned, version: 3, resourcePreviews: unauthorized.resourcePreviews }]);
+    expect(mixed.find((row) => row.id === edited.id)?.body).toBe("editada");
+    expect(mixed.find((row) => row.id === tombstoned.id)?.resourcePreviews).toEqual(unauthorized.resourcePreviews);
+    expect(mixed.find((row) => row.id === tombstoned.id)?.body).toBeNull();
+  });
+
+  it("keeps a draft typed during send and preserves a failed row beside a new send", () => {
+    expect(draftAfterSuccessfulSend("A", "A", true)).toBe("");
+    expect(draftAfterSuccessfulSend("B", "A", true)).toBe("B");
+    expect(draftAfterSuccessfulSend("novo", "A", false)).toBe("novo");
+    const failed = { localId: "a", key: "key-a", body: "A", conversationId: "c", lifecycle: "pending" as const };
+    const afterFail = applySendFailure([failed], "a", new Set());
+    expect(afterFail[0]?.lifecycle).toBe("failed");
+    const alongside = [
+      ...afterFail,
+      { localId: "b", key: "key-b", body: "B", conversationId: "c", lifecycle: "pending" as const },
+    ];
+    expect(alongside.filter((row) => row.lifecycle === "failed")).toHaveLength(1);
+    expect(applySendFailure(alongside, "a", new Set(["a"]))).toEqual([alongside[1]]);
+    expect(reuseSendKey({ key: "key-a", body: "A" }, "A")).toBe("key-a");
+    expect(reconciledTombstone({ lifecycle: "TOMBSTONED", deletedAt: "2026-10-02T13:00:00.000Z", version: 2 })).toBe("done");
+    expect(reconciledTombstone({ lifecycle: "EDITED", deletedAt: null, version: 4 })).toBe("retry");
+    expect(reconciledTombstone(undefined)).toBe("unavailable");
+  });
+
+  it("ignores a Direct or Team create response from the previous Organization", () => {
+    const attempt = { organizationId: "org-a", generation: 2, requestId: "req-a" };
+    expect(
+      acceptCreateResult({
+        ...attempt,
+        currentOrganizationId: "org-b",
+        currentGeneration: 3,
+        currentRequestId: "req-b",
+        dialogOpen: true,
+      }),
+    ).toBe(false);
+    expect(
+      acceptCreateResult({
+        ...attempt,
+        currentOrganizationId: "org-a",
+        currentGeneration: 2,
+        currentRequestId: "req-a",
+        dialogOpen: false,
+      }),
+    ).toBe(false);
+    expect(
+      acceptCreateResult({
+        ...attempt,
+        currentOrganizationId: "org-a",
+        currentGeneration: 2,
+        currentRequestId: "req-a",
+        dialogOpen: true,
+      }),
+    ).toBe(true);
   });
 
   it("discards a failed send when the draft changes and keeps it retryable otherwise", () => {

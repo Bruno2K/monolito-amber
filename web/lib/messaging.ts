@@ -115,6 +115,7 @@ export interface PendingSend {
 
 export interface SendLock {
   conversationId: string;
+  organizationId: string;
   generation: number;
   localId: string;
   key: string;
@@ -340,29 +341,53 @@ export function authorLabel(
   return members?.find((member) => member.id === authorMembershipId)?.displayName || "Participante";
 }
 
-const RESOURCE_ROUTES: Record<string, (projectId: string) => string> = {
-  PROJECT: (projectId) => `/projects/${projectId}/overview`,
-  TASK: (projectId) => `/projects/${projectId}/planner`,
-  MILESTONE: (projectId) => `/projects/${projectId}/planner`,
-  DELIVERABLE: (projectId) => `/projects/${projectId}/deliverables`,
+const OPEN_LABEL: Record<string, string> = {
+  PROJECT: "Abrir projeto",
+  TASK: "Abrir tarefa",
+  MILESTONE: "Abrir marco",
+  DELIVERABLE: "Abrir entrega",
 };
 
-export function resourcePresentation(preview: ResourcePreview): { name: string; caption: string; href: string | null } {
+export function resourcePresentation(preview: ResourcePreview): {
+  name: string;
+  caption: string;
+  href: string | null;
+  openLabel: string | null;
+} {
   if (!preview.authorized) {
-    return { name: "Recurso protegido", caption: COLLABORATION_CAPTION, href: null };
+    return { name: "Recurso protegido", caption: COLLABORATION_CAPTION, href: null, openLabel: null };
   }
   const kind = LINK_TYPE_LABEL[preview.type] ?? "Recurso";
   const title = preview.title?.trim();
   const projectId = preview.type === "PROJECT" ? preview.id : preview.projectId;
-  const build = RESOURCE_ROUTES[preview.type];
-  const href = projectId && build ? build(projectId) : null;
+  const href = authorizedResourceHref(preview.type, preview.id, projectId);
   return {
     name: title ? `${kind}: ${title}` : kind,
     caption: href
       ? COLLABORATION_CAPTION
       : "Vínculo de colaboração. Não é uma decisão governada e não abre uma rota de produto.",
     href,
+    openLabel: href ? (OPEN_LABEL[preview.type] ?? null) : null,
   };
+}
+
+function authorizedResourceHref(type: string, id: string, projectId: string | undefined): string | null {
+  if (type === "PROJECT") {
+    return `/projects/${id}/overview`;
+  }
+  if (!projectId) {
+    return null;
+  }
+  if (type === "TASK") {
+    return `/projects/${projectId}/planner?inspect=${encodeURIComponent(id)}`;
+  }
+  if (type === "MILESTONE") {
+    return `/projects/${projectId}/planner?view=milestones&milestone=${encodeURIComponent(id)}`;
+  }
+  if (type === "DELIVERABLE") {
+    return `/projects/${projectId}/deliverables?inspect=${encodeURIComponent(id)}`;
+  }
+  return null;
 }
 
 export function activeConversationMissing(conversationId: string | null, authorizedIds: ReadonlySet<string>): boolean {
@@ -380,6 +405,7 @@ export function releaseSendLock(current: SendLock | null, finished: SendLock): S
   if (
     current &&
     current.conversationId === finished.conversationId &&
+    current.organizationId === finished.organizationId &&
     current.generation === finished.generation &&
     current.localId === finished.localId &&
     current.key === finished.key
@@ -395,9 +421,56 @@ export function mergeTranscriptByVersion(current: readonly MessageRecord[], inco
     const existing = map.get(message.id);
     if (!existing || message.version > existing.version) {
       map.set(message.id, message);
+      continue;
+    }
+    if (message.version === existing.version) {
+      map.set(message.id, { ...existing, resourcePreviews: message.resourcePreviews });
     }
   }
   return [...map.values()].sort(compareMessages);
+}
+
+export function draftAfterSuccessfulSend(currentDraft: string, submittedBody: string, sameContext: boolean): string {
+  if (!sameContext || currentDraft !== submittedBody) {
+    return currentDraft;
+  }
+  return "";
+}
+
+export function applySendFailure(rows: readonly PendingSend[], localId: string, discarded: ReadonlySet<string>): PendingSend[] {
+  if (discarded.has(localId)) {
+    return rows.filter((row) => row.localId !== localId);
+  }
+  return rows.map((row) => (row.localId === localId ? { ...row, lifecycle: "failed" } : row));
+}
+
+export function acceptCreateResult(input: {
+  organizationId: string;
+  generation: number;
+  requestId: string;
+  currentOrganizationId: string | null;
+  currentGeneration: number;
+  currentRequestId: string | null;
+  dialogOpen: boolean;
+}): boolean {
+  return (
+    input.dialogOpen &&
+    input.currentOrganizationId === input.organizationId &&
+    input.currentGeneration === input.generation &&
+    input.currentRequestId === input.requestId
+  );
+}
+
+export function reconciledTombstone(
+  message: Pick<MessageRecord, "lifecycle" | "deletedAt" | "version"> | undefined,
+): "done" | "retry" | "unavailable" {
+  if (!message) {
+    return "unavailable";
+  }
+  if (message.deletedAt || message.lifecycle === "TOMBSTONED") {
+    return "done";
+  }
+  return "retry";
 }
 
 export function discardFailedSends(rows: readonly PendingSend[]): PendingSend[] {

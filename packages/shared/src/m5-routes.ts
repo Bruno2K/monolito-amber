@@ -20,7 +20,7 @@ export interface M5ApiRoutePlan {
   idempotency: boolean;
   cas: boolean;
   purpose: string;
-  implementedIn: "m5.2" | "m5.4";
+  implementedIn: "m5.2" | "m5.4" | "m5.5";
 }
 
 export const M5_PLANNED_UI_ROUTES: readonly M5UiRoutePlan[] = [

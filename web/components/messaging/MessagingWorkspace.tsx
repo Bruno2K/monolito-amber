@@ -28,11 +28,14 @@ import {
   inboxPageDisposition,
   inboxSurface,
   isAuthorizationMiss,
-  discardFailedSends,
+  acceptCreateResult,
+  applySendFailure,
+  draftAfterSuccessfulSend,
   isReadOnlyConversation,
   mergeTranscriptByVersion,
   nextInboxIndex,
   nextTranscriptCursor,
+  reconciledTombstone,
   releaseSendLock,
   resourcePresentation,
   reuseSendKey,
@@ -68,6 +71,7 @@ type DialogMode =
   | { type: "edit"; message: MessageRecord }
   | { type: "tombstone"; message: MessageRecord; key: string }
   | { type: "edit-conflict"; messageId: string; detail: string }
+  | { type: "tombstone-conflict"; messageId: string; key: string; version: number; detail: string }
   | null;
 
 type DirectoryState =
@@ -128,6 +132,14 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
   const conversationRef = useRef<string | null>(conversationId);
   const inboxRef = useRef<InboxItem[]>([]);
   const sendLock = useRef<SendLock | null>(null);
+  const orgRef = useRef(orgId);
+  const createGen = useRef(0);
+  const createRequest = useRef<string | null>(null);
+  const createAbort = useRef<AbortController | null>(null);
+  const dialogOpen = useRef(false);
+  const discardedSends = useRef(new Set<string>());
+  const messagesRef = useRef<MessageRecord[]>([]);
+  orgRef.current = orgId;
   const inboxCommitted = useRef(false);
   const seenOrg = useRef<string | null | undefined>(undefined);
   conversationRef.current = conversationId;
@@ -165,6 +177,8 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
   const [threadNonce, setThreadNonce] = useState(0);
   const [searchNonce, setSearchNonce] = useState(0);
   const watermarkSent = useRef<string | null>(null);
+  messagesRef.current = messages;
+  dialogOpen.current = dialog !== null;
   const [scopeOrg, setScopeOrg] = useState(orgId);
   if (scopeOrg !== orgId) {
     setScopeOrg(orgId);
@@ -172,7 +186,12 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     threadGen.current += 1;
     searchGen.current += 1;
     directoryGen.current += 1;
+    createGen.current += 1;
+    createRequest.current = null;
+    createAbort.current?.abort();
+    dialogOpen.current = false;
     sendLock.current = null;
+    discardedSends.current = new Set();
     inboxCommitted.current = false;
     inboxRef.current = [];
     setInbox([]);
@@ -244,6 +263,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     setMessages([]);
     setActive(null);
     setPending([]);
+    discardedSends.current = new Set();
     setDraft("");
     setSendError(null);
     setFailedSend(null);
@@ -371,6 +391,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     setActive(null);
     setMessages([]);
     setPending([]);
+    discardedSends.current = new Set();
     setResolvedIds(new Map());
     setDraft("");
     setSendError(null);
@@ -644,6 +665,10 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
   }
 
   function closeDialog() {
+    createGen.current += 1;
+    createRequest.current = null;
+    createAbort.current?.abort();
+    dialogOpen.current = false;
     setDialog(null);
     setDialogError(null);
     setDialogPending(false);
@@ -657,16 +682,50 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     router.push(`/messages/${id}`);
   }
 
-  async function startDirect(membershipId: string) {
-    const key = newIdempotencyKey("direct");
+  function beginCreate(kind: "direct" | "team"): { controller: AbortController; attempt: { organizationId: string; generation: number; requestId: string } } | null {
+    if (!orgId) {
+      return null;
+    }
+    createAbort.current?.abort();
     const controller = new AbortController();
+    createAbort.current = controller;
+    const attempt = {
+      organizationId: orgId,
+      generation: ++createGen.current,
+      requestId: newIdempotencyKey(kind),
+    };
+    createRequest.current = attempt.requestId;
+    dialogOpen.current = true;
+    return { controller, attempt };
+  }
+
+  function createStillCurrent(attempt: { organizationId: string; generation: number; requestId: string }): boolean {
+    return acceptCreateResult({
+      organizationId: attempt.organizationId,
+      generation: attempt.generation,
+      requestId: attempt.requestId,
+      currentOrganizationId: orgRef.current,
+      currentGeneration: createGen.current,
+      currentRequestId: createRequest.current,
+      dialogOpen: dialogOpen.current,
+    });
+  }
+
+  async function startDirect(membershipId: string) {
+    const started = beginCreate("direct");
+    if (!started) {
+      return;
+    }
     setDialogPending(true);
     setDialogError(null);
-    const result = await request<InboxItem>("/api/v1/conversations/direct", controller.signal, {
+    const result = await request<InboxItem>("/api/v1/conversations/direct", started.controller.signal, {
       method: "POST",
-      headers: { "Idempotency-Key": key },
+      headers: { "Idempotency-Key": started.attempt.requestId },
       body: JSON.stringify({ organizationMembershipId: membershipId }),
     });
+    if (!createStillCurrent(started.attempt)) {
+      return;
+    }
     setDialogPending(false);
     if (result === "aborted") {
       return;
@@ -682,14 +741,19 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
   }
 
   async function openTeam(teamId: string) {
-    const key = newIdempotencyKey("team");
-    const controller = new AbortController();
+    const started = beginCreate("team");
+    if (!started) {
+      return;
+    }
     setDialogPending(true);
-    const result = await request<InboxItem>("/api/v1/conversations/team", controller.signal, {
+    const result = await request<InboxItem>("/api/v1/conversations/team", started.controller.signal, {
       method: "POST",
-      headers: { "Idempotency-Key": key },
+      headers: { "Idempotency-Key": started.attempt.requestId },
       body: JSON.stringify({ teamId }),
     });
+    if (!createStillCurrent(started.attempt)) {
+      return;
+    }
     setDialogPending(false);
     if (result === "aborted") {
       return;
@@ -719,7 +783,8 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
       body: JSON.stringify({ body }),
     });
     finishSend(lock);
-    if (result === "aborted" || !threadIsCurrent(lock.generation, lock.conversationId)) {
+    const sameContext = threadIsCurrent(lock.generation, lock.conversationId) && orgRef.current === lock.organizationId;
+    if (result === "aborted" || !sameContext) {
       setPending((rows) => rows.filter((row) => row.conversationId === conversationRef.current && row.localId !== lock.localId));
       return;
     }
@@ -728,7 +793,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
         revokeThread(lock.generation, lock.conversationId, result.problem.detail);
         return;
       }
-      setPending((rows) => rows.map((row) => (row.localId === lock.localId ? { ...row, lifecycle: "failed" } : row)));
+      setPending((rows) => applySendFailure(rows, lock.localId, discardedSends.current));
       setFailedSend({ key: lock.key, body });
       setSendError(result.problem.detail || "Não foi possível enviar.");
       setAnnounce("Falha ao enviar. Você pode tentar de novo sem duplicar a mensagem.");
@@ -737,20 +802,42 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     setPending((rows) => rows.filter((row) => row.localId !== lock.localId));
     setResolvedIds((current) => new Map(current).set(lock.localId, result.body.id));
     setMessages((rows) => appendUniqueMessage(rows, result.body));
-    setFailedSend(null);
-    setDraft("");
+    setFailedSend((current) => (current?.key === lock.key ? null : current));
+    setDraft((current) => draftAfterSuccessfulSend(current, body, true));
     setAnnounce("Mensagem enviada.");
     setInboxNonce((value) => value + 1);
   }
 
+  function retryFailed(row: PendingSend) {
+    if (!conversationId || !orgId || !canSendMessage(active) || row.conversationId !== conversationId) {
+      return;
+    }
+    const lock: SendLock = {
+      conversationId: row.conversationId,
+      organizationId: orgId,
+      generation: threadGen.current,
+      localId: row.localId,
+      key: row.key,
+    };
+    const decision = beginLockedSend(sendLock.current, lock, row.body);
+    if (!decision.started || !decision.lock) {
+      return;
+    }
+    discardedSends.current.delete(row.localId);
+    sendLock.current = decision.lock;
+    setSending(true);
+    void send(decision.lock, row.body);
+  }
+
   function submitDraft() {
     const body = draft.trim();
-    if (!conversationId || !canSendMessage(active)) {
+    if (!conversationId || !orgId || !canSendMessage(active)) {
       return;
     }
     const key = reuseSendKey(failedSend, body) ?? newIdempotencyKey("msg");
     const lock: SendLock = {
       conversationId,
+      organizationId: orgId,
       generation: threadGen.current,
       localId: `pending-${key}`,
       key,
@@ -818,20 +905,23 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
   }
 
   async function confirmTombstone() {
-    if (!dialog || dialog.type !== "tombstone" || !conversationId) {
+    if (!dialog || (dialog.type !== "tombstone" && dialog.type !== "tombstone-conflict") || !conversationId) {
       return;
     }
     const targetId = conversationId;
     const generation = threadGen.current;
+    const messageId = dialog.type === "tombstone" ? dialog.message.id : dialog.messageId;
+    const expectedVersion = dialog.type === "tombstone" ? dialog.message.version : dialog.version;
+    const key = dialog.key;
     setDialogPending(true);
     const controller = new AbortController();
     const result = await request<MessageRecord>(
-      `/api/v1/conversations/${targetId}/messages/${dialog.message.id}/tombstone`,
+      `/api/v1/conversations/${targetId}/messages/${messageId}/tombstone`,
       controller.signal,
       {
         method: "POST",
-        headers: { "Idempotency-Key": dialog.key },
-        body: JSON.stringify({ expectedVersion: dialog.message.version }),
+        headers: { "Idempotency-Key": key },
+        body: JSON.stringify({ expectedVersion }),
       },
     );
     setDialogPending(false);
@@ -842,6 +932,36 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
       if (isAuthorizationMiss(result.status)) {
         closeDialog();
         revokeThread(generation, targetId, result.problem.detail);
+        return;
+      }
+      if (result.status === 409 || result.status === 0) {
+        const detail =
+          result.status === 0
+            ? "A resposta da remoção não foi confirmada."
+            : result.problem.detail || "A versão da mensagem mudou.";
+        const messageId = dialog.type === "tombstone" ? dialog.message.id : dialog.messageId;
+        const key = dialog.key;
+        setDialogPending(true);
+        const reconciled = await loadTranscript(targetId, generation, new AbortController().signal, "refresh");
+        setDialogPending(false);
+        if (!threadIsCurrent(generation, targetId)) {
+          return;
+        }
+        if (!reconciled) {
+          setDialogError(`${detail} A versão atual não foi carregada, então a remoção antiga não será reenviada.`);
+          return;
+        }
+        const latest = messagesRef.current.find((message) => message.id === messageId);
+        if (reconciledTombstone(latest) === "done") {
+          closeDialog();
+          setAnnounce("Mensagem removida. O texto original não permanece na transcrição.");
+          return;
+        }
+        if (!latest) {
+          setDialogError(`${detail} A mensagem atual não está disponível.`);
+          return;
+        }
+        setDialog({ type: "tombstone-conflict", messageId, key, version: latest.version, detail });
         return;
       }
       setDialogError(result.problem.detail || "Não foi possível remover.");
@@ -1060,7 +1180,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
                               <div key={`${preview.type}:${preview.id}`} className="messages-link" data-node-id={FIGMA_MESSAGE_NODES.links}>
                                 <span>{view.name}</span>
                                 <span className="messages-caption">{view.caption}</span>
-                                {view.href ? <a href={view.href}>Abrir projeto</a> : null}
+                                {view.href && view.openLabel ? <a href={view.href}>{view.openLabel}</a> : null}
                               </div>
                             );
                           })
@@ -1123,16 +1243,18 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
                     <p className="messages-body">{row.body}</p>
                     {row.lifecycle === "failed" ? (
                       <div className="messages-actions">
-                        <button type="button" className="btn" onClick={() => submitDraft()}>
+                        <button type="button" className="btn" onClick={() => retryFailed(row)}>
                           Tentar novamente
                         </button>
                         <button
                           type="button"
                           className="btn secondary"
                           onClick={() => {
+                            discardedSends.current.add(row.localId);
                             setPending((rows) => rows.filter((item) => item.localId !== row.localId));
-                            setFailedSend(null);
+                            setFailedSend((current) => (current?.key === row.key ? null : current));
                             setSendError(null);
+                            setAnnounce("Envio descartado.");
                           }}
                         >
                           Descartar
@@ -1164,15 +1286,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
                     value={draft}
                     aria-keyshortcuts="Enter Shift+Enter"
                     aria-describedby="composer-hint"
-                    onChange={(event) => {
-                      const next = event.target.value;
-                      setDraft(next);
-                      if (failedSend && next.trim() !== failedSend.body) {
-                        setPending((rows) => discardFailedSends(rows));
-                        setFailedSend(null);
-                        setSendError(null);
-                      }
-                    }}
+                    onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={(event) => {
                       if (composerKeyAction(event) === "send") {
                         event.preventDefault();
@@ -1297,6 +1411,20 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
             </div>
           </>
         ) : null}
+        {dialog?.type === "tombstone-conflict" ? (
+          <>
+            <h2 id="messages-dialog-title">Remoção não confirmada</h2>
+            <p>{dialog.detail} A versão antiga não será reenviada.</p>
+            <div className="messages-dialog-actions">
+              <button type="button" className="btn secondary" onClick={closeDialog}>
+                Fechar
+              </button>
+              <button type="button" className="btn" disabled={dialogPending} onClick={() => void confirmTombstone()}>
+                Remover versão atual
+              </button>
+            </div>
+          </>
+        ) : null}
         {dialog?.type === "tombstone" ? (
           <>
             <h2 id="messages-dialog-title">Remover mensagem</h2>
@@ -1316,11 +1444,6 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
             {dialogError}{" "}
             {dialog?.type === "edit" ? (
               <button type="button" className="btn" onClick={() => void saveEdit()}>
-                Tentar novamente
-              </button>
-            ) : null}
-            {dialog?.type === "tombstone" ? (
-              <button type="button" className="btn" onClick={() => void confirmTombstone()}>
                 Tentar novamente
               </button>
             ) : null}

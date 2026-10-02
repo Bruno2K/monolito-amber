@@ -85,10 +85,12 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     await expect(page.getByText("Enviando")).toHaveCount(0);
     const rewritten = `${body} novo`;
     await composer.fill(rewritten);
-    await expect(page.getByText("Falha ao enviar")).toHaveCount(0);
+    await expect(page.getByText("Falha ao enviar")).toBeVisible();
     await page.unroute(`**/api/v1/conversations/${DIRECT_ID}/messages`);
     await page.getByRole("button", { name: "Enviar" }).click();
     await expect(page.getByText(rewritten)).toBeVisible();
+    await page.getByRole("button", { name: "Descartar" }).click();
+    await expect(page.getByText("Falha ao enviar")).toHaveCount(0);
     await page.route(`**/api/v1/conversations/${DIRECT_ID}/messages`, async (route) => {
       if (route.request().method() === "POST") {
         await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ detail: "falha temporária" }) });

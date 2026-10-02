@@ -14,6 +14,7 @@ import {
 import { Prisma } from "@prisma/client";
 import { AuditService } from "../audit/audit.service";
 import type { RequestSession } from "../auth/session.types";
+import { AuthzService } from "../authz/authz.service";
 import { FoundationService } from "../foundation/foundation.service";
 import { IdempotencyService } from "../foundation/idempotency.service";
 import { currentCorrelationId } from "../observability/request-context";
@@ -38,6 +39,7 @@ export class ConversationsService {
     private readonly audit: AuditService,
     private readonly foundation: FoundationService,
     private readonly idempotency: IdempotencyService,
+    private readonly authz: AuthzService,
   ) {}
 
   async list(
@@ -273,7 +275,15 @@ export class ConversationsService {
       },
       select: { projectId: true },
     });
-    const projectIds = ownProjects.map((row) => row.projectId);
+    const projectIds: string[] = [];
+    for (const row of ownProjects) {
+      try {
+        await this.authz.assert(session, "project.read", row.projectId);
+        projectIds.push(row.projectId);
+      } catch {
+        continue;
+      }
+    }
     if (projectIds.length === 0) {
       return { items: [] as Array<{ id: string; displayName: string }> };
     }

@@ -104,12 +104,12 @@ afterAll(async () => {
   }
 });
 
-async function invite(label: string): Promise<Agent> {
+async function invite(label: string, membershipType: "INTERNAL" | "EXTERNAL" = "INTERNAL"): Promise<Agent> {
   const email = `${label}-${suffix}@example.com`;
   await ownerA.post(`/api/v1/organizations/${orgA}/invitations`).send({
     email,
     roleTemplateKey: "VIEWER",
-    membershipType: "INTERNAL",
+    membershipType,
   });
   const inviteRow = emails.sent.filter((message) => message.to === email).at(-1);
   const agent = request.agent(app.getHttpServer());
@@ -220,5 +220,77 @@ describe("M5.4 Messaging ADV", () => {
     const removed = await alice.get("/api/v1/conversations/direct-candidates");
     expect((removed.body.items as Array<{ id: string }>).map((row) => row.id)).not.toContain(bobMembershipId);
     await prisma.organizationMembership.update({ where: { id: bobMembershipId }, data: { status: "ACTIVE" } });
+  });
+
+  it("direct candidates require project.read and do not leak other projects or directories", async () => {
+    const carol = await invite("carol");
+    const erin = await invite("erin", "EXTERNAL");
+    const frank = await invite("frank");
+    const members = await ownerA.get(`/api/v1/organizations/${orgA}/members`);
+    const carolMembershipId = members.body.find((row: { email: string }) => row.email.startsWith("carol-")).id as string;
+    const erinMembershipId = members.body.find((row: { email: string }) => row.email.startsWith("erin-")).id as string;
+    const frankMembershipId = members.body.find((row: { email: string }) => row.email.startsWith("frank-")).id as string;
+
+    const carolAdded = await ownerA
+      .post(`/api/v1/projects/${projectA}/members`)
+      .send({ organizationMembershipId: carolMembershipId });
+    expect(carolAdded.status).toBeLessThan(300);
+    const permissionless = await carol.get("/api/v1/conversations/direct-candidates");
+    expect(permissionless.status).toBe(200);
+    expect(permissionless.body.items).toEqual([]);
+
+    const granted = await ownerA
+      .post(`/api/v1/projects/${projectA}/members/${carolAdded.body.id}/roles`)
+      .send({ templateKey: "VIEWER" });
+    expect(granted.status).toBeLessThan(300);
+    const visible = await carol.get("/api/v1/conversations/direct-candidates");
+    const visibleIds = (visible.body.items as Array<{ id: string }>).map((row) => row.id);
+    expect(visibleIds).toContain(aliceMembershipId);
+    expect(visibleIds.filter((id) => id === aliceMembershipId)).toHaveLength(1);
+    expect(visibleIds).not.toContain(ownerBMembershipId);
+    expect(JSON.stringify(visible.body)).not.toContain("@");
+
+    await prisma.projectRoleAssignment.deleteMany({ where: { projectMembershipId: carolAdded.body.id } });
+    const afterRoleRemoval = await carol.get("/api/v1/conversations/direct-candidates");
+    expect(afterRoleRemoval.body.items).toEqual([]);
+
+    const hiddenProject = (
+      await ownerA.post(`/api/v1/organizations/${orgA}/projects`).send({ name: `Hidden ${suffix}` })
+    ).body.project.id as string;
+    const frankAdded = await ownerA
+      .post(`/api/v1/projects/${hiddenProject}/members`)
+      .send({ organizationMembershipId: frankMembershipId });
+    await ownerA.post(`/api/v1/projects/${hiddenProject}/members/${frankAdded.body.id}/roles`).send({ templateKey: "VIEWER" });
+    const bobOnHidden = await ownerA
+      .post(`/api/v1/projects/${hiddenProject}/members`)
+      .send({ organizationMembershipId: bobMembershipId });
+    await ownerA.post(`/api/v1/projects/${hiddenProject}/members/${bobOnHidden.body.id}/roles`).send({ templateKey: "VIEWER" });
+    const frankView = await frank.get("/api/v1/conversations/direct-candidates");
+    const frankIds = (frankView.body.items as Array<{ id: string }>).map((row) => row.id);
+    expect(frankIds).toContain(bobMembershipId);
+    expect(frankIds).not.toContain(aliceMembershipId);
+    expect(frankIds).not.toContain(carolMembershipId);
+    await ownerA
+      .post(`/api/v1/projects/${projectA}/members/${carolAdded.body.id}/roles`)
+      .send({ templateKey: "VIEWER" });
+    const scoped = await carol.get("/api/v1/conversations/direct-candidates");
+    const scopedIds = (scoped.body.items as Array<{ id: string }>).map((row) => row.id);
+    expect(scopedIds).not.toContain(frankMembershipId);
+    expect(scopedIds.filter((id) => id === bobMembershipId)).toHaveLength(1);
+
+    const erinAdded = await ownerA
+      .post(`/api/v1/projects/${projectA}/members`)
+      .send({ organizationMembershipId: erinMembershipId });
+    const externalBare = await erin.get("/api/v1/conversations/direct-candidates");
+    expect(externalBare.body.items).toEqual([]);
+    await ownerA
+      .post(`/api/v1/projects/${projectA}/members/${erinAdded.body.id}/roles`)
+      .send({ templateKey: "EXTERNAL_CONTRIBUTOR" });
+    const externalScoped = await erin.get("/api/v1/conversations/direct-candidates");
+    const externalIds = (externalScoped.body.items as Array<{ id: string }>).map((row) => row.id);
+    expect(externalIds).toContain(aliceMembershipId);
+    expect(externalIds).not.toContain(ownerBMembershipId);
+    expect(externalIds).not.toContain(frankMembershipId);
+    expect(JSON.stringify(externalScoped.body)).not.toContain("@");
   });
 });
