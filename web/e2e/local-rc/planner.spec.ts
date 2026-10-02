@@ -212,6 +212,12 @@ test.describe("M4.2 Local RC Planning List", () => {
 
     await page.goto(`/projects/${IDS.projectA1}/planner?view=gantt&q=${encodeURIComponent(title)}`);
     await expect(page.getByRole("region", { name: "Cronograma Gantt" })).toBeVisible();
+    await expect(page.getByLabel("Ordenar lista")).toHaveCount(0);
+    await expect(page.getByLabel("Direção da ordenação")).toHaveCount(0);
+    await expect(page.getByLabel("Buscar tarefas")).toBeVisible();
+    await expect(page.getByLabel("Filtrar por status armazenado")).toBeVisible();
+    await expect(page.getByLabel("Filtrar por atraso derivado")).toBeVisible();
+    await expect(page.getByLabel("Filtrar por fase")).toBeVisible();
     await expect(page.locator(`[data-lane-kind="TASK"][data-source-id="${taskId}"]`).first()).toBeVisible();
     const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
     await page.screenshot({ path: path.join(EVIDENCE_M46, `gantt-${tag}.png`), fullPage: true });
@@ -307,5 +313,35 @@ test.describe("M4.2 Local RC Planning List", () => {
     const after = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/milestones/${created.body.id}`);
     expect(after.body.recordedStatus).toBe("ACHIEVED");
     expect(after.body.status).toBe("ACHIEVED");
+  });
+
+  test("M4.8.1 board Novo Marco stays in create mode, Esc dismisses, and submit adds a row", async ({ page }, testInfo) => {
+    await signInToOrg(page, "coord-a", "Amber Demo Alpha");
+    await page.goto(`/projects/${IDS.projectA1}/planner?view=milestones`);
+    await expect(page.getByRole("tab", { name: "Marcos" })).toHaveAttribute("aria-selected", "true");
+
+    const boardCreate = page.locator('[data-surface="milestones"]').getByRole("button", { name: "Novo Marco" });
+    await boardCreate.click();
+    const inspector = page.getByRole("dialog");
+    await expect(inspector.getByRole("heading", { name: "Novo marco" })).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("heading", { name: "Novo marco" })).toHaveCount(0);
+
+    await page.getByLabel("Buscar marcos").fill("zzzz-no-match-m481");
+    await expect(page.getByRole("heading", { name: /Nenhum marco corresponde/i })).toBeVisible();
+    await boardCreate.click();
+    await expect(inspector.getByRole("heading", { name: "Novo marco" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("heading", { name: "Novo marco" })).toHaveCount(0);
+    await page.getByLabel("Buscar marcos").fill("");
+    await expect(page.getByRole("button", { name: "Seed Concept freeze", exact: true })).toBeVisible();
+
+    const title = `UI Marco ${testInfo.project.name} ${Date.now()}`;
+    await boardCreate.click();
+    await expect(inspector.getByRole("heading", { name: "Novo marco" })).toBeVisible();
+    await inspector.getByLabel("Título").fill(title);
+    await inspector.getByRole("button", { name: "Criar marco" }).click();
+    await expect(page.getByRole("button", { name: title, exact: true })).toBeVisible();
   });
 });

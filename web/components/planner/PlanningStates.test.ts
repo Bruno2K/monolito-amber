@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import type { PlanningReadModel } from "../../lib/planning";
+import { MilestoneBoard } from "./MilestoneBoard";
 import { PlanningEmpty, PlanningError, PlanningSkeleton } from "./PlanningStates";
 
 describe("M4.2 planning system states", () => {
@@ -34,6 +36,78 @@ describe("M4.2 planning system states", () => {
     expect(src).toMatch(/Nova Tarefa/);
     expect(src).toMatch(/canCreateTask/);
     expect(src).toMatch(/TaskInspector/);
+  });
+
+  it("M4.8.1 create inspector renders when the milestone list is empty", () => {
+    const model: PlanningReadModel = {
+      projectId: "p",
+      organizationId: "o",
+      generatedAt: "2026-01-01T00:00:00.000Z",
+      view: "milestones",
+      project: { archivedAt: null, readOnly: false },
+      tasks: [],
+      milestones: [],
+      dependencies: [],
+      schedule: {
+        dateRange: { start: "2026-01-01T00:00:00.000Z", end: "2026-01-01T00:00:00.000Z" },
+        take: 500,
+        truncated: false,
+        canEditTaskDates: false,
+        lanes: [],
+        links: [],
+      },
+      page: { page: 1, pageSize: 20, total: 0, sort: "createdAt", order: "asc" },
+      counts: { total: 0, late: 0, byStatus: {} },
+      inspected: null,
+    };
+    const empty = renderToStaticMarkup(
+      createElement(MilestoneBoard, {
+        projectId: "p",
+        model,
+        phases: [],
+        selectedId: null,
+        creating: false,
+        readOnly: false,
+        permissions: ["milestone.create"],
+        filtered: false,
+        onSelect: () => undefined,
+        onCreatingChange: () => undefined,
+        onChanged: () => undefined,
+      }),
+    );
+    expect(empty).toContain("Nenhum marco neste projeto");
+    expect(empty).not.toContain("Novo marco");
+
+    const creating = renderToStaticMarkup(
+      createElement(MilestoneBoard, {
+        projectId: "p",
+        model,
+        phases: [],
+        selectedId: null,
+        creating: true,
+        readOnly: false,
+        permissions: ["milestone.create"],
+        filtered: false,
+        onSelect: () => undefined,
+        onCreatingChange: () => undefined,
+        onChanged: () => undefined,
+      }),
+    );
+    expect(creating).toContain("Nenhum marco neste projeto");
+    expect(creating).toContain("Novo marco");
+    expect(creating).toContain("Criar marco");
+  });
+
+  it("M4.8.1 Novo Marco create state is not cleared by onSelect(null) and Esc dismisses it", () => {
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "PlannerView.tsx"), "utf8");
+    expect(src).toMatch(/creating \|\| creatingMilestone/);
+    expect(src).toMatch(/setCreatingMilestone\(false\)/);
+    expect(src).toMatch(/if \(id\) \{\s*setCreatingMilestone\(false\);/);
+    expect(src).not.toMatch(/onSelect=\{\(id\) => \{\s*setCreatingMilestone\(false\);\s*openMilestone\(id\);/);
+    expect(src).toMatch(/view !== "gantt" \? \([\s\S]*aria-label="Ordenar lista"/);
+    const board = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "MilestoneBoard.tsx"), "utf8");
+    expect(board).toMatch(/visible\.length === 0 && !creating && !selected/);
+    expect(board).toMatch(/id="milestone-create-title"/);
   });
 
   it("M4.7 Marcos is a projection over the same planner, not a coming-later placeholder", () => {
