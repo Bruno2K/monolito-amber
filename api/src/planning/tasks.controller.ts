@@ -163,12 +163,11 @@ class UpdateTaskDto {
   @Max(100)
   progressPercent?: number | null;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({ description: "Required CAS token. M4.3 Task writes fail closed without it." })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  expectedVersion?: number;
+  expectedVersion!: number;
 }
 
 class AssignTaskDto {
@@ -176,6 +175,12 @@ class AssignTaskDto {
   @ValidateIf((_, value) => value !== null)
   @IsString()
   assigneeUserId!: string | null;
+
+  @ApiProperty({ description: "Required CAS token." })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  expectedVersion!: number;
 }
 
 class TransitionTaskDto {
@@ -189,21 +194,26 @@ class TransitionTaskDto {
   @IsString()
   blockedReason?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({ description: "Required CAS token." })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  expectedVersion?: number;
+  expectedVersion!: number;
 }
 
-class CompleteTaskDto {
-  @ApiPropertyOptional()
-  @IsOptional()
+class ExpectedVersionDto {
+  @ApiProperty({ description: "Required CAS token." })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  expectedVersion?: number;
+  expectedVersion!: number;
+}
+
+class BlockTaskDto extends ExpectedVersionDto {
+  @ApiProperty({ description: "Non-empty reason required to enter BLOCKED." })
+  @IsString()
+  @MinLength(1)
+  blockedReason!: string;
 }
 
 class ListTasksQueryDto {
@@ -291,32 +301,36 @@ export class TasksController {
   @UseGuards(SessionGuard, PermissionGuard)
   @RequirePermission("task.update")
   @ApiCookieAuth()
+  @ApiHeader({ name: "Idempotency-Key", required: false, description: "When sent, replay must not double-apply." })
   @ApiParam({ name: "projectId", format: "uuid" })
   @ApiParam({ name: "taskId", format: "uuid" })
-  @ApiOperation({ summary: "Update Task fields. Status and assignee use dedicated endpoints." })
+  @ApiOperation({ summary: "Update Task fields. Status and assignee use dedicated endpoints. expectedVersion is required." })
   update(
     @CurrentSession() session: RequestSession,
     @Param("projectId") projectId: string,
     @Param("taskId") taskId: string,
+    @Headers("idempotency-key") idempotencyKey: string | undefined,
     @Body() body: UpdateTaskDto,
   ) {
-    return this.tasks.update(this.auth.requireSession(session), projectId, taskId, body);
+    return this.tasks.update(this.auth.requireSession(session), projectId, taskId, idempotencyKey, body);
   }
 
   @Post(":taskId/assign")
   @UseGuards(SessionGuard, PermissionGuard)
   @RequirePermission("task.assign")
   @ApiCookieAuth()
+  @ApiHeader({ name: "Idempotency-Key", required: true })
   @ApiParam({ name: "projectId", format: "uuid" })
   @ApiParam({ name: "taskId", format: "uuid" })
-  @ApiOperation({ summary: "Assign a Task to an ACTIVE ProjectMembership only" })
+  @ApiOperation({ summary: "Assign a Task to an ACTIVE ProjectMembership only. Idempotency-Key and expectedVersion required." })
   assign(
     @CurrentSession() session: RequestSession,
     @Param("projectId") projectId: string,
     @Param("taskId") taskId: string,
+    @Headers("idempotency-key") idempotencyKey: string | undefined,
     @Body() body: AssignTaskDto,
   ) {
-    return this.tasks.assign(this.auth.requireSession(session), projectId, taskId, body);
+    return this.tasks.assign(this.auth.requireSession(session), projectId, taskId, idempotencyKey, body);
   }
 
   @Post(":taskId/status")
@@ -339,6 +353,60 @@ export class TasksController {
     return this.tasks.transition(this.auth.requireSession(session), projectId, taskId, idempotencyKey, body);
   }
 
+  @Post(":taskId/start")
+  @UseGuards(SessionGuard, PermissionGuard)
+  @RequirePermission("task.update")
+  @ApiCookieAuth()
+  @ApiHeader({ name: "Idempotency-Key", required: true })
+  @ApiParam({ name: "projectId", format: "uuid" })
+  @ApiParam({ name: "taskId", format: "uuid" })
+  @ApiOperation({ summary: "Start a Task (TODO or BLOCKED → IN_PROGRESS). Blocked by unfinished FS predecessors." })
+  start(
+    @CurrentSession() session: RequestSession,
+    @Param("projectId") projectId: string,
+    @Param("taskId") taskId: string,
+    @Headers("idempotency-key") idempotencyKey: string | undefined,
+    @Body() body: ExpectedVersionDto,
+  ) {
+    return this.tasks.start(this.auth.requireSession(session), projectId, taskId, idempotencyKey, body);
+  }
+
+  @Post(":taskId/block")
+  @UseGuards(SessionGuard, PermissionGuard)
+  @RequirePermission("task.update")
+  @ApiCookieAuth()
+  @ApiHeader({ name: "Idempotency-Key", required: true })
+  @ApiParam({ name: "projectId", format: "uuid" })
+  @ApiParam({ name: "taskId", format: "uuid" })
+  @ApiOperation({ summary: "Block an IN_PROGRESS Task. blockedReason is required and non-empty." })
+  block(
+    @CurrentSession() session: RequestSession,
+    @Param("projectId") projectId: string,
+    @Param("taskId") taskId: string,
+    @Headers("idempotency-key") idempotencyKey: string | undefined,
+    @Body() body: BlockTaskDto,
+  ) {
+    return this.tasks.block(this.auth.requireSession(session), projectId, taskId, idempotencyKey, body);
+  }
+
+  @Post(":taskId/unblock")
+  @UseGuards(SessionGuard, PermissionGuard)
+  @RequirePermission("task.update")
+  @ApiCookieAuth()
+  @ApiHeader({ name: "Idempotency-Key", required: true })
+  @ApiParam({ name: "projectId", format: "uuid" })
+  @ApiParam({ name: "taskId", format: "uuid" })
+  @ApiOperation({ summary: "Unblock a Task (BLOCKED → IN_PROGRESS). Clears blockedReason. Auditable." })
+  unblock(
+    @CurrentSession() session: RequestSession,
+    @Param("projectId") projectId: string,
+    @Param("taskId") taskId: string,
+    @Headers("idempotency-key") idempotencyKey: string | undefined,
+    @Body() body: ExpectedVersionDto,
+  ) {
+    return this.tasks.unblock(this.auth.requireSession(session), projectId, taskId, idempotencyKey, body);
+  }
+
   @Post(":taskId/complete")
   @UseGuards(SessionGuard, PermissionGuard)
   @RequirePermission("task.complete")
@@ -352,9 +420,42 @@ export class TasksController {
     @Param("projectId") projectId: string,
     @Param("taskId") taskId: string,
     @Headers("idempotency-key") idempotencyKey: string | undefined,
-    @Body() body: CompleteTaskDto,
+    @Body() body: ExpectedVersionDto,
   ) {
     return this.tasks.complete(this.auth.requireSession(session), projectId, taskId, idempotencyKey, body);
+  }
+
+  @Post(":taskId/cancel")
+  @UseGuards(SessionGuard, PermissionGuard)
+  @RequirePermission("task.update")
+  @ApiCookieAuth()
+  @ApiHeader({ name: "Idempotency-Key", required: true })
+  @ApiParam({ name: "projectId", format: "uuid" })
+  @ApiParam({ name: "taskId", format: "uuid" })
+  @ApiOperation({ summary: "Cancel a Task. Terminal. Does not cascade sibling aggregates." })
+  cancel(
+    @CurrentSession() session: RequestSession,
+    @Param("projectId") projectId: string,
+    @Param("taskId") taskId: string,
+    @Headers("idempotency-key") idempotencyKey: string | undefined,
+    @Body() body: ExpectedVersionDto,
+  ) {
+    return this.tasks.cancel(this.auth.requireSession(session), projectId, taskId, idempotencyKey, body);
+  }
+
+  @Get(":taskId/history")
+  @UseGuards(SessionGuard, PermissionGuard)
+  @RequirePermission("project.read")
+  @ApiCookieAuth()
+  @ApiParam({ name: "projectId", format: "uuid" })
+  @ApiParam({ name: "taskId", format: "uuid" })
+  @ApiOperation({ summary: "Task-scoped append-only audit / state history. Re-authorized; no other-tenant events." })
+  history(
+    @CurrentSession() session: RequestSession,
+    @Param("projectId") projectId: string,
+    @Param("taskId") taskId: string,
+  ) {
+    return this.tasks.listHistory(this.auth.requireSession(session), projectId, taskId);
   }
 
   @Get(":taskId/dependencies")

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { DenyByDefaultError, type PermissionCode } from "@amber/shared";
+import { DenyByDefaultError, PlanningStateError, type PermissionCode } from "@amber/shared";
 import type { RequestSession } from "../auth/session.types";
 import { AuthzService } from "../authz/authz.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -23,6 +23,12 @@ export class PlanningAccess {
       throw new DenyByDefaultError("Project is not bound to the authorized Organization");
     }
     return { project, organizationId: context.organizationId, context };
+  }
+
+  rejectArchivedProject(project: { archivedAt: Date | null }, action = "Task mutations"): void {
+    if (project.archivedAt) {
+      throw new PlanningStateError(`Archived Project rejects ${action}`);
+    }
   }
 
   rejectClientAuthority(

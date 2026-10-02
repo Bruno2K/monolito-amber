@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { contextLabel, lateExplanation, plannerPath, taskStatusLabel, type PlanningTaskRow } from "./planning";
+import {
+  auditEventLabel,
+  canAssignTask,
+  canCompleteTask,
+  canCreateTask,
+  canUpdateTask,
+  contextLabel,
+  lateExplanation,
+  plannerPath,
+  taskStatusLabel,
+  type PlanningTaskRow,
+} from "./planning";
 
 function row(partial: Partial<PlanningTaskRow> = {}): PlanningTaskRow {
   return {
@@ -58,6 +69,16 @@ describe("planner URL + labels", () => {
     expect(linked.title).toBe("Atualizar malha");
     expect(linked.previews.issue?.relation).toBe("issue");
     expect(linked.previews.issue?.title).not.toBe(linked.title);
+  });
+
+  it("M4.3 permission helpers stay on closed task.* codes", () => {
+    expect(canCreateTask(["task.create"])).toBe(true);
+    expect(canCreateTask(["project.read"])).toBe(false);
+    expect(canUpdateTask(["task.update"])).toBe(true);
+    expect(canAssignTask(["task.assign"])).toBe(true);
+    expect(canCompleteTask(["task.complete"])).toBe(true);
+    expect(auditEventLabel("TASK_UNBLOCKED")).toBe("Desbloqueada");
+    expect(auditEventLabel("TASK_PROGRESS_CHANGED")).toBe("Progresso alterado");
   });
 
   it("builds context from authorized previews only", () => {

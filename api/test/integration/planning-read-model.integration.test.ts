@@ -96,7 +96,10 @@ beforeAll(async () => {
       progressPercent: 20,
     });
   taskId = onTime.body.id;
-  await coordinator.post(`/api/v1/projects/${projectA}/tasks/${taskId}/assign`).send({ assigneeUserId: contributorUserId });
+  await coordinator
+    .post(`/api/v1/projects/${projectA}/tasks/${taskId}/assign`)
+    .set("Idempotency-Key", `asg-${suffix}`)
+    .send({ assigneeUserId: contributorUserId, expectedVersion: onTime.body.version });
 
   const late = await coordinator
     .post(`/api/v1/projects/${projectA}/tasks`)

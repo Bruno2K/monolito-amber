@@ -16,7 +16,7 @@ import {
 } from "./planning.js";
 
 describe("Task state machine", () => {
-  it("encodes TODO → IN_PROGRESS → BLOCKED | DONE with CANCELLED side", () => {
+  it("M4.3-UNIT-01 encodes TODO → IN_PROGRESS → BLOCKED | DONE with CANCELLED side and no skip", () => {
     assertTaskTransition("TODO", "IN_PROGRESS");
     assertTaskTransition("TODO", "CANCELLED");
     assertTaskTransition("IN_PROGRESS", "BLOCKED");

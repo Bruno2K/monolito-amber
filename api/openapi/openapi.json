@@ -4194,6 +4194,15 @@
             "schema": {
               "format": "uuid"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "When sent, replay must not double-apply.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -4206,7 +4215,7 @@
             "cookie": []
           }
         ],
-        "summary": "Update Task fields. Status and assignee use dedicated endpoints.",
+        "summary": "Update Task fields. Status and assignee use dedicated endpoints. expectedVersion is required.",
         "tags": [
           "planning"
         ]
@@ -4231,6 +4240,14 @@
             "schema": {
               "format": "uuid"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -4243,7 +4260,7 @@
             "cookie": []
           }
         ],
-        "summary": "Assign a Task to an ACTIVE ProjectMembership only",
+        "summary": "Assign a Task to an ACTIVE ProjectMembership only. Idempotency-Key and expectedVersion required.",
         "tags": [
           "planning"
         ]
@@ -4294,6 +4311,141 @@
         ]
       }
     },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/start": {
+      "post": {
+        "operationId": "TasksController_start",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Start a Task (TODO or BLOCKED → IN_PROGRESS). Blocked by unfinished FS predecessors.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/block": {
+      "post": {
+        "operationId": "TasksController_block",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Block an IN_PROGRESS Task. blockedReason is required and non-empty.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/unblock": {
+      "post": {
+        "operationId": "TasksController_unblock",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Unblock a Task (BLOCKED → IN_PROGRESS). Clears blockedReason. Auditable.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
     "/api/v1/projects/{projectId}/tasks/{taskId}/complete": {
       "post": {
         "operationId": "TasksController_complete",
@@ -4334,6 +4486,88 @@
           }
         ],
         "summary": "Mark a Task DONE. Does not resolve a source Issue or achieve a Milestone.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/cancel": {
+      "post": {
+        "operationId": "TasksController_cancel",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Cancel a Task. Terminal. Does not cascade sibling aggregates.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/history": {
+      "get": {
+        "operationId": "TasksController_history",
+        "parameters": [
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Task-scoped append-only audit / state history. Re-authorized; no other-tenant events.",
         "tags": [
           "planning"
         ]

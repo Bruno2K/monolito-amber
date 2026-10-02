@@ -6,22 +6,28 @@
 
 **M3 — Project Operations is ACTIVE / LOCAL ONLY with Exit Gate FAIL — ACCEPTED.** Audit WI Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51) squash-merged to `main` @ `762c3f3ba85ff899623cf4c3682e6bddad062bab`. Disposition sync #52 brought `main` to `a3eaadcd61c8f8153f61c6a51f920e37b8f362a0`. Reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Independent Reviewer **PASS (audit WI only)**. Homologated Local RC narrative tip remains `6104276754607334c53c6864135d29c539db813e`. **This is not M3 COMPLETE.**
 
-**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** M4.1 is MERGED @ `6e47d9fb050dcc49b120dd511b9de55634cd4e13`. **M4.2** is in flight (Issue [#56](https://github.com/Bruno2K/monolito-amber/issues/56), branch `m4-2-planning-shell-list`): Planning shell + unified List. M4.3–M4.9 remain later WIs.
+**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** M4.1 is MERGED @ `6e47d9fb050dcc49b120dd511b9de55634cd4e13`. M4.2 is MERGED @ `0fc8e9ea8901d1a68d12289e743d3115a0ac25fd`. **M4.3** is in flight (Issue [#58](https://github.com/Bruno2K/monolito-amber/issues/58), branch `m4-3-task-operations-inspector`): Task operations + inspector. M4.4–M4.9 remain later WIs.
 
 Authorization: Bruno runway M4.1→M4.9 autonomous; LOCAL ONLY. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring Exit Gate PASS or M3/M4 completion.
 
 Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (supported path = Docker Desktop + WSL2 + bash). M3 cloud residuals are **accepted debt**, not M4 scope.
 
-## M4.2 (IN FLIGHT — LOCAL ONLY)
+## M4.3 (IN FLIGHT — LOCAL ONLY)
 
-- Issue [#56](https://github.com/Bruno2K/monolito-amber/issues/56)
-- Branch `m4-2-planning-shell-list` from `6e47d9fb050dcc49b120dd511b9de55634cd4e13`
-- Canonical Notion: https://app.notion.com/p/3ec678e54c8d8155b715c1309a86627c
+- Issue [#58](https://github.com/Bruno2K/monolito-amber/issues/58)
+- Branch `m4-3-task-operations-inspector` from `0fc8e9ea8901d1a68d12289e743d3115a0ac25fd`
+- Canonical Notion: https://app.notion.com/p/3ec678e54c8d81299a9cd44035220532
 - Pack: https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7
-- Plan: `docs/domain/m4.2-requirement-to-change-plan.md`
-- Matrix: `docs/domain/m4.2-requirements-traceability.md`
-- Product: `GET /api/v1/projects/{projectId}/planning` + `/projects/:projectId/planner` List
+- Plan: `docs/domain/m4.3-requirement-to-change-plan.md`
+- Matrix: `docs/domain/m4.3-requirements-traceability.md`
+- Product: Task create / PATCH / assign / start / block / unblock / complete / cancel + planner inspector
 - Non-goals: Kanban, Gantt, dependency editing, Milestone workflows, cloud/PaaS/M5
+
+## M4.2 (MERGED — LOCAL ONLY)
+
+- Issue [#56](https://github.com/Bruno2K/monolito-amber/issues/56) / PR [#57](https://github.com/Bruno2K/monolito-amber/pull/57)
+- Merge tip `0fc8e9ea8901d1a68d12289e743d3115a0ac25fd`
+- Product: `GET /api/v1/projects/{projectId}/planning` + `/projects/:projectId/planner` List
 
 ## M4.1 (MERGED — docs-only)
 

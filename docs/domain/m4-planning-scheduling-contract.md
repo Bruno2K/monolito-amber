@@ -228,12 +228,12 @@ Append-only `audit.audit_events` (ADR-008). Actor, org, project, resource, corre
 
 Replay returns the stored response and must not duplicate rows or extra audit/outbox for the same key+hash. PATCH field updates are CAS-protected; if an Idempotency-Key is sent it must replay, not double-apply.
 
-**Baseline gap (truthful, not silently patched):** `POST …/assign` and `POST …/milestones/:id/cancel` do not require Idempotency-Key on this tip. Later WIs tighten; this WI does not add handlers.
+**Baseline gap (truthful, not silently patched):** `POST …/milestones/:id/cancel` still does not require Idempotency-Key on this tip (M4.7). **M4.3 closed** the Task assign gap: `POST …/tasks/:id/assign` requires `Idempotency-Key`.
 
 ### Optimistic concurrency (CAS)
 
 Task and Milestone carry integer `version`. M4 mutations that update those rows **must** accept `expectedVersion` and fail closed on mismatch (Foundation `cas` helper — typically 409). Lost-update is not last-write-wins.
 
-**Baseline gap:** `expectedVersion` is optional on several endpoints today. M4.3 / M4.7 make it required on Task/Milestone writes. Dependency edges have no `version`; create uniqueness + idempotency is the concurrency control.
+**Baseline gap:** Milestone writes may still treat `expectedVersion` as optional until M4.7. **M4.3 closed** the Task write gap: create is new-row (no CAS); every Task field PATCH / assign / status / start / block / unblock / complete / cancel requires `expectedVersion`. Dependency edges have no `version`; create uniqueness + idempotency is the concurrency control.
 
 Outbox events stay optional companions (ADR-016). No Redis/BullMQ Planning worker.

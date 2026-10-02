@@ -126,6 +126,9 @@ export class PlanningService {
       bound.project.id,
       query.inspect,
     );
+    const inspectedHistory = inspectedRow
+      ? await this.tasks.historyFor(bound.organizationId, bound.project.id, inspectedRow.id)
+      : [];
 
     const milestoneDtos = milestoneRows.map((row) => this.milestones.toDto(row, linkedTaskSignals));
     const previewSource = inspectedRow && !rows.some((row) => row.id === inspectedRow.id) ? [...rows, inspectedRow] : rows;
@@ -150,7 +153,7 @@ export class PlanningService {
       dependencies: dependencyRows.map((row) => this.tasks.toDependencyDto(row)),
       page: { page, pageSize, total, sort, order },
       counts: { total, late: lateCount, byStatus },
-      inspected: inspectedRow ? this.toPlanningTask(inspectedRow, previews) : null,
+      inspected: inspectedRow ? { ...this.toPlanningTask(inspectedRow, previews), history: inspectedHistory } : null,
     };
   }
 
