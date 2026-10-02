@@ -15,6 +15,9 @@ import {
   M3_CANONICAL_UI_ROUTES,
   M3_LATER_API_ROUTES,
   M3_PLANNED_API_ROUTES,
+  M4_2_NEXT_APP_ROUTES,
+  M4_CANONICAL_UI_ROUTES,
+  M4_PLANNED_API_ROUTES,
   M4_RESERVED_UI_ROUTES,
 } from "./m3-routes.js";
 
@@ -55,19 +58,24 @@ describe("M3 route collision audit", () => {
     for (const implemented of M3_5_NEXT_APP_ROUTES) {
       expect(existing, implemented).toContain(implemented);
     }
+    for (const implemented of M4_2_NEXT_APP_ROUTES) {
+      expect(existing, implemented).toContain(implemented);
+    }
     expect(existsSync(join(ROOT, "web/app/projects"))).toBe(true);
     expect(existsSync(join(ROOT, "web/app/projects/[projectId]/overview/page.tsx"))).toBe(true);
   });
 
-  it("reserves planner for M4 and does not treat Figma prototype Portuguese paths as product routes", () => {
-    expect(M4_RESERVED_UI_ROUTES.some((row) => row.path.includes("planner"))).toBe(true);
+  it("ships /planner as the M4.2 product path and never treats /planejamento as a Next route", () => {
+    expect(M4_CANONICAL_UI_ROUTES.some((row) => row.path.includes("planner"))).toBe(true);
+    expect(M4_RESERVED_UI_ROUTES.some((row) => row.path === "/planejamento")).toBe(true);
     expect(FIGMA_PROTOTYPE_ROUTE_MAP.find((row) => row.figmaPath === "/planejamento")?.productPath).toBeNull();
     expect(FIGMA_PROTOTYPE_ROUTE_MAP.find((row) => row.figmaPath === "/entregas")?.productPath).toBe(
       "/projects/:projectId/deliverables",
     );
     const existing = listNextAppRoutes(join(ROOT, "web/app"));
     expect(existing.some((route) => route.includes("planejamento") || route.includes("visao-geral"))).toBe(false);
-    expect(existing).not.toContain("/projects/[projectId]/planner");
+    expect(existing).toContain("/projects/[projectId]/planner");
+    expect(existsSync(join(ROOT, "web/app/planejamento"))).toBe(false);
   });
 
   it("exposes M3.3–M3.7 Phase/Discipline/Deliverable/WorkPackage/Hub/Traceability API paths in OpenAPI", () => {
@@ -100,7 +108,11 @@ describe("M3 route collision audit", () => {
     expect(existing).toContain("/api/v1/projects/{projectId}/deliverables");
     expect(existing).toContain("/api/v1/projects/{projectId}/work-packages");
     expect(existing).toContain("/api/v1/projects/{projectId}/hub");
+    for (const row of M4_PLANNED_API_ROUTES) {
+      expect(existing, row.path).toContain(row.path);
+    }
     expect(M3_PLANNED_API_ROUTES.every((row) => !row.path.includes("gate.override"))).toBe(true);
+    expect(M4_PLANNED_API_ROUTES.every((row) => !row.path.includes("gate.override"))).toBe(true);
     const disassociate = M3_5_API_ROUTES.find((row) => row.path.endsWith("/disassociate"));
     expect(disassociate?.permission).toBe("work_package.update");
   });

@@ -12,6 +12,7 @@ const OPERATIONAL_ROUTES = [
   { name: "structure", path: `/projects/${IDS.projectA1}/structure` },
   { name: "deliverables", path: `/projects/${IDS.projectA1}/deliverables` },
   { name: "work-packages", path: `/projects/${IDS.projectA1}/work-packages` },
+  { name: "planner", path: `/projects/${IDS.projectA1}/planner` },
 ] as const;
 
 async function analyzeAxe(page: Page, label: string, projectName: string) {

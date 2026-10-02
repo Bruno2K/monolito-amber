@@ -33,11 +33,14 @@ PF-1.7 DONE
                                                                         disposition #52
                                                                         main @ a3eaadcd61c8f8153f61c6a51f920e37b8f362a0
                                                                              └─ M4 ACTIVE / LOCAL ONLY
-                                                                                  └─ M4.1 IN FLIGHT (Issue #54)
-                                                                                       branch m4-1-contract-baseline
+                                                                                  └─ M4.1 MERGED (Issue #54)
+                                                                                       main @ 6e47d9fb050dcc49b120dd511b9de55634cd4e13
                                                                                        docs-only contract / baseline / read-model plan
-                                                                                       M4.2–M4.9 LOCKED
-                                                                                       Independent Reviewer required
+                                                                                       └─ M4.2 IN FLIGHT (Issue #56)
+                                                                                            branch m4-2-planning-shell-list
+                                                                                            Planning shell + unified List
+                                                                                            LOCAL ONLY — no Vercel / Railway / M5
+                                                                                            Independent Reviewer required
                                                                                        do not merge from Engineer pass
 ```
 

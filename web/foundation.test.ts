@@ -21,6 +21,7 @@ describe("web M3.2 application shell", () => {
     expect(existsSync(join(__dirname, "app/projects/[projectId]/overview/page.tsx"))).toBe(true);
     expect(existsSync(join(__dirname, "app/projects/[projectId]/structure/page.tsx"))).toBe(true);
     expect(existsSync(join(__dirname, "app/projects/[projectId]/deliverables/page.tsx"))).toBe(true);
+    expect(existsSync(join(__dirname, "app/projects/[projectId]/planner/page.tsx"))).toBe(true);
     for (const relative of FORBIDDEN_PROTOTYPE_PAGES) {
       expect(existsSync(join(__dirname, relative)), relative).toBe(false);
     }

@@ -6,13 +6,15 @@ import { FoundationModule } from "../foundation/foundation.module";
 import { MilestonesController } from "./milestones.controller";
 import { MilestonesService } from "./milestones.service";
 import { PlanningAccess } from "./planning.access";
+import { PlanningController } from "./planning.controller";
+import { PlanningService } from "./planning.service";
 import { TasksController } from "./tasks.controller";
 import { TasksService } from "./tasks.service";
 
 @Module({
   imports: [AuditModule, AuthModule, AuthzModule, FoundationModule],
-  controllers: [TasksController, MilestonesController],
-  providers: [PlanningAccess, TasksService, MilestonesService],
-  exports: [TasksService, MilestonesService],
+  controllers: [TasksController, MilestonesController, PlanningController],
+  providers: [PlanningAccess, TasksService, MilestonesService, PlanningService],
+  exports: [TasksService, MilestonesService, PlanningService],
 })
 export class PlanningModule {}

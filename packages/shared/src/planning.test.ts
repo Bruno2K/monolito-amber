@@ -4,9 +4,11 @@ import {
   TASK_PRIORITIES,
   assertAcyclicDependency,
   assertTaskTransition,
+  deriveKanbanColumn,
   deriveMilestoneStatus,
   isTaskLate,
   isTaskPriority,
+  planningListSortCompare,
   prerequisitesBlockStart,
   taskStatusRequiresBlockedReason,
   taskStatusRequiresCompletePermission,
@@ -113,6 +115,42 @@ describe("Milestone derivation baseline", () => {
         now,
       }),
     ).toBe("PLANNED");
+  });
+});
+
+describe("M4.2-UNIT-01 Kanban column + List sort helpers", () => {
+  it("maps stored status + derived late to Figma columns without inventing OVERDUE", () => {
+    expect(deriveKanbanColumn({ status: "TODO", late: false })).toBe("PLANEJADAS");
+    expect(deriveKanbanColumn({ status: "IN_PROGRESS", late: false })).toBe("EM_ANDAMENTO");
+    expect(deriveKanbanColumn({ status: "TODO", late: true })).toBe("EM_RISCO");
+    expect(deriveKanbanColumn({ status: "IN_PROGRESS", late: true })).toBe("EM_RISCO");
+    expect(deriveKanbanColumn({ status: "BLOCKED", late: false })).toBe("BLOQUEADAS");
+    expect(deriveKanbanColumn({ status: "BLOCKED", late: true })).toBe("BLOQUEADAS");
+    expect(deriveKanbanColumn({ status: "DONE", late: false })).toBeNull();
+    expect(deriveKanbanColumn({ status: "CANCELLED", late: false })).toBeNull();
+  });
+
+  it("sorts List rows by stored fields (late is not a stored column)", () => {
+    const a = {
+      title: "B",
+      dueDate: "2026-01-02T00:00:00.000Z",
+      plannedStartAt: null,
+      status: "TODO",
+      progressPercent: 10,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
+    const b = {
+      title: "A",
+      dueDate: "2026-01-01T00:00:00.000Z",
+      plannedStartAt: null,
+      status: "BLOCKED",
+      progressPercent: 40,
+      createdAt: "2026-01-02T00:00:00.000Z",
+    };
+    expect(planningListSortCompare(a, b, "title")).toBeGreaterThan(0);
+    expect(planningListSortCompare(a, b, "dueDate")).toBeGreaterThan(0);
+    expect(planningListSortCompare(a, b, "createdAt")).toBeLessThan(0);
+    expect(planningListSortCompare(a, b, "progressPercent")).toBeLessThan(0);
   });
 });
 

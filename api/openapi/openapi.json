@@ -4636,6 +4636,36 @@
         ]
       }
     },
+    "/api/v1/projects/{projectId}/planning": {
+      "get": {
+        "description": "GET-only. Reuses Task and Milestone DTOs plus derived late and kanbanColumn. view= is a projection hint — the payload always contains the same record sets. Unauthorized projects are denied without an existence leak. Linked Issue / Deliverable / WorkPackage / Phase / Milestone previews are re-authorized individually and omitted without a placeholder title. Does not mutate Planning rows.",
+        "operationId": "PlanningController_get",
+        "parameters": [
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Authorized unified Planning read-model (List / later Kanban / Gantt / Marcos)",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
     "/api/v1/projects/{projectId}/gates": {
       "get": {
         "operationId": "GatesController_list",

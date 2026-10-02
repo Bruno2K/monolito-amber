@@ -6,21 +6,31 @@
 
 **M3 — Project Operations is ACTIVE / LOCAL ONLY with Exit Gate FAIL — ACCEPTED.** Audit WI Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51) squash-merged to `main` @ `762c3f3ba85ff899623cf4c3682e6bddad062bab`. Disposition sync #52 brought `main` to `a3eaadcd61c8f8153f61c6a51f920e37b8f362a0`. Reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Independent Reviewer **PASS (audit WI only)**. Homologated Local RC narrative tip remains `6104276754607334c53c6864135d29c539db813e`. **This is not M3 COMPLETE.**
 
-**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** Only **M4.1** is unlocked (Issue [#54](https://github.com/Bruno2K/monolito-amber/issues/54), branch `m4-1-contract-baseline`). M4.2–M4.9 remain LOCKED until Governor Exit Gate PASS on M4.1 after Independent Reviewer and merge.
+**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** M4.1 is MERGED @ `6e47d9fb050dcc49b120dd511b9de55634cd4e13`. **M4.2** is in flight (Issue [#56](https://github.com/Bruno2K/monolito-amber/issues/56), branch `m4-2-planning-shell-list`): Planning shell + unified List. M4.3–M4.9 remain later WIs.
 
-Authorization (Bruno 2026-10-01 via Altair): M4 ACTIVE / LOCAL ONLY; M4.1 READY only. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring Exit Gate PASS or M3/M4 completion; starting M4.2+.
+Authorization: Bruno runway M4.1→M4.9 autonomous; LOCAL ONLY. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring Exit Gate PASS or M3/M4 completion.
 
 Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (supported path = Docker Desktop + WSL2 + bash). M3 cloud residuals are **accepted debt**, not M4 scope.
 
-## M4.1 (IN FLIGHT — docs-only)
+## M4.2 (IN FLIGHT — LOCAL ONLY)
+
+- Issue [#56](https://github.com/Bruno2K/monolito-amber/issues/56)
+- Branch `m4-2-planning-shell-list` from `6e47d9fb050dcc49b120dd511b9de55634cd4e13`
+- Canonical Notion: https://app.notion.com/p/3ec678e54c8d8155b715c1309a86627c
+- Pack: https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7
+- Plan: `docs/domain/m4.2-requirement-to-change-plan.md`
+- Matrix: `docs/domain/m4.2-requirements-traceability.md`
+- Product: `GET /api/v1/projects/{projectId}/planning` + `/projects/:projectId/planner` List
+- Non-goals: Kanban, Gantt, dependency editing, Milestone workflows, cloud/PaaS/M5
+
+## M4.1 (MERGED — docs-only)
 
 - Issue [#54](https://github.com/Bruno2K/monolito-amber/issues/54)
-- Branch `m4-1-contract-baseline` from `a3eaadcd61c8f8153f61c6a51f920e37b8f362a0`
+- Merge tip `6e47d9fb050dcc49b120dd511b9de55634cd4e13`
 - Canonical Notion: https://app.notion.com/p/3ec678e54c8d8103beafc69c3bb51edc
 - Pack: https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7
 - Matrix: `docs/domain/m4.1-requirements-traceability.md`
 - Contract: `docs/domain/m4-planning-scheduling-contract.md`
-- Non-goals: no feature UI, no applied migration, no new API handlers
 
 ## M3.9 (MERGED — Exit Gate FAIL — ACCEPTED)
 

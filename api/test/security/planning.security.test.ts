@@ -3,6 +3,7 @@ import {
   PlanningStateError,
   assertAcyclicDependency,
   assertTaskTransition,
+  deriveKanbanColumn,
   deriveMilestoneStatus,
   isTaskLate,
   prerequisitesBlockStart,
@@ -27,6 +28,12 @@ describe("PF-1.5 Planning security floors (fail closed)", () => {
     expect(() => assertAcyclicDependency([], "t", "t")).toThrow(/itself/);
     expect(prerequisitesBlockStart([{ status: "TODO" }])).toBe(true);
     expect(prerequisitesBlockStart([{ status: "DONE" }])).toBe(false);
+  });
+
+  it("derives kanbanColumn without persisting Portuguese or OVERDUE statuses", () => {
+    expect(deriveKanbanColumn({ status: "TODO", late: true })).toBe("EM_RISCO");
+    expect(deriveKanbanColumn({ status: "BLOCKED", late: true })).toBe("BLOQUEADAS");
+    expect(deriveKanbanColumn({ status: "DONE", late: false })).toBeNull();
   });
 
   it("derives AT_RISK / MISSED without invented business thresholds", () => {

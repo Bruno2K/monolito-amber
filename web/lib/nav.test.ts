@@ -13,12 +13,13 @@ describe("shell navigation", () => {
     expect(isGlobalPath("/projects/abc/overview")).toBe(false);
   });
 
-  it("does not resolve coming-later M4+ items to product hrefs", () => {
+  it("resolves Planejamento to /planner and keeps later M4+ items unavailable", () => {
     const planning = PROJECT_NAV.find((item) => item.id === "planning");
     const calendars = GLOBAL_NAV.find((item) => item.id === "calendars");
-    expect(resolveNavHref(planning!, "abc")).toBeNull();
+    expect(resolveNavHref(planning!, "abc")).toBe("/projects/abc/planner");
+    expect(planning?.availability).toBe("available");
     expect(resolveNavHref(calendars!, null)).toBeNull();
-    expect(PROJECT_NAV.every((item) => item.id !== "planner")).toBe(true);
+    expect(matchNavItem("/projects/abc/planner", "abc")?.id).toBe("planning");
   });
 
   it("builds breadcrumbs that name Global or Project context", () => {
@@ -45,5 +46,11 @@ describe("shell navigation", () => {
       projectName: "Aurora",
     });
     expect(packages.map((crumb) => crumb.label)).toContain("Pacotes");
+    const planner = breadcrumbsFor({
+      pathname: "/projects/abc/planner",
+      projectId: "abc",
+      projectName: "Aurora",
+    });
+    expect(planner.map((crumb) => crumb.label)).toContain("Planejamento");
   });
 });

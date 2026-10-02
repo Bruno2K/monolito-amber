@@ -847,7 +847,7 @@ export class TasksService {
     };
   }
 
-  private toDependencyDto(row: {
+  toDependencyDto(row: {
     id: string;
     organizationId: string;
     projectId: string;

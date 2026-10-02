@@ -69,7 +69,8 @@ export const PROJECT_NAV: readonly NavItemDef[] = [
     id: "planning",
     label: "Planejamento",
     group: "project",
-    availability: "coming-later",
+    href: "/projects/:projectId/planner",
+    availability: "available",
     icon: "calendar",
   },
   {

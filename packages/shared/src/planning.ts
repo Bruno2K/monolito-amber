@@ -180,3 +180,89 @@ export function prerequisitesBlockStart(predecessors: readonly { status: string 
 
 /** M3.7 additive Task schedule fields. Status remains an explicit transition. */
 export const TASK_PROGRESS_FIELDS = ["plannedStartAt", "estimatedMinutes", "progressPercent"] as const;
+
+/**
+ * Figma Kanban columns are a derived projection (M4.1 gap analysis).
+ * Never persisted on `planning.tasks.status`. DONE / CANCELLED have no column.
+ */
+export const KANBAN_COLUMNS = ["PLANEJADAS", "EM_ANDAMENTO", "EM_RISCO", "BLOQUEADAS"] as const;
+export type KanbanColumn = (typeof KANBAN_COLUMNS)[number];
+
+export const PLANNING_VIEWS = ["list", "kanban", "gantt", "milestones"] as const;
+export type PlanningView = (typeof PLANNING_VIEWS)[number];
+
+export const PLANNING_LIST_SORTS = [
+  "title",
+  "dueDate",
+  "plannedStartAt",
+  "status",
+  "progressPercent",
+  "createdAt",
+] as const;
+export type PlanningListSort = (typeof PLANNING_LIST_SORTS)[number];
+
+export const PLANNING_PAGE_SIZE_DEFAULT = 20;
+export const PLANNING_PAGE_SIZE_MAX = 50;
+
+export function isPlanningView(value: string | null | undefined): value is PlanningView {
+  return value != null && (PLANNING_VIEWS as readonly string[]).includes(value);
+}
+
+export function isPlanningListSort(value: string | null | undefined): value is PlanningListSort {
+  return value != null && (PLANNING_LIST_SORTS as readonly string[]).includes(value);
+}
+
+export function deriveKanbanColumn(input: { status: TaskStatus; late: boolean }): KanbanColumn | null {
+  if (input.status === "DONE" || input.status === "CANCELLED") {
+    return null;
+  }
+  if (input.status === "BLOCKED") {
+    return "BLOQUEADAS";
+  }
+  if (input.late && (input.status === "TODO" || input.status === "IN_PROGRESS")) {
+    return "EM_RISCO";
+  }
+  if (input.status === "TODO") {
+    return "PLANEJADAS";
+  }
+  if (input.status === "IN_PROGRESS") {
+    return "EM_ANDAMENTO";
+  }
+  return null;
+}
+
+export function clampPlanningPageSize(value: number | undefined): number {
+  if (!Number.isFinite(value) || value == null || value < 1) {
+    return PLANNING_PAGE_SIZE_DEFAULT;
+  }
+  return Math.min(Math.floor(value), PLANNING_PAGE_SIZE_MAX);
+}
+
+export function planningListSortCompare(
+  left: { title: string; dueDate: Date | string | null; plannedStartAt: Date | string | null; status: string; progressPercent: number | null; createdAt: Date | string },
+  right: typeof left,
+  sort: PlanningListSort,
+): number {
+  const time = (value: Date | string | null) => {
+    if (!value) {
+      return Number.POSITIVE_INFINITY;
+    }
+    const ms = typeof value === "string" ? Date.parse(value) : value.getTime();
+    return Number.isNaN(ms) ? Number.POSITIVE_INFINITY : ms;
+  };
+  switch (sort) {
+    case "title":
+      return left.title.localeCompare(right.title);
+    case "dueDate":
+      return time(left.dueDate) - time(right.dueDate);
+    case "plannedStartAt":
+      return time(left.plannedStartAt) - time(right.plannedStartAt);
+    case "status":
+      return left.status.localeCompare(right.status);
+    case "progressPercent":
+      return (left.progressPercent ?? -1) - (right.progressPercent ?? -1);
+    case "createdAt":
+    default:
+      return time(left.createdAt) - time(right.createdAt);
+  }
+}
