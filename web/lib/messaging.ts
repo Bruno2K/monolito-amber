@@ -430,11 +430,45 @@ export function mergeTranscriptByVersion(current: readonly MessageRecord[], inco
   return [...map.values()].sort(compareMessages);
 }
 
-export function draftAfterSuccessfulSend(currentDraft: string, submittedBody: string, sameContext: boolean): string {
-  if (!sameContext || currentDraft !== submittedBody) {
+export function normalizeComposerBody(raw: string): string {
+  return raw.trim();
+}
+
+export function draftAfterSuccessfulSend(currentDraft: string, submittedRaw: string, sameContext: boolean): string {
+  if (!sameContext || currentDraft !== submittedRaw) {
     return currentDraft;
   }
   return "";
+}
+
+export function acceptTranscriptRefresh(input: {
+  requestSeq: number;
+  latestSeq: number;
+  generation: number;
+  currentGeneration: number;
+  revokedGeneration: number | null;
+  organizationId: string | null;
+  currentOrganizationId: string | null;
+  conversationId: string;
+  currentConversationId: string | null;
+}): boolean {
+  if (input.requestSeq !== input.latestSeq) {
+    return false;
+  }
+  if (!input.organizationId || input.organizationId !== input.currentOrganizationId) {
+    return false;
+  }
+  if (input.conversationId !== input.currentConversationId) {
+    return false;
+  }
+  return (
+    acceptAsyncResult({
+      generation: input.generation,
+      currentGeneration: input.currentGeneration,
+      revokedGeneration: input.revokedGeneration,
+      value: true,
+    }) === true
+  );
 }
 
 export function applySendFailure(rows: readonly PendingSend[], localId: string, discarded: ReadonlySet<string>): PendingSend[] {
@@ -471,6 +505,25 @@ export function reconciledTombstone(
     return "done";
   }
   return "retry";
+}
+
+export function nextTombstoneAttempt(input: {
+  refresh: "ready" | "denied" | "failed" | "stale";
+  message: Pick<MessageRecord, "lifecycle" | "deletedAt" | "version"> | undefined;
+  previousVersion: number;
+  idempotencyKey: string;
+}): { action: "done" | "retry" | "unavailable" | "stop"; version: number | null; key: string } {
+  if (input.refresh !== "ready") {
+    return { action: "stop", version: null, key: input.idempotencyKey };
+  }
+  const outcome = reconciledTombstone(input.message);
+  if (outcome === "done") {
+    return { action: "done", version: input.message?.version ?? null, key: input.idempotencyKey };
+  }
+  if (outcome === "unavailable" || !input.message) {
+    return { action: "unavailable", version: null, key: input.idempotencyKey };
+  }
+  return { action: "retry", version: input.message.version, key: input.idempotencyKey };
 }
 
 export function discardFailedSends(rows: readonly PendingSend[]): PendingSend[] {

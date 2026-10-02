@@ -17,7 +17,10 @@ import {
   canTombstoneOwnMessage,
   composerKeyAction,
   contentFits,
+  acceptTranscriptRefresh,
   draftAfterSuccessfulSend,
+  nextTombstoneAttempt,
+  normalizeComposerBody,
   discardFailedSends,
   conversationFailure,
   eligibleDirectPeers,
@@ -447,6 +450,137 @@ describe("M5.5 messaging presentation", () => {
     expect(peersFromProjectMembers(rows, actor).map((member) => member.displayName)).toEqual(["Seed Contributor A"]);
     expect(membersFromProjectRows(rows, actor).some((member) => member.status === "SUSPENDED")).toBe(true);
     expect(peersFromProjectMembers(rows, actor).some((member) => member.displayName.includes("Beta"))).toBe(false);
+  });
+
+  it("ignores an older transcript refresh after a newer revocation response", () => {
+    const context = {
+      generation: 4,
+      currentGeneration: 4,
+      revokedGeneration: null,
+      organizationId: "org-a",
+      currentOrganizationId: "org-a",
+      conversationId: "conv-direct",
+      currentConversationId: "conv-direct",
+    };
+    let latestSeq = 0;
+    const authorized = {
+      ...message(1),
+      resourcePreviews: [{ type: "TASK" as const, id: "t1", authorized: true, title: "Secreto", projectId: "p1" }],
+    };
+    const unauthorized = {
+      ...authorized,
+      resourcePreviews: [{ type: "TASK" as const, id: "t1", authorized: false }],
+    };
+    const requestA = ++latestSeq;
+    const requestB = ++latestSeq;
+    let state: MessageRecord = authorized;
+    if (acceptTranscriptRefresh({ ...context, requestSeq: requestB, latestSeq })) {
+      state = mergeTranscriptByVersion([state], [unauthorized])[0] ?? state;
+    }
+    if (acceptTranscriptRefresh({ ...context, requestSeq: requestA, latestSeq })) {
+      state = mergeTranscriptByVersion([state], [authorized])[0] ?? state;
+    }
+    expect(state.resourcePreviews).toEqual([{ type: "TASK", id: "t1", authorized: false }]);
+    expect(state.resourcePreviews[0]?.title).toBeUndefined();
+    expect(state.resourcePreviews[0]?.projectId).toBeUndefined();
+
+    const requestC = ++latestSeq;
+    const requestD = ++latestSeq;
+    let inverse: MessageRecord = unauthorized;
+    if (acceptTranscriptRefresh({ ...context, requestSeq: requestC, latestSeq })) {
+      inverse = authorized;
+    }
+    if (acceptTranscriptRefresh({ ...context, requestSeq: requestD, latestSeq })) {
+      inverse = mergeTranscriptByVersion([inverse], [authorized])[0] ?? inverse;
+    }
+    expect(inverse.resourcePreviews[0]?.authorized).toBe(true);
+    expect(inverse.resourcePreviews[0]?.title).toBe("Secreto");
+    expect(
+      acceptTranscriptRefresh({
+        ...context,
+        requestSeq: requestD,
+        latestSeq,
+        currentOrganizationId: "org-b",
+      }),
+    ).toBe(false);
+    expect(
+      acceptTranscriptRefresh({
+        ...context,
+        requestSeq: requestD,
+        latestSeq,
+        currentConversationId: "other",
+      }),
+    ).toBe(false);
+  });
+
+  it("clears only the exact raw draft that was submitted", () => {
+    expect(normalizeComposerBody(" oi ")).toBe("oi");
+    expect(normalizeComposerBody("  a \n\n b  ")).toBe("a \n\n b");
+    expect(normalizeComposerBody(" \n ")).toBe("");
+    expect(draftAfterSuccessfulSend(" oi ", " oi ", true)).toBe("");
+    expect(draftAfterSuccessfulSend("oi agora", " oi ", true)).toBe("oi agora");
+    expect(draftAfterSuccessfulSend(" oi ", " oi ", false)).toBe(" oi ");
+    expect(draftAfterSuccessfulSend("nova", " oi ", false)).toBe("nova");
+  });
+
+  it("reconciles a tombstone from the loaded snapshot instead of the stale version", () => {
+    const key = "tombstone-key";
+    expect(
+      nextTombstoneAttempt({
+        refresh: "ready",
+        message: { lifecycle: "EDITED", deletedAt: null, version: 5 },
+        previousVersion: 4,
+        idempotencyKey: key,
+      }),
+    ).toEqual({ action: "retry", version: 5, key });
+    expect(
+      nextTombstoneAttempt({
+        refresh: "ready",
+        message: { lifecycle: "TOMBSTONED", deletedAt: "2026-10-02T13:00:00.000Z", version: 6 },
+        previousVersion: 4,
+        idempotencyKey: key,
+      }).action,
+    ).toBe("done");
+    expect(
+      nextTombstoneAttempt({
+        refresh: "ready",
+        message: { lifecycle: "TOMBSTONED", deletedAt: "2026-10-02T13:00:00.000Z", version: 3 },
+        previousVersion: 3,
+        idempotencyKey: key,
+      }),
+    ).toMatchObject({ action: "done", key });
+    expect(
+      nextTombstoneAttempt({
+        refresh: "ready",
+        message: undefined,
+        previousVersion: 4,
+        idempotencyKey: key,
+      }).action,
+    ).toBe("unavailable");
+    expect(
+      nextTombstoneAttempt({
+        refresh: "denied",
+        message: { lifecycle: "VISIBLE", deletedAt: null, version: 4 },
+        previousVersion: 4,
+        idempotencyKey: key,
+      }),
+    ).toEqual({ action: "stop", version: null, key });
+    expect(
+      nextTombstoneAttempt({
+        refresh: "failed",
+        message: { lifecycle: "VISIBLE", deletedAt: null, version: 4 },
+        previousVersion: 4,
+        idempotencyKey: key,
+      }).version,
+    ).toBeNull();
+    expect(
+      nextTombstoneAttempt({
+        refresh: "stale",
+        message: undefined,
+        previousVersion: 4,
+        idempotencyKey: key,
+      }).action,
+    ).toBe("stop");
   });
 });
 

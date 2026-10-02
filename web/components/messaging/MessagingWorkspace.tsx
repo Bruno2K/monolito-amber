@@ -30,12 +30,14 @@ import {
   isAuthorizationMiss,
   acceptCreateResult,
   applySendFailure,
+  acceptTranscriptRefresh,
   draftAfterSuccessfulSend,
+  normalizeComposerBody,
   isReadOnlyConversation,
   mergeTranscriptByVersion,
   nextInboxIndex,
   nextTranscriptCursor,
-  reconciledTombstone,
+  nextTombstoneAttempt,
   releaseSendLock,
   resourcePresentation,
   reuseSendKey,
@@ -139,6 +141,8 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
   const dialogOpen = useRef(false);
   const discardedSends = useRef(new Set<string>());
   const messagesRef = useRef<MessageRecord[]>([]);
+  const transcriptSeq = useRef(0);
+  const transcriptAbort = useRef<AbortController | null>(null);
   orgRef.current = orgId;
   const inboxCommitted = useRef(false);
   const seenOrg = useRef<string | null | undefined>(undefined);
@@ -189,6 +193,9 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     createGen.current += 1;
     createRequest.current = null;
     createAbort.current?.abort();
+    transcriptAbort.current?.abort();
+    transcriptSeq.current += 1;
+    messagesRef.current = [];
     dialogOpen.current = false;
     sendLock.current = null;
     discardedSends.current = new Set();
@@ -253,6 +260,8 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
   }
 
   function revokeThread(generation: number, id: string, detail?: string) {
+    transcriptAbort.current?.abort();
+    transcriptSeq.current += 1;
     threadRevokedGen.current = generation;
     threadGen.current = generation + 1;
     if (conversationRef.current !== id) {
@@ -260,6 +269,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     }
     const nextInbox = inboxRef.current.filter((row) => row.id !== id);
     rememberInbox(nextInbox);
+    messagesRef.current = [];
     setMessages([]);
     setActive(null);
     setPending([]);
@@ -270,6 +280,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     setSending(false);
     sendLock.current = null;
     setRefreshError(null);
+    setDialog(null);
     setThreadState("revoked");
     setThreadDetail(detail);
     setSearchHits((hits) => hits.filter((hit) => hit.conversationId !== id));
@@ -403,36 +414,71 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     setDialogError(null);
     setDialogPending(false);
     if (!conversationId) {
+      transcriptAbort.current?.abort();
+      transcriptSeq.current += 1;
       setThreadState("idle");
       setThreadDetail(undefined);
       return;
     }
     setThreadState("loading");
     setThreadDetail(undefined);
-    const controller = new AbortController();
-    void loadTranscript(conversationId, generation, controller.signal, "replace");
-    return () => controller.abort();
+    const request = beginTranscriptRequest();
+    void loadTranscript(conversationId, generation, request.signal, "replace", request.requestSeq, request.organizationId);
+    return () => {
+      transcriptAbort.current?.abort();
+      transcriptSeq.current += 1;
+    };
   }, [conversationId, threadNonce, orgId]);
 
-  async function loadTranscript(id: string, generation: number, signal: AbortSignal, mode: "replace" | "refresh"): Promise<boolean> {
+  function beginTranscriptRequest(): { requestSeq: number; signal: AbortSignal; organizationId: string | null } {
+    transcriptAbort.current?.abort();
+    const controller = new AbortController();
+    transcriptAbort.current = controller;
+    return { requestSeq: ++transcriptSeq.current, signal: controller.signal, organizationId: orgRef.current };
+  }
+
+  function transcriptRequestCurrent(requestSeq: number, generation: number, id: string, organizationId: string | null): boolean {
+    return acceptTranscriptRefresh({
+      requestSeq,
+      latestSeq: transcriptSeq.current,
+      generation,
+      currentGeneration: threadGen.current,
+      revokedGeneration: threadRevokedGen.current,
+      organizationId,
+      currentOrganizationId: orgRef.current,
+      conversationId: id,
+      currentConversationId: conversationRef.current,
+    });
+  }
+
+  async function loadTranscript(
+    id: string,
+    generation: number,
+    signal: AbortSignal,
+    mode: "replace" | "refresh",
+    requestSeq: number,
+    organizationId: string | null,
+  ): Promise<{ status: "ready"; messages: MessageRecord[] } | { status: "stale" | "denied" | "failed" }> {
+    const stillCurrent = () => transcriptRequestCurrent(requestSeq, generation, id, organizationId);
     const conversationResult = await request<InboxItem>(`/api/v1/conversations/${id}`, signal);
-    if (conversationResult === "aborted" || !threadIsCurrent(generation, id)) {
-      return false;
+    if (conversationResult === "aborted" || !stillCurrent()) {
+      return { status: "stale" };
     }
     if (!conversationResult.ok) {
       if (isAuthorizationMiss(conversationResult.status)) {
         revokeThread(generation, id, conversationResult.problem.detail);
-        return false;
+        return { status: "denied" };
       }
       if (mode === "refresh") {
         setRefreshError(conversationResult.problem.detail);
-        return false;
+        return { status: "failed" };
       }
       setThreadState(conversationFailure(conversationResult.status));
       setThreadDetail(conversationResult.problem.detail);
+      messagesRef.current = [];
       setMessages([]);
       setActive(null);
-      return false;
+      return { status: "failed" };
     }
     let transcript: MessageRecord[] = [];
     let cursor: string | null = null;
@@ -440,23 +486,24 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     while (page < TRANSCRIPT_PAGE_GUARD) {
       const path = `/api/v1/conversations/${id}/messages?pageSize=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`;
       const pageResult = await request<MessagePage>(path, signal);
-      if (pageResult === "aborted" || !threadIsCurrent(generation, id)) {
-        return false;
+      if (pageResult === "aborted" || !stillCurrent()) {
+        return { status: "stale" };
       }
       if (!pageResult.ok) {
         if (isAuthorizationMiss(pageResult.status)) {
           revokeThread(generation, id, pageResult.problem.detail);
-          return false;
+          return { status: "denied" };
         }
         if (mode === "refresh") {
           setRefreshError(pageResult.problem.detail);
-          return false;
+          return { status: "failed" };
         }
         setThreadState("error");
         setThreadDetail(pageResult.problem.detail);
+        messagesRef.current = [];
         setMessages([]);
         setActive(null);
-        return false;
+        return { status: "failed" };
       }
       const appended = appendTranscriptPage(transcript, pageResult.body.items);
       transcript = appended.messages;
@@ -466,47 +513,53 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
         break;
       }
     }
-    if (!threadIsCurrent(generation, id)) {
-      return false;
+    if (!stillCurrent()) {
+      return { status: "stale" };
     }
     if (cursor) {
       if (mode === "refresh") {
         setRefreshError("A transcrição não foi carregada por completo.");
-        return false;
+        return { status: "failed" };
       }
       setThreadState("error");
       setThreadDetail("A transcrição não foi carregada por completo.");
+      messagesRef.current = [];
       setMessages([]);
       setActive(null);
-      return false;
+      return { status: "failed" };
     }
+    const merged = mode === "refresh" ? mergeTranscriptByVersion(messagesRef.current, transcript) : transcript;
+    if (!stillCurrent()) {
+      return { status: "stale" };
+    }
+    messagesRef.current = merged;
+    setMessages(merged);
     setActive(conversationResult.body);
-    setMessages((current) => (mode === "refresh" ? mergeTranscriptByVersion(current, transcript) : transcript));
     setThreadState("ready");
     setThreadDetail(undefined);
     setRefreshError(null);
     const target = watermarkTarget(transcript);
     if (!target || watermarkSent.current === `${id}:${target}`) {
-      return true;
+      return { status: "ready", messages: merged };
     }
     const read = await request(`/api/v1/conversations/${id}/read-state`, signal, {
       method: "PUT",
       body: JSON.stringify({ lastReadMessageId: target }),
     });
-    if (read === "aborted" || !threadIsCurrent(generation, id)) {
-      return true;
+    if (read === "aborted" || !stillCurrent()) {
+      return { status: "ready", messages: merged };
     }
     if (!read.ok) {
       if (isAuthorizationMiss(read.status)) {
         revokeThread(generation, id, read.problem.detail);
-        return false;
+        return { status: "denied" };
       }
       setRefreshError(read.problem.detail);
-      return true;
+      return { status: "ready", messages: merged };
     }
     watermarkSent.current = `${id}:${target}`;
     rememberInbox(inboxRef.current.map((row) => (row.id === id ? { ...row, unreadCount: 0 } : row)));
-    return true;
+    return { status: "ready", messages: merged };
   }
 
   useEffect(() => {
@@ -554,8 +607,8 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
       })();
       const id = conversationRef.current;
       if (id && threadStateRef.current === "ready") {
-        const generation = threadGen.current;
-        void loadTranscript(id, generation, controller.signal, "refresh");
+        const request = beginTranscriptRequest();
+        void loadTranscript(id, threadGen.current, request.signal, "refresh", request.requestSeq, request.organizationId);
       }
     };
     const timer = window.setInterval(refresh, MESSAGE_POLL_MS);
@@ -768,7 +821,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     await openConversation(result.body.id);
   }
 
-  async function send(lock: SendLock, body: string) {
+  async function send(lock: SendLock, body: string, submittedRaw: string) {
     const controller = new AbortController();
     setSendError(null);
     setPending((rows) => {
@@ -803,7 +856,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     setResolvedIds((current) => new Map(current).set(lock.localId, result.body.id));
     setMessages((rows) => appendUniqueMessage(rows, result.body));
     setFailedSend((current) => (current?.key === lock.key ? null : current));
-    setDraft((current) => draftAfterSuccessfulSend(current, body, true));
+    setDraft((current) => draftAfterSuccessfulSend(current, submittedRaw, sameContext));
     setAnnounce("Mensagem enviada.");
     setInboxNonce((value) => value + 1);
   }
@@ -826,11 +879,17 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     discardedSends.current.delete(row.localId);
     sendLock.current = decision.lock;
     setSending(true);
-    void send(decision.lock, row.body);
+    const rawAtRetry = draft;
+    const submittedRaw = normalizeComposerBody(rawAtRetry) === row.body ? rawAtRetry : `${rawAtRetry}\u0000`;
+    void send(decision.lock, row.body, submittedRaw);
   }
 
   function submitDraft() {
-    const body = draft.trim();
+    const raw = draft;
+    const body = normalizeComposerBody(raw);
+    if (!body) {
+      return;
+    }
     if (!conversationId || !orgId || !canSendMessage(active)) {
       return;
     }
@@ -848,7 +907,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     }
     sendLock.current = decision.lock;
     setSending(true);
-    void send(decision.lock, body);
+    void send(decision.lock, body, raw);
   }
 
   async function saveEdit() {
@@ -884,12 +943,20 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
             ? "A resposta da edição não foi confirmada."
             : result.problem.detail || "A versão da mensagem mudou.";
         setDialogPending(true);
-        const reconciled = await loadTranscript(targetId, generation, new AbortController().signal, "refresh");
+        const request = beginTranscriptRequest();
+        const reconciled = await loadTranscript(
+          targetId,
+          generation,
+          request.signal,
+          "refresh",
+          request.requestSeq,
+          request.organizationId,
+        );
         setDialogPending(false);
-        if (!threadIsCurrent(generation, targetId)) {
+        if (!threadIsCurrent(generation, targetId) || reconciled.status === "stale" || reconciled.status === "denied") {
           return;
         }
-        if (!reconciled) {
+        if (reconciled.status !== "ready") {
           setDialogError(`${detail} A versão atual não foi carregada, então a edição antiga não será reenviada.`);
           return;
         }
@@ -942,26 +1009,40 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
         const messageId = dialog.type === "tombstone" ? dialog.message.id : dialog.messageId;
         const key = dialog.key;
         setDialogPending(true);
-        const reconciled = await loadTranscript(targetId, generation, new AbortController().signal, "refresh");
+        const request = beginTranscriptRequest();
+        const reconciled = await loadTranscript(
+          targetId,
+          generation,
+          request.signal,
+          "refresh",
+          request.requestSeq,
+          request.organizationId,
+        );
         setDialogPending(false);
-        if (!threadIsCurrent(generation, targetId)) {
+        if (!threadIsCurrent(generation, targetId) || reconciled.status === "stale" || reconciled.status === "denied") {
           return;
         }
-        if (!reconciled) {
+        if (reconciled.status !== "ready") {
           setDialogError(`${detail} A versão atual não foi carregada, então a remoção antiga não será reenviada.`);
           return;
         }
-        const latest = messagesRef.current.find((message) => message.id === messageId);
-        if (reconciledTombstone(latest) === "done") {
+        const latest = reconciled.messages.find((message) => message.id === messageId);
+        const attempt = nextTombstoneAttempt({
+          refresh: "ready",
+          message: latest,
+          previousVersion: expectedVersion,
+          idempotencyKey: key,
+        });
+        if (attempt.action === "done") {
           closeDialog();
           setAnnounce("Mensagem removida. O texto original não permanece na transcrição.");
           return;
         }
-        if (!latest) {
+        if (attempt.action !== "retry" || attempt.version === null) {
           setDialogError(`${detail} A mensagem atual não está disponível.`);
           return;
         }
-        setDialog({ type: "tombstone-conflict", messageId, key, version: latest.version, detail });
+        setDialog({ type: "tombstone-conflict", messageId, key: attempt.key, version: attempt.version, detail });
         return;
       }
       setDialogError(result.problem.detail || "Não foi possível remover.");
