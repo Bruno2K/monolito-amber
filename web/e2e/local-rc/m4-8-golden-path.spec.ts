@@ -48,7 +48,7 @@ test.describe("M4.8 Local RC golden path + cross-view consistency", () => {
     await page.goto(`/projects/${IDS.projectA1}/planner?inspect=${created!.id}`);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.locator("#task-assignee")).toContainText("Seed Contributor A");
-    await page.locator("#task-assignee").selectOption({ label: /Seed Contributor A/ });
+    await page.locator("#task-assignee").selectOption({ label: "Seed Contributor A" });
     await page.getByRole("button", { name: "Atribuir" }).click();
     await expect(page.getByRole("dialog")).toContainText("Seed Contributor A");
     await page.getByRole("button", { name: "Iniciar" }).click();
