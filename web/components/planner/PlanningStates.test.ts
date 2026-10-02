@@ -36,6 +36,20 @@ describe("M4.2 planning system states", () => {
     expect(src).toMatch(/TaskInspector/);
   });
 
+  it("M4.7 Marcos is a projection over the same planner, not a coming-later placeholder", () => {
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "PlannerView.tsx"), "utf8");
+    expect(src).toMatch(/MilestoneBoard/);
+    expect(src).toMatch(/view === "milestones"/);
+    expect(src).toMatch(/242:6853/);
+    expect(src).not.toMatch(/Marcos em um marco posterior/);
+    const board = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "MilestoneBoard.tsx"), "utf8");
+    expect(board).toMatch(/milestoneKpis/);
+    expect(board).toMatch(/Alcançar/);
+    expect(board).toMatch(/não são[\s\S]*controles de status|não são controles de status/);
+    expect(board).toMatch(/Issue permanece/);
+    expect(board).not.toMatch(/AT_RISK toggle|manual AT_RISK|status.*select.*AT_RISK/);
+  });
+
   it("M4.6 Gantt is a projection over the same planner, not a coming-later placeholder", () => {
     const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "PlannerView.tsx"), "utf8");
     expect(src).toMatch(/TaskGantt/);

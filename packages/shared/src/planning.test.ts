@@ -10,6 +10,7 @@ import {
   buildScheduleLanes,
   countTasksByKanbanColumn,
   deriveKanbanColumn,
+  deriveMilestoneRisk,
   deriveMilestoneStatus,
   ganttBarRange,
   planningScheduleDateRange,
@@ -127,6 +128,83 @@ describe("Milestone derivation baseline", () => {
         now,
       }),
     ).toBe("PLANNED");
+  });
+
+  it("M4.7-UNIT-01 derives AT_RISK from late, blocked, or dependency-blocked Tasks and never from incomplete-only", () => {
+    const future = new Date("2026-10-01T00:00:00.000Z");
+    const late = deriveMilestoneRisk({
+      recordedStatus: "PLANNED",
+      targetDate: future,
+      now,
+      contributing: [{ id: "t-late", status: "TODO", dueDate: new Date("2026-09-01T00:00:00.000Z") }],
+    });
+    expect(late.status).toBe("AT_RISK");
+    expect(late.reasons.map((row) => row.code)).toEqual(["LINKED_TASK_LATE"]);
+    expect(late.sources).toEqual([{ kind: "TASK", id: "t-late" }]);
+
+    const blocked = deriveMilestoneRisk({
+      recordedStatus: "PLANNED",
+      targetDate: future,
+      now,
+      contributing: [{ id: "t-block", status: "BLOCKED", dueDate: future }],
+    });
+    expect(blocked.status).toBe("AT_RISK");
+    expect(blocked.reasons.map((row) => row.code)).toEqual(["LINKED_TASK_BLOCKED"]);
+
+    const dep = deriveMilestoneRisk({
+      recordedStatus: "PLANNED",
+      targetDate: future,
+      now,
+      contributing: [{ id: "t-dep", status: "TODO", dueDate: future, dependencyStartBlocked: true }],
+    });
+    expect(dep.status).toBe("AT_RISK");
+    expect(dep.reasons.map((row) => row.code)).toEqual(["LINKED_TASK_DEPENDENCY_BLOCKED"]);
+    expect(dep.explanation).toMatch(/not stored BLOCKED/);
+
+    const incompleteOnly = deriveMilestoneRisk({
+      recordedStatus: "PLANNED",
+      targetDate: future,
+      now,
+      contributing: [{ id: "t-ok", status: "TODO", dueDate: future }],
+    });
+    expect(incompleteOnly.status).toBe("PLANNED");
+    expect(incompleteOnly.reasons).toEqual([]);
+    expect(incompleteOnly.sources).toEqual([]);
+  });
+
+  it("M4.7-UNIT-01 omits hidden contributing records from reasons, counts, and ids", () => {
+    const risk = deriveMilestoneRisk({
+      recordedStatus: "PLANNED",
+      targetDate: new Date("2026-10-01T00:00:00.000Z"),
+      now,
+      contributing: [
+        { id: "hidden-late", status: "TODO", dueDate: new Date("2026-09-01T00:00:00.000Z"), visible: false },
+        { id: "visible-ok", status: "TODO", dueDate: new Date("2026-10-01T00:00:00.000Z"), visible: true },
+      ],
+    });
+    expect(risk.status).toBe("PLANNED");
+    expect(risk.explanation).not.toMatch(/hidden-late|1 authorized|oculto/i);
+    expect(risk.sources).toEqual([]);
+  });
+
+  it("M4.7-UNIT-01 keeps ACHIEVED/CANCELLED winning and MISSED derived without persisting status", () => {
+    const missed = deriveMilestoneRisk({
+      recordedStatus: "PLANNED",
+      targetDate: new Date("2026-09-01T00:00:00.000Z"),
+      now,
+      contributing: [{ id: "t-late", status: "TODO", dueDate: new Date("2026-09-01T00:00:00.000Z") }],
+    });
+    expect(missed.status).toBe("MISSED");
+    expect(missed.recordedStatus).toBe("PLANNED");
+    expect(missed.reasons.map((row) => row.code)).toEqual(["TARGET_DATE_PASSED", "LINKED_TASK_LATE"]);
+    expect(
+      deriveMilestoneRisk({
+        recordedStatus: "ACHIEVED",
+        targetDate: new Date("2026-09-01T00:00:00.000Z"),
+        now,
+        contributing: [{ id: "t-late", status: "TODO", dueDate: new Date("2026-09-01T00:00:00.000Z") }],
+      }).status,
+    ).toBe("ACHIEVED");
   });
 });
 

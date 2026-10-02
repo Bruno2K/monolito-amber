@@ -19,6 +19,7 @@ Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (s
 - Canonical Notion: https://app.notion.com/p/3ec678e54c8d81079ac3dd07dff39f5e
 - Pack: https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7
 - Plan: `docs/domain/m4.7-requirement-to-change-plan.md`
+- Matrix: `docs/domain/m4.7-requirements-traceability.md`
 - Product: explicit Milestone commands + explainable derived AT_RISK/MISSED over the unified Planning read-model
 - Non-goals: Gate release, templates, auto achievement, manual AT_RISK toggle, forecast, cloud/PaaS/M5
 

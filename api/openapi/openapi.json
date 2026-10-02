@@ -4775,7 +4775,7 @@
             "cookie": []
           }
         ],
-        "summary": "List Milestones. status is derived; recordedStatus is the stored explicit state.",
+        "summary": "List Milestones. status is derived; recordedStatus is stored PLANNED|ACHIEVED|CANCELLED. Additive risk.reasons/explanation/sources use authorized visible contributors only.",
         "tags": [
           "planning"
         ]
@@ -4881,7 +4881,7 @@
             "cookie": []
           }
         ],
-        "summary": "Update Milestone fields. Status is not patchable.",
+        "summary": "Update Milestone title, target date, or Phase/Deliverable. Status is not patchable. expectedVersion is required.",
         "tags": [
           "planning"
         ]
@@ -4926,7 +4926,7 @@
             "cookie": []
           }
         ],
-        "summary": "Explicitly achieve a Milestone. Completing linked Tasks does not achieve it.",
+        "summary": "Explicitly achieve a Milestone. Completing linked Tasks, progress, or date edits never achieve it. expectedVersion required.",
         "tags": [
           "planning"
         ]
@@ -4951,6 +4951,14 @@
             "schema": {
               "format": "uuid"
             }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -4963,7 +4971,7 @@
             "cookie": []
           }
         ],
-        "summary": "Cancel a planned Milestone",
+        "summary": "Cancel a planned Milestone. Idempotency-Key and expectedVersion are required. Immutable audit.",
         "tags": [
           "planning"
         ]

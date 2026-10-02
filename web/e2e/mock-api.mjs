@@ -304,6 +304,123 @@ function requireProject(session, projectId, res) {
 const mockTasks = [];
 const mockTaskHistory = new Map();
 const mockDependencies = [];
+const mockMilestones = [];
+
+function milestoneRiskFor(row) {
+  const linked = mockTasks.filter((task) => task.milestoneId === row.id && task.projectId === row.projectId);
+  const late = linked.filter((task) => task.late && task.status !== "DONE" && task.status !== "CANCELLED");
+  const blocked = linked.filter((task) => task.status === "BLOCKED");
+  const dep = linked.filter((task) => task.dependencyStartBlocked && task.status !== "DONE" && task.status !== "CANCELLED");
+  const reasons = [];
+  const sources = [];
+  const now = Date.now();
+  const missed = row.recordedStatus === "PLANNED" && row.targetDate && Date.parse(row.targetDate) < now;
+  if (row.recordedStatus === "ACHIEVED") {
+    return {
+      recordedStatus: "ACHIEVED",
+      status: "ACHIEVED",
+      reasons: [],
+      explanation: "Milestone was explicitly achieved. Derived risk does not override ACHIEVED.",
+      sources: [],
+    };
+  }
+  if (row.recordedStatus === "CANCELLED") {
+    return {
+      recordedStatus: "CANCELLED",
+      status: "CANCELLED",
+      reasons: [],
+      explanation: "Milestone was explicitly cancelled. Derived risk does not override CANCELLED.",
+      sources: [],
+    };
+  }
+  if (missed) {
+    reasons.push({
+      code: "TARGET_DATE_PASSED",
+      text: "Target date is in the past. Stored milestone status remains PLANNED.",
+    });
+  }
+  if (late.length) {
+    reasons.push({
+      code: "LINKED_TASK_LATE",
+      text: `${late.length} authorized linked Task${late.length === 1 ? " is" : "s are"} late. Lateness is derived and is not a stored status.`,
+    });
+    for (const task of late) sources.push({ kind: "TASK", id: task.id });
+  }
+  if (blocked.length) {
+    reasons.push({ code: "LINKED_TASK_BLOCKED", text: `${blocked.length} authorized linked Task${blocked.length === 1 ? " is" : "s are"} stored BLOCKED.` });
+    for (const task of blocked) sources.push({ kind: "TASK", id: task.id });
+  }
+  if (dep.length) {
+    reasons.push({
+      code: "LINKED_TASK_DEPENDENCY_BLOCKED",
+      text: `${dep.length} authorized linked Task${dep.length === 1 ? " is" : "s are"} waiting on an unfinished finish-to-start predecessor. This is not stored BLOCKED.`,
+    });
+    for (const task of dep) sources.push({ kind: "TASK", id: task.id });
+  }
+  const status = missed ? "MISSED" : late.length || blocked.length || dep.length ? "AT_RISK" : "PLANNED";
+  return {
+    recordedStatus: row.recordedStatus,
+    status,
+    reasons,
+    explanation:
+      reasons.length > 0
+        ? reasons.map((item) => item.text).join(" ")
+        : "Milestone remains PLANNED. No authorized late, blocked, or dependency-blocked contributing Tasks.",
+    sources,
+  };
+}
+
+function decorateMilestone(row) {
+  const risk = milestoneRiskFor(row);
+  return { ...row, status: risk.status, risk };
+}
+
+function seedMockMilestones() {
+  if (mockMilestones.length > 0) {
+    return;
+  }
+  mockMilestones.push(
+    {
+      id: "ms-concept",
+      organizationId: ORG_A,
+      projectId: PROJECT_A,
+      title: "Concept freeze",
+      description: "",
+      recordedStatus: "PLANNED",
+      status: "PLANNED",
+      targetDate: "2026-12-01T00:00:00.000Z",
+      phaseId: "phase-concept",
+      deliverableId: "del-arch-001",
+      version: 1,
+    },
+    {
+      id: "ms-missed",
+      organizationId: ORG_A,
+      projectId: PROJECT_A,
+      title: "Survey package",
+      description: "",
+      recordedStatus: "PLANNED",
+      status: "MISSED",
+      targetDate: "2020-01-01T00:00:00.000Z",
+      phaseId: "phase-concept",
+      deliverableId: null,
+      version: 1,
+    },
+    {
+      id: "ms-done",
+      organizationId: ORG_A,
+      projectId: PROJECT_A,
+      title: "Brief approved",
+      description: "",
+      recordedStatus: "ACHIEVED",
+      status: "ACHIEVED",
+      targetDate: "2025-06-01T00:00:00.000Z",
+      phaseId: "phase-brief",
+      deliverableId: null,
+      version: 2,
+    },
+  );
+}
 
 function seedMockTasks() {
   if (mockTasks.length > 0) {
@@ -343,7 +460,7 @@ function seedMockTasks() {
         phase: { id: "phase-concept", name: "Concept" },
         deliverable: { id: "del-arch-001", code: "DEL-ARCH-001", title: "Architectural pack" },
         workPackage: { id: "wp-outline", title: "Outline programme", code: "WP-PLAN-001" },
-        milestone: { id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED" },
+        milestone: { id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "AT_RISK" },
         assignee: { userId: USER, displayName: "M. Santos" },
       },
     },
@@ -352,7 +469,7 @@ function seedMockTasks() {
       organizationId: ORG_A,
       projectId: PROJECT_A,
       issueId: null,
-      milestoneId: null,
+      milestoneId: "ms-concept",
       phaseId: "phase-concept",
       deliverableId: null,
       workPackageId: null,
@@ -557,20 +674,7 @@ function buildMockSchedule(project, tasks) {
   const projectPhases = (project.id === PROJECT_A ? phasesA : []).filter((row) => !row.archivedAt);
   const projectDels = deliverables.filter((row) => row.projectId === project.id && !row.archivedAt);
   const projectWps = workPackages.filter((row) => row.projectId === project.id && !row.archivedAt);
-  const milestones =
-    project.id === PROJECT_A
-      ? [
-          {
-            id: "ms-concept",
-            title: "Concept freeze",
-            recordedStatus: "PLANNED",
-            status: "PLANNED",
-            targetDate: "2026-06-01T00:00:00.000Z",
-            phaseId: "phase-concept",
-            deliverableId: "del-arch-001",
-          },
-        ]
-      : [];
+  const milestones = mockMilestones.filter((row) => row.projectId === project.id).map(decorateMilestone);
   const lanes = [];
   const usedTasks = new Set();
   const usedWps = new Set();
@@ -685,7 +789,7 @@ function buildMockSchedule(project, tasks) {
           status: ms.status,
           recordedStatus: ms.recordedStatus,
           late: false,
-          risk: null,
+          risk: ms.risk?.explanation ? { code: ms.risk.reasons?.[0]?.code ?? ms.status, text: ms.risk.explanation } : null,
           version: null,
         });
       }
@@ -743,6 +847,7 @@ function appendHistory(taskId, eventType) {
 
 const server = http.createServer(async (req, res) => {
   seedMockTasks();
+  seedMockMilestones();
   const url = new URL(req.url ?? "/", "http://127.0.0.1");
   const path = url.pathname;
   const token = cookieToken(req);
@@ -871,6 +976,9 @@ const server = http.createServer(async (req, res) => {
         "task.update",
         "task.assign",
         "task.complete",
+        "milestone.create",
+        "milestone.update",
+        "milestone.achieve",
       ],
     });
     return;
@@ -1369,20 +1477,101 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  const milestoneItemMatch = /^\/api\/v1\/projects\/([^/]+)\/milestones\/([^/]+)(?:\/(achieve|cancel))?$/.exec(path);
+  if (milestoneItemMatch) {
+    const project = requireProject(session, milestoneItemMatch[1], res);
+    if (!project) {
+      return;
+    }
+    const row = mockMilestones.find((item) => item.id === milestoneItemMatch[2] && item.projectId === project.id);
+    if (!row) {
+      problem(res, 403, "TENANCY_DENIED", "Milestone is not bound to the authorized Project");
+      return;
+    }
+    if (req.method === "GET" && !milestoneItemMatch[3]) {
+      json(res, 200, decorateMilestone(row));
+      return;
+    }
+    const body = await readBody(req);
+    if (req.method === "PATCH" && !milestoneItemMatch[3]) {
+      if (body.status) {
+        problem(res, 409, "PLANNING_STATE", "Milestone status is not patchable; achieve or cancel explicitly");
+        return;
+      }
+      if (body.expectedVersion == null) {
+        problem(res, 409, "PLANNING_STATE", "expectedVersion is required");
+        return;
+      }
+      if (body.expectedVersion !== row.version) {
+        problem(res, 409, "OPTIMISTIC_LOCK", "Optimistic lock");
+        return;
+      }
+      if (body.title) {
+        row.title = String(body.title);
+      }
+      if (body.targetDate !== undefined) {
+        row.targetDate = body.targetDate;
+      }
+      if (body.phaseId !== undefined) {
+        row.phaseId = body.phaseId;
+      }
+      row.version += 1;
+      json(res, 200, decorateMilestone(row));
+      return;
+    }
+    if (req.method === "POST" && milestoneItemMatch[3] === "achieve") {
+      if (body.expectedVersion !== row.version) {
+        problem(res, 409, "OPTIMISTIC_LOCK", "Optimistic lock");
+        return;
+      }
+      row.recordedStatus = "ACHIEVED";
+      row.status = "ACHIEVED";
+      row.version += 1;
+      json(res, 200, decorateMilestone(row));
+      return;
+    }
+    if (req.method === "POST" && milestoneItemMatch[3] === "cancel") {
+      if (body.expectedVersion !== row.version) {
+        problem(res, 409, "OPTIMISTIC_LOCK", "Optimistic lock");
+        return;
+      }
+      row.recordedStatus = "CANCELLED";
+      row.status = "CANCELLED";
+      row.version += 1;
+      json(res, 200, decorateMilestone(row));
+      return;
+    }
+  }
+
   const milestoneListMatch = /^\/api\/v1\/projects\/([^/]+)\/milestones$/.exec(path);
-  if (milestoneListMatch && req.method === "GET") {
+  if (milestoneListMatch) {
     const project = requireProject(session, milestoneListMatch[1], res);
     if (!project) {
       return;
     }
-    json(
-      res,
-      200,
-      project.id === PROJECT_A
-        ? [{ id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED", targetDate: null, phaseId: "phase-concept", deliverableId: null }]
-        : [],
-    );
-    return;
+    if (req.method === "GET") {
+      json(res, 200, mockMilestones.filter((row) => row.projectId === project.id).map(decorateMilestone));
+      return;
+    }
+    if (req.method === "POST") {
+      const body = await readBody(req);
+      const created = {
+        id: `ms-${Date.now()}`,
+        organizationId: project.organizationId,
+        projectId: project.id,
+        title: String(body.title ?? "").trim(),
+        description: body.description ?? "",
+        recordedStatus: "PLANNED",
+        status: "PLANNED",
+        targetDate: body.targetDate ?? null,
+        phaseId: body.phaseId ?? null,
+        deliverableId: body.deliverableId ?? null,
+        version: 1,
+      };
+      mockMilestones.push(created);
+      json(res, 201, decorateMilestone(created));
+      return;
+    }
   }
 
   const taskCollection = /^\/api\/v1\/projects\/([^/]+)\/tasks$/.exec(path);
@@ -1737,9 +1926,7 @@ const server = http.createServer(async (req, res) => {
       project: { archivedAt: project.archivedAt, readOnly: Boolean(project.archivedAt) },
       tasks: rows.map(withGraph),
       dependencies: mockDependencies.filter((edge) => edge.projectId === project.id),
-      milestones: project.id === PROJECT_A
-        ? [{ id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED", targetDate: "2026-06-01T00:00:00.000Z", phaseId: "phase-concept", deliverableId: "del-arch-001" }]
-        : [],
+      milestones: mockMilestones.filter((row) => row.projectId === project.id).map(decorateMilestone),
       schedule: buildMockSchedule(project, rows),
       page: { page: 1, pageSize: 20, total: rows.length, sort: "createdAt", order: "asc" },
       counts: {

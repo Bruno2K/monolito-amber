@@ -70,6 +70,7 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [M4.6 requirement-to-change plan](./domain/m4.6-requirement-to-change-plan.md) — Issue [#64](https://github.com/Bruno2K/monolito-amber/issues/64); published first
 - [M4.6 matrix](./domain/m4.6-requirements-traceability.md) · [Figma trace](./domain/m4.6-figma-trace.md) · [UI evidence](./ux/evidence/m4.6/)
 - [M4.7 requirement-to-change plan](./domain/m4.7-requirement-to-change-plan.md) — Issue [#66](https://github.com/Bruno2K/monolito-amber/issues/66); published first
+- [M4.7 matrix](./domain/m4.7-requirements-traceability.md) · [Figma trace](./domain/m4.7-figma-trace.md) · [UI evidence](./ux/evidence/m4.7/)
 - M3 Exit Gate **FAIL — ACCEPTED** remains accepted debt. **Not M3 COMPLETE.** M4.8–M4.9 remain LOCKED.
 
 ## M3 — Project Operations (Exit Gate FAIL — ACCEPTED / LOCAL ONLY)

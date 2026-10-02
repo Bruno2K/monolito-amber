@@ -10,7 +10,11 @@ import { RequirePermission } from "../authz/require-permission.decorator";
 import { PlanningService } from "./planning.service";
 
 class PlanningQueryDto {
-  @ApiPropertyOptional({ enum: ["list", "kanban", "gantt", "milestones"], description: "Projection hint. Same record sets." })
+  @ApiPropertyOptional({
+    enum: ["list", "kanban", "gantt", "milestones"],
+    description:
+      "Projection hint. Same authorized record sets. view=milestones uses the same schedule + milestone risk as Gantt.",
+  })
   @IsOptional()
   @IsString()
   view?: string;

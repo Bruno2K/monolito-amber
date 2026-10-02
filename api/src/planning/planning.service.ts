@@ -100,7 +100,7 @@ export class PlanningService {
       statusGroups,
       rows,
       milestoneRows,
-      linkedTaskSignals,
+      contributingTasks,
       dependencyRows,
       countSource,
       phaseRows,
@@ -132,11 +132,7 @@ export class PlanningService {
         orderBy: { createdAt: "asc" },
         take: SUPPORTING_TAKE,
       }),
-      this.prisma.task.findMany({
-        where: { projectId: bound.project.id, organizationId: bound.organizationId, milestoneId: { not: null } },
-        select: { milestoneId: true, dueDate: true, status: true },
-        take: SUPPORTING_TAKE,
-      }),
+      this.milestones.loadContributingTasks(bound.organizationId, bound.project.id),
       this.prisma.taskDependency.findMany({
         where: { projectId: bound.project.id, organizationId: bound.organizationId },
         orderBy: { createdAt: "asc" },
@@ -221,7 +217,7 @@ export class PlanningService {
       ? await this.tasks.historyFor(bound.organizationId, bound.project.id, inspectedRow.id)
       : [];
 
-    const milestoneDtos = milestoneRows.map((row) => this.milestones.toDto(row, linkedTaskSignals));
+    const milestoneDtos = milestoneRows.map((row) => this.milestones.toDto(row, contributingTasks));
     const previewSource = inspectedRow && !rows.some((row) => row.id === inspectedRow.id) ? [...rows, inspectedRow] : rows;
     const previews = await this.loadPreviews(bound.organizationId, bound.project.id, previewSource, milestoneDtos);
     const graph = await this.loadDependencyProjection(
@@ -666,6 +662,7 @@ export class PlanningService {
       targetDate: Date | string | null;
       phaseId: string | null;
       deliverableId: string | null;
+      risk?: { reasons?: Array<{ code: string; text: string }>; explanation?: string } | null;
     }>;
     dependencies: Array<{ id: string; predecessorTaskId: string; successorTaskId: string; type?: string }>;
     graph: Map<
@@ -740,7 +737,7 @@ export class PlanningService {
       recordedStatus: row.recordedStatus,
       phaseId: row.phaseId,
       deliverableId: row.deliverableId,
-      risk: milestoneScheduleRisk(row.status),
+      risk: milestoneScheduleRisk(row),
     }));
 
     if (input.filtered) {
@@ -830,14 +827,23 @@ function scheduleTaskRisk(input: {
   return null;
 }
 
-function milestoneScheduleRisk(status: string): { code: string; text: string } | null {
-  if (status === "AT_RISK") {
+function milestoneScheduleRisk(row: {
+  status: string;
+  risk?: { reasons?: Array<{ code: string; text: string }>; explanation?: string } | null;
+}): { code: string; text: string } | null {
+  if (row.risk?.explanation) {
     return {
-      code: "AT_RISK",
-      text: "At least one linked Task is late. Stored milestone status remains PLANNED.",
+      code: row.risk.reasons?.[0]?.code ?? row.status,
+      text: row.risk.explanation,
     };
   }
-  if (status === "MISSED") {
+  if (row.status === "AT_RISK") {
+    return {
+      code: "AT_RISK",
+      text: "At least one authorized linked Task is late, stored BLOCKED, or dependency-blocked. Stored milestone status remains PLANNED.",
+    };
+  }
+  if (row.status === "MISSED") {
     return {
       code: "MISSED",
       text: "Target date is in the past. Stored milestone status remains PLANNED.",

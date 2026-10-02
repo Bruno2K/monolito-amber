@@ -351,4 +351,176 @@ describe("M4.2 unified Planning read-model", () => {
     expect(viewerDenied.status).toBeGreaterThanOrEqual(400);
     expect(viewerDenied.status).not.toBe(200);
   });
+
+  it("M4.7-HTTP-01/02 explicit achieve-cancel, CAS, retry, and no auto-achieve", async () => {
+    const future = new Date(Date.now() + 14 * 86400000).toISOString();
+    const created = await coordinator
+      .post(`/api/v1/projects/${projectA}/milestones`)
+      .set("Idempotency-Key", `m47-ms-${suffix}`)
+      .send({ title: `M47 ${suffix}`, targetDate: future });
+    expect(created.status).toBeLessThan(400);
+    expect(created.body.recordedStatus).toBe("PLANNED");
+    expect(created.body.status).toBe("PLANNED");
+    expect(created.body.risk.reasons).toEqual([]);
+
+    const dated = await coordinator.patch(`/api/v1/projects/${projectA}/milestones/${created.body.id}`).send({
+      targetDate: new Date(Date.now() + 21 * 86400000).toISOString(),
+      expectedVersion: created.body.version,
+    });
+    expect(dated.status).toBe(200);
+    expect(dated.body.recordedStatus).toBe("PLANNED");
+
+    const stale = await coordinator.patch(`/api/v1/projects/${projectA}/milestones/${created.body.id}`).send({
+      title: "stale",
+      expectedVersion: created.body.version,
+    });
+    expect(stale.status).toBe(409);
+
+    const missingCas = await coordinator.patch(`/api/v1/projects/${projectA}/milestones/${created.body.id}`).send({
+      title: "no cas",
+    });
+    expect(missingCas.status).toBeGreaterThanOrEqual(400);
+
+    const task = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks`)
+      .set("Idempotency-Key", `m47-task-${suffix}`)
+      .send({
+        title: `M47 late ${suffix}`,
+        milestoneId: created.body.id,
+        dueDate: "2000-01-01T00:00:00.000Z",
+      });
+    expect(task.status).toBeLessThan(400);
+
+    const atRisk = await coordinator.get(`/api/v1/projects/${projectA}/milestones/${created.body.id}`);
+    expect(atRisk.body.recordedStatus).toBe("PLANNED");
+    expect(atRisk.body.status).toBe("AT_RISK");
+    expect(atRisk.body.risk.reasons.some((row: { code: string }) => row.code === "LINKED_TASK_LATE")).toBe(true);
+    expect(atRisk.body.risk.sources).toEqual([{ kind: "TASK", id: task.body.id }]);
+    expect(JSON.stringify(atRisk.body.risk)).not.toMatch(/oculto|hidden/i);
+
+    const started = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks/${task.body.id}/status`)
+      .set("Idempotency-Key", `m47-start-${suffix}`)
+      .send({ status: "IN_PROGRESS", expectedVersion: task.body.version });
+    const done = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks/${task.body.id}/complete`)
+      .set("Idempotency-Key", `m47-done-${suffix}`)
+      .send({ expectedVersion: started.body.version });
+    expect(done.body.status).toBe("DONE");
+    const afterDone = await coordinator.get(`/api/v1/projects/${projectA}/milestones/${created.body.id}`);
+    expect(afterDone.body.recordedStatus).toBe("PLANNED");
+    expect(afterDone.body.status).toBe("PLANNED");
+
+    const progress = await coordinator
+      .patch(`/api/v1/projects/${projectA}/tasks/${task.body.id}`)
+      .send({ progressPercent: 90, expectedVersion: done.body.version });
+    expect(progress.status).toBe(200);
+    const afterProgress = await coordinator.get(`/api/v1/projects/${projectA}/milestones/${created.body.id}`);
+    expect(afterProgress.body.recordedStatus).toBe("PLANNED");
+
+    const forbiddenAchieve = await viewer
+      .post(`/api/v1/projects/${projectA}/milestones/${created.body.id}/achieve`)
+      .set("Idempotency-Key", `m47-viewer-ach-${suffix}`)
+      .send({ expectedVersion: afterProgress.body.version });
+    expect(forbiddenAchieve.status).toBeGreaterThanOrEqual(400);
+
+    const achieved = await coordinator
+      .post(`/api/v1/projects/${projectA}/milestones/${created.body.id}/achieve`)
+      .set("Idempotency-Key", `m47-ach-${suffix}`)
+      .send({ expectedVersion: afterProgress.body.version });
+    expect(achieved.status).toBeLessThan(400);
+    expect(achieved.body.recordedStatus).toBe("ACHIEVED");
+    expect(achieved.body.status).toBe("ACHIEVED");
+
+    const replay = await coordinator
+      .post(`/api/v1/projects/${projectA}/milestones/${created.body.id}/achieve`)
+      .set("Idempotency-Key", `m47-ach-${suffix}`)
+      .send({ expectedVersion: afterProgress.body.version });
+    expect(replay.status).toBeLessThan(400);
+    expect(replay.body.id).toBe(created.body.id);
+
+    const cancelTarget = await coordinator
+      .post(`/api/v1/projects/${projectA}/milestones`)
+      .set("Idempotency-Key", `m47-ms-cancel-${suffix}`)
+      .send({ title: `M47 cancel ${suffix}`, targetDate: future });
+    const cancelled = await coordinator
+      .post(`/api/v1/projects/${projectA}/milestones/${cancelTarget.body.id}/cancel`)
+      .set("Idempotency-Key", `m47-cancel-${suffix}`)
+      .send({ expectedVersion: cancelTarget.body.version });
+    expect(cancelled.status).toBeLessThan(400);
+    expect(cancelled.body.recordedStatus).toBe("CANCELLED");
+    const cancelReplay = await coordinator
+      .post(`/api/v1/projects/${projectA}/milestones/${cancelTarget.body.id}/cancel`)
+      .set("Idempotency-Key", `m47-cancel-${suffix}`)
+      .send({ expectedVersion: cancelTarget.body.version });
+    expect(cancelReplay.body.id).toBe(cancelTarget.body.id);
+
+    const audits = await prisma.auditEvent.findMany({
+      where: {
+        resourceId: { in: [created.body.id, cancelTarget.body.id] },
+        eventType: { in: ["MILESTONE_CREATED", "MILESTONE_DATE_CHANGED", "MILESTONE_ACHIEVED", "MILESTONE_CANCELLED"] },
+      },
+    });
+    expect(audits.some((row) => row.eventType === "MILESTONE_CREATED")).toBe(true);
+    expect(audits.some((row) => row.eventType === "MILESTONE_DATE_CHANGED")).toBe(true);
+    expect(audits.some((row) => row.eventType === "MILESTONE_ACHIEVED")).toBe(true);
+    expect(audits.some((row) => row.eventType === "MILESTONE_CANCELLED")).toBe(true);
+    expect(audits.filter((row) => row.eventType === "MILESTONE_ACHIEVED")).toHaveLength(1);
+    expect(audits.filter((row) => row.eventType === "MILESTONE_CANCELLED")).toHaveLength(1);
+  });
+
+  it("M4.7-ADV omit-not-leak, cross-tenant relation, and Marcos/Gantt/List consistency", async () => {
+    const future = new Date(Date.now() + 10 * 86400000).toISOString();
+    const ms = await coordinator
+      .post(`/api/v1/projects/${projectA}/milestones`)
+      .set("Idempotency-Key", `m47-adv-ms-${suffix}`)
+      .send({ title: `M47 adv ${suffix}`, targetDate: future });
+    const late = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks`)
+      .set("Idempotency-Key", `m47-adv-late-${suffix}`)
+      .send({
+        title: `M47 adv late ${suffix}`,
+        milestoneId: ms.body.id,
+        dueDate: "2001-01-01T00:00:00.000Z",
+      });
+    expect(late.status).toBeLessThan(400);
+
+    const entity = await coordinator.get(`/api/v1/projects/${projectA}/milestones/${ms.body.id}`);
+    const list = await coordinator.get(`/api/v1/projects/${projectA}/planning?view=list`);
+    const gantt = await coordinator.get(`/api/v1/projects/${projectA}/planning?view=gantt`);
+    const marcos = await coordinator.get(`/api/v1/projects/${projectA}/planning?view=milestones`);
+    const listed = list.body.milestones.find((row: { id: string }) => row.id === ms.body.id);
+    const projected = marcos.body.milestones.find((row: { id: string }) => row.id === ms.body.id);
+    const lane = gantt.body.schedule.lanes.find(
+      (row: { kind: string; id: string }) => row.kind === "MILESTONE" && row.id === ms.body.id,
+    );
+    expect(entity.body.status).toBe("AT_RISK");
+    expect(listed.status).toBe("AT_RISK");
+    expect(projected.status).toBe("AT_RISK");
+    expect(listed.risk.explanation).toBe(entity.body.risk.explanation);
+    expect(projected.risk.explanation).toBe(entity.body.risk.explanation);
+    expect(lane.risk.text).toContain("late");
+    expect(JSON.stringify(entity.body.risk)).toContain(late.body.id);
+
+    const foreignPhaseId = randomUUID();
+    const cross = await coordinator.patch(`/api/v1/projects/${projectA}/milestones/${ms.body.id}`).send({
+      phaseId: foreignPhaseId,
+      expectedVersion: entity.body.version,
+    });
+    expect(cross.status).toBeGreaterThanOrEqual(400);
+    expect(JSON.stringify(cross.body)).not.toContain(foreignPhaseId);
+
+    const other = await ownerB.get(`/api/v1/projects/${projectA}/milestones/${ms.body.id}`);
+    expect(other.status).toBe(403);
+    expect(JSON.stringify(other.body)).not.toContain(`M47 adv ${suffix}`);
+    expect(JSON.stringify(other.body)).not.toContain(late.body.id);
+
+    const foreignMs = await ownerB
+      .post(`/api/v1/projects/${projectB}/milestones`)
+      .set("Idempotency-Key", `m47-ms-b-${suffix}`)
+      .send({ title: `Hidden MS ${suffix}` });
+    const leak = await coordinator.get(`/api/v1/projects/${projectA}/milestones/${foreignMs.body.id}`);
+    expect(leak.status).toBe(403);
+    expect(JSON.stringify(leak.body)).not.toContain(`Hidden MS ${suffix}`);
+  });
 });

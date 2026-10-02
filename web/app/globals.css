@@ -1047,8 +1047,84 @@ button.btn {
 }
 
 .planner-page.is-kanban,
-.planner-page.is-gantt {
+.planner-page.is-gantt,
+.planner-page.is-milestones {
   max-width: none;
+}
+
+.milestone-board {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.milestone-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.milestone-kpi-value {
+  margin: 0 0 6px;
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+.milestone-timeline {
+  background: #fff;
+  border: 1px solid var(--header-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.milestone-timeline h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.milestone-timeline-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.milestone-diamond-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.milestone-diamond-btn.is-active,
+.milestone-diamond-btn:focus-visible {
+  border-color: #d97706;
+  outline: 2px solid #d97706;
+}
+
+.milestone-reasons {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+.milestone-task-list {
+  margin: 0 0 12px;
+  padding-left: 18px;
+}
+
+@media (max-width: 1180px) {
+  .milestone-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .gantt-derived-note {
@@ -1651,6 +1727,12 @@ button.btn {
   justify-content: space-between;
   gap: 12px;
   align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.inspector-form {
+  display: grid;
+  gap: 10px;
   margin-bottom: 16px;
 }
 
