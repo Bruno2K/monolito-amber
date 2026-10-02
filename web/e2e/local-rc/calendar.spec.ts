@@ -159,7 +159,8 @@ test.describe("M5.3 Calendar UX / My Schedule", () => {
     await expect(teamCard).toBeVisible();
     await expect(teamCard).toContainText("herdado via equipe");
     await page.goto(`/calendars/${teamCalendarId}/share`);
-    await expect(page.getByText(/Não editável diretamente|Somente o proprietário/)).toBeVisible();
+    await expect(page.getByText("Somente o proprietário ativo administra concessões. Editor não compartilha nem arquiva.")).toBeVisible();
+    await expect(page.locator(".calendar-grant-row").getByText("Não editável diretamente")).toBeVisible();
 
     await clearBrowserToSignIn(page);
     await signInToOrg(page, "coord-a", "Amber Demo Alpha");
