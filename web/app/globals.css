@@ -1315,13 +1315,17 @@ button.btn {
 
 .gantt-hierarchy-row,
 .gantt-row {
+  height: 40px;
   min-height: 40px;
+  max-height: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 4px 12px;
   border-bottom: 1px solid #f3f4f6;
   position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .gantt-hierarchy-row.is-active {
@@ -1334,6 +1338,15 @@ button.btn {
   text-transform: uppercase;
   color: var(--text-muted);
   flex-shrink: 0;
+}
+
+.gantt-title,
+.gantt-title-btn {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .gantt-title-btn {
@@ -1349,7 +1362,7 @@ button.btn {
 
 .gantt-title-btn:focus-visible,
 .gantt-bar:focus-visible,
-.gantt-diamond:focus-visible,
+.gantt-timeline .gantt-diamond:focus-visible,
 .gantt-table input:focus-visible,
 .gantt-edit-actions select:focus-visible {
   outline: 2px solid var(--amber);
@@ -1386,15 +1399,21 @@ button.btn {
   position: absolute;
   top: 8px;
   height: 24px;
+  min-width: 36px;
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
   border: 0;
   border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  padding: 0 8px;
   font-size: 11px;
   color: #111827;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .gantt-bar-phase {
@@ -1417,7 +1436,7 @@ button.btn {
   background: #fed7aa;
 }
 
-.gantt-diamond {
+.gantt-timeline .gantt-diamond {
   position: absolute;
   top: 6px;
   appearance: none;
@@ -1436,10 +1455,7 @@ button.btn {
 }
 
 .gantt-row-risk {
-  margin-left: auto;
-  font-size: 11px;
-  color: #9a3412;
-  max-width: 40%;
+  display: none;
 }
 
 .gantt-links {
@@ -1494,7 +1510,7 @@ button.btn {
 
 @media (prefers-reduced-motion: reduce) {
   .gantt-bar,
-  .gantt-diamond {
+  .gantt-timeline .gantt-diamond {
     transition: none;
   }
 }
