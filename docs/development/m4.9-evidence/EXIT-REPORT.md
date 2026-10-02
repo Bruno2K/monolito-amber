@@ -16,7 +16,7 @@ Reason: every M4.1–M4.8 (+M4.8.1) requirement is **ATENDIDO** with objective e
 | Correction loops ≤3 for BLOCKER/IMPORTANT | None required. MINOR M49-01…03 closed as honesty docs/OpenAPI |
 | Evidence index + this report | this folder + [../../release/m4.9-evidence-index.md](../../release/m4.9-evidence-index.md) |
 | Agentic docs for ACTIVE M4.9 | `docs/agentic/{state,context,graph,loop,harness}.md` |
-| Same-tip Foundation + Local RC | recorded in [INDEX.md](./INDEX.md) after green CI |
+| Same-tip Foundation + Local RC | [36972519273](https://github.com/Bruno2K/monolito-amber/actions/runs/36972519273) SUCCESS on `1679dee0…` |
 
 ## Issues / PRs / SHAs / migrations
 

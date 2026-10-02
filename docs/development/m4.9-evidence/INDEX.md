@@ -49,10 +49,12 @@ Same-tip Foundation + Local RC SUCCESS on the audit tip (no jobs skipped):
 
 | Job | URL | Status | Tip SHA |
 | --- | --- | --- | --- |
-| Foundation & Security Gates | _pending first green run_ | — | — |
-| Local RC (real API + Postgres + MinIO) | _pending first green run_ | — | — |
+| Foundation & Security Gates | https://github.com/Bruno2K/monolito-amber/actions/runs/36972519273/job/110729299995 | success | `1679dee0c029f324f0ea8fdae1e3a3dd54ae22ce` |
+| Local RC (real API + Postgres + MinIO) | https://github.com/Bruno2K/monolito-amber/actions/runs/36972519273/job/110729299886 | success | `1679dee0c029f324f0ea8fdae1e3a3dd54ae22ce` |
 
-Workflow: _pending first green run_
+Workflow: https://github.com/Bruno2K/monolito-amber/actions/runs/36972519273
+
+A later docs-only commit on this branch only records that run. The green evidence tip remains `1679dee0c029f324f0ea8fdae1e3a3dd54ae22ce`.
 
 Required commands (QG-1):
 
