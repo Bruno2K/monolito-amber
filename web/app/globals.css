@@ -14,6 +14,7 @@
   --header-bg: #ffffff;
   --header-border: #e5e7eb;
   --text-primary: #111827;
+  --text: var(--text-primary);
   --text-muted: #4b5563;
   --text-secondary: #4b5563;
   --bg-page: #f9fafb;
@@ -25,6 +26,7 @@
   --status-global-fg: #1d4ed8;
   --radius-md: 6px;
   --input-height: 36px;
+  --field-gap: 8px;
   --nav-item-height: 36px;
   color-scheme: light;
   font-family: var(--font-sans);
@@ -168,14 +170,54 @@ a {
 }
 
 .field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--field-gap);
   margin: 0.75rem 0;
 }
 
 .field label,
 .identity-main label {
   display: block;
-  margin: 0.75rem 0 0.35rem;
+  margin: 0.75rem 0 0;
   color: var(--text-secondary);
+}
+
+.field label {
+  margin: 0;
+}
+
+.control-select,
+.project-switcher,
+.deliverables-toolbar select,
+.structure-inspector select,
+.kanban-move select,
+.gantt-edit-actions select {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  height: var(--input-height);
+  padding: 0 32px 0 12px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-md);
+  font: inherit;
+  color: var(--text-primary);
+  background-color: var(--bg-input);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4.5L6 8L9.5 4.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  cursor: pointer;
+}
+
+.control-select:disabled,
+.project-switcher:disabled,
+.deliverables-toolbar select:disabled,
+.structure-inspector select:disabled,
+.kanban-move select:disabled,
+.gantt-edit-actions select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .identity-main input,
@@ -463,13 +505,7 @@ button.btn {
 }
 
 .project-switcher {
-  height: 28px;
   max-width: 220px;
-  border: 1px solid var(--header-border);
-  border-radius: 4px;
-  background: #fff;
-  font: inherit;
-  color: var(--text-primary);
 }
 
 .search-field {
@@ -739,21 +775,35 @@ button.btn {
 }
 
 .structure-inspector label {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--field-gap);
   margin: 12px 0;
   color: var(--text-secondary);
 }
 
 .structure-inspector input,
-.structure-inspector textarea {
+.structure-inspector textarea,
+.structure-inspector select {
   display: block;
   width: 100%;
-  margin-top: 4px;
-  padding: 8px 12px;
+  margin-top: 0;
   border: 1px solid var(--border-input);
   border-radius: var(--radius-md);
   font: inherit;
-  background: var(--bg-input);
+  background-color: var(--bg-input);
+}
+
+.structure-inspector input {
+  height: var(--input-height);
+  padding: 0 12px;
+}
+
+.structure-inspector textarea {
+  min-height: 72px;
+  padding: 8px 12px;
+  resize: vertical;
 }
 
 .inspector-actions {
@@ -787,19 +837,15 @@ button.btn {
   align-items: center;
 }
 
-.deliverables-search,
-.deliverables-toolbar select,
-.structure-inspector select {
-  padding: 8px 12px;
+.deliverables-search {
+  min-width: min(100%, 240px);
+  flex: 1;
+  height: var(--input-height);
+  padding: 0 12px;
   border: 1px solid var(--border-input);
   border-radius: var(--radius-md);
   font: inherit;
   background: var(--bg-input);
-}
-
-.deliverables-search {
-  min-width: min(100%, 240px);
-  flex: 1;
 }
 
 .deliverables-table-wrap {
@@ -1485,16 +1531,20 @@ button.btn {
 }
 
 .kanban-card-chips {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 8px;
   align-items: center;
 }
 
 .kanban-move {
   display: grid;
-  gap: 4px;
+  gap: var(--field-gap);
   font-size: 12px;
+}
+
+.kanban-move select {
+  width: 100%;
 }
 
 .kanban-block-prompt {
@@ -1551,7 +1601,6 @@ button.btn {
 
 .planner-late {
   display: inline-flex;
-  margin-left: 6px;
   padding: 2px 8px;
   border-radius: 999px;
   background: #fff7ed;
@@ -1583,13 +1632,18 @@ button.btn {
 
 .planner-dep-wait {
   display: inline-flex;
-  margin-left: 6px;
   padding: 2px 8px;
   border-radius: 999px;
   background: #eef2ff;
   color: #3730a3;
   font-size: 11px;
   border: 1px solid #c7d2fe;
+}
+
+.status-pill + .planner-late,
+.status-pill + .planner-dep-wait,
+.planner-late + .planner-dep-wait {
+  margin-inline-start: 8px;
 }
 
 .planner-deps {
