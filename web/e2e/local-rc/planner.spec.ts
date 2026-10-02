@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { apiJson, capture, IDS, logoutToSignIn, signInToOrg } from "./helpers";
+import { apiJson, capture, clearBrowserToSignIn, IDS, signInToOrg } from "./helpers";
 
 const EVIDENCE_M42 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.2");
 const EVIDENCE_M43 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.3");
@@ -178,7 +178,7 @@ test.describe("M4.2 Local RC Planning List", () => {
     );
     await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${succ.body.id}"]`)).toBeVisible();
 
-    await logoutToSignIn(page);
+    await clearBrowserToSignIn(page);
     await signInToOrg(page, "viewer-a", "Amber Demo Alpha");
     await page.goto(`/projects/${IDS.projectA1}/planner?view=kanban&q=${encodeURIComponent(title)}`);
     await expect(page.getByRole("region", { name: "Quadro Kanban" })).toBeVisible();
@@ -247,7 +247,7 @@ test.describe("M4.2 Local RC Planning List", () => {
     expect(startBlocked.status).toBeGreaterThanOrEqual(400);
     expect(JSON.stringify(startBlocked.body)).toMatch(/predecessor|DEPENDENCY|término-início|finish-to-start/i);
 
-    await logoutToSignIn(page);
+    await clearBrowserToSignIn(page);
     await signInToOrg(page, "viewer-a", "Amber Demo Alpha");
     await page.goto(`/projects/${IDS.projectA1}/planner?view=gantt&q=${encodeURIComponent(title)}`);
     await expect(page.getByRole("region", { name: "Cronograma Gantt" })).toBeVisible();
