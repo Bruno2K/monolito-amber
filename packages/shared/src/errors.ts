@@ -1,12 +1,14 @@
 export class AmberError extends Error {
   readonly code: string;
   readonly status: number;
+  readonly extras?: Record<string, unknown>;
 
-  constructor(code: string, message: string, status: number) {
+  constructor(code: string, message: string, status: number, extras?: Record<string, unknown>) {
     super(message);
     this.name = "AmberError";
     this.code = code;
     this.status = status;
+    this.extras = extras;
   }
 }
 
@@ -189,8 +191,8 @@ export class CoordinationStateError extends AmberError {
 }
 
 export class PlanningStateError extends AmberError {
-  constructor(detail: string) {
-    super("PLANNING_STATE", detail, 409);
+  constructor(detail: string, extras?: Record<string, unknown>) {
+    super("PLANNING_STATE", detail, 409, extras);
     this.name = "PlanningStateError";
   }
 }

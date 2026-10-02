@@ -105,7 +105,7 @@ MVP: **same-Project finish-to-start**.
 | Successor already `IN_PROGRESS` or `BLOCKED` and predecessor not `DONE` | `PlanningStateError` |
 | Successor → `IN_PROGRESS` while any predecessor is not `DONE` | `prerequisitesBlockStart` |
 
-No start-to-start, finish-to-finish, lag/lead calendar engine, or automatic successor date shift. Gantt drags that would propagate dates are **rejected** (M4.6). Unlink (delete edge) is additive M4.4; until then the create API is the mutation surface.
+No start-to-start, finish-to-finish, lag/lead calendar engine, or automatic successor date shift. Gantt drags that would propagate dates are **rejected** (M4.6). Unlink (delete edge) is the additive M4.4 command `DELETE …/tasks/{taskId}/dependencies/{dependencyId}` (`task.update` + `Idempotency-Key`). Create remains `POST …/dependencies`.
 
 ---
 

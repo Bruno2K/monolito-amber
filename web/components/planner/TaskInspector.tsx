@@ -9,6 +9,7 @@ import {
   canCreateTask,
   canUpdateTask,
   dateInputToIso,
+  dependencyStartExplanation,
   formatPlanningDate,
   formatProgress,
   isoDateInput,
@@ -17,6 +18,7 @@ import {
   taskStatusLabel,
   type PlanningHistoryEvent,
   type PlanningMilestoneRow,
+  type PlanningNeighborLink,
   type PlanningTaskRow,
 } from "../../lib/planning";
 import {
@@ -70,6 +72,11 @@ export function TaskInspector({
   const [issues, setIssues] = useState<IssueOption[]>([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineListResponse["items"]>([]);
+  const [predecessors, setPredecessors] = useState<PlanningNeighborLink[]>(row?.predecessors ?? []);
+  const [successors, setSuccessors] = useState<PlanningNeighborLink[]>(row?.successors ?? []);
+  const [candidates, setCandidates] = useState<Array<{ id: string; title: string; status: string }>>([]);
+  const [candidateQuery, setCandidateQuery] = useState("");
+  const [selectedPredecessor, setSelectedPredecessor] = useState("");
 
   const canCreate = canCreateTask(permissions);
   const canUpdate = canUpdateTask(permissions);
@@ -83,7 +90,11 @@ export function TaskInspector({
     setConfirming(null);
     setBlockReason(row?.blockedReason ?? "");
     setHistory(row?.history ?? []);
-  }, [row?.id, row?.blockedReason, row?.history, creating]);
+    setPredecessors(row?.predecessors ?? []);
+    setSuccessors(row?.successors ?? []);
+    setCandidateQuery("");
+    setSelectedPredecessor("");
+  }, [row?.id, row?.blockedReason, row?.history, row?.predecessors, row?.successors, creating]);
 
   useEffect(() => {
     void Promise.all([
@@ -132,7 +143,53 @@ export function TaskInspector({
         setHistory(result.body);
       }
     });
+    void api<
+      Array<{
+        id: string;
+        predecessorTaskId: string;
+        successorTaskId: string;
+        predecessor?: { id: string; title: string; status: string };
+        successor?: { id: string; title: string; status: string };
+      }>
+    >(`/api/v1/projects/${projectId}/tasks/${row.id}/dependencies`).then((result) => {
+      if (!result.ok) {
+        return;
+      }
+      setPredecessors(
+        result.body
+          .filter((edge) => edge.successorTaskId === row.id && edge.predecessor)
+          .map((edge) => ({
+            dependencyId: edge.id,
+            taskId: edge.predecessorTaskId,
+            title: edge.predecessor?.title,
+            status: edge.predecessor?.status ?? "",
+          })),
+      );
+      setSuccessors(
+        result.body
+          .filter((edge) => edge.predecessorTaskId === row.id && edge.successor)
+          .map((edge) => ({
+            dependencyId: edge.id,
+            taskId: edge.successorTaskId,
+            title: edge.successor?.title,
+            status: edge.successor?.status ?? "",
+          })),
+      );
+    });
   }, [creating, projectId, row?.id, row?.version]);
+
+  useEffect(() => {
+    if (!row?.id || creating) {
+      return;
+    }
+    const q = candidateQuery.trim();
+    const path = `/api/v1/projects/${projectId}/tasks/${row.id}/dependency-candidates${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+    void api<{ items: Array<{ id: string; title: string; status: string }> }>(path).then((result) => {
+      if (result.ok) {
+        setCandidates(result.body.items);
+      }
+    });
+  }, [candidateQuery, creating, predecessors, projectId, row?.id, row?.version]);
 
   async function onSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -216,6 +273,58 @@ export function TaskInspector({
     setBusy(false);
     setConfirming(null);
     if (!result.ok) {
+      const blockers = result.problem.blockers
+        ?.map((item) => item.title || item.message)
+        .filter(Boolean)
+        .join("; ");
+      setFormError(blockers ? `${result.problem.detail} ${blockers}` : result.problem.detail);
+      return;
+    }
+    await onChanged();
+  }
+
+  async function onAddPredecessor(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!row || !selectedPredecessor) {
+      setFormError("Selecione um predecessor autorizado.");
+      return;
+    }
+    if (!canUpdate) {
+      setFormError("Dependências requerem task.update.");
+      return;
+    }
+    setBusy(true);
+    setFormError(null);
+    const result = await api(`/api/v1/projects/${projectId}/tasks/${row.id}/dependencies`, {
+      method: "POST",
+      headers: { "Idempotency-Key": newIdempotencyKey("task-dep-add") },
+      body: JSON.stringify({ predecessorTaskId: selectedPredecessor, type: "FINISH_TO_START" }),
+    });
+    setBusy(false);
+    if (!result.ok) {
+      setFormError(result.problem.detail);
+      return;
+    }
+    setSelectedPredecessor("");
+    await onChanged();
+  }
+
+  async function onRemoveDependency(dependencyId: string) {
+    if (!row) {
+      return;
+    }
+    if (!canUpdate) {
+      setFormError("Dependências requerem task.update.");
+      return;
+    }
+    setBusy(true);
+    setFormError(null);
+    const result = await api(`/api/v1/projects/${projectId}/tasks/${row.id}/dependencies/${dependencyId}`, {
+      method: "DELETE",
+      headers: { "Idempotency-Key": newIdempotencyKey("task-dep-remove") },
+    });
+    setBusy(false);
+    if (!result.ok) {
       setFormError(result.problem.detail);
       return;
     }
@@ -267,6 +376,19 @@ export function TaskInspector({
       {row?.late ? (
         <p className="planner-late-explain" role="status">
           <strong>Atrasada (derivado).</strong> {lateExplanation(row.status)}
+        </p>
+      ) : null}
+
+      {row && !creating && (row.dependencyStartBlocked || (row.startBlockers?.length ?? 0) > 0) ? (
+        <p className="planner-dep-block" role="status">
+          <strong>Aguardando predecessor.</strong> {dependencyStartExplanation(row.startBlockers)}
+        </p>
+      ) : null}
+
+      {row?.status === "BLOCKED" ? (
+        <p className="planner-task-blocked" role="status">
+          <strong>Bloqueada (estado armazenado).</strong> {row.blockedReason || "Motivo obrigatório."} Isto não é um
+          bloqueio por dependência.
         </p>
       ) : null}
 
@@ -474,6 +596,102 @@ export function TaskInspector({
             </div>
           </dl>
 
+          <section className="planner-deps" aria-labelledby="planner-deps-title">
+            <h3 id="planner-deps-title">Dependências (término-início)</h3>
+            <p className="muted">
+              O predecessor precisa estar Concluída para iniciar. Isto não altera datas e não é o estado Bloqueada.
+            </p>
+            <div className="planner-dep-columns">
+              <div>
+                <h4>Predecessores</h4>
+                {predecessors.length === 0 ? (
+                  <p className="muted">Nenhum predecessor.</p>
+                ) : (
+                  <ul className="planner-dep-list">
+                    {predecessors.map((item) => (
+                      <li key={item.dependencyId}>
+                        <span>
+                          {item.title ?? "Tarefa autorizada"}{" "}
+                          <span className="muted">({taskStatusLabel(item.status)})</span>
+                        </span>
+                        {canUpdate && !readOnly ? (
+                          <button
+                            type="button"
+                            className="btn secondary"
+                            disabled={busy}
+                            onClick={() => void onRemoveDependency(item.dependencyId)}
+                          >
+                            Remover predecessor
+                          </button>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <h4>Sucessores</h4>
+                {successors.length === 0 ? (
+                  <p className="muted">Nenhum sucessor.</p>
+                ) : (
+                  <ul className="planner-dep-list">
+                    {successors.map((item) => (
+                      <li key={item.dependencyId}>
+                        <span>
+                          {item.title ?? "Tarefa autorizada"}{" "}
+                          <span className="muted">({taskStatusLabel(item.status)})</span>
+                        </span>
+                        {canUpdate && !readOnly ? (
+                          <button
+                            type="button"
+                            className="btn secondary"
+                            disabled={busy}
+                            onClick={() => void onRemoveDependency(item.dependencyId)}
+                          >
+                            Remover sucessor
+                          </button>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+            {canUpdate && !readOnly && !creating ? (
+              <form className="planner-dep-add" onSubmit={(event) => void onAddPredecessor(event)}>
+                <label htmlFor="task-dep-search">
+                  Buscar predecessor
+                  <input
+                    id="task-dep-search"
+                    value={candidateQuery}
+                    onChange={(event) => setCandidateQuery(event.target.value)}
+                    disabled={busy}
+                    autoComplete="off"
+                  />
+                </label>
+                <label htmlFor="task-dep-candidate">
+                  Adicionar predecessor
+                  <select
+                    id="task-dep-candidate"
+                    value={selectedPredecessor}
+                    onChange={(event) => setSelectedPredecessor(event.target.value)}
+                    disabled={busy || candidates.length === 0}
+                  >
+                    <option value="">{candidates.length === 0 ? "Nenhum candidato autorizado" : "Selecionar tarefa"}</option>
+                    {candidates.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.title} ({taskStatusLabel(item.status)})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button type="submit" className="btn secondary" disabled={busy || !selectedPredecessor}>
+                  Adicionar dependência
+                </button>
+              </form>
+            ) : null}
+          </section>
+
           {canAssign && !readOnly && !terminal ? (
             <form className="planner-assign" onSubmit={(event) => void onAssign(event)}>
               <label htmlFor="task-assignee">
@@ -501,7 +719,12 @@ export function TaskInspector({
                 <button
                   type="button"
                   className="btn secondary"
-                  disabled={busy}
+                  disabled={busy || (row.status === "TODO" && Boolean(row.dependencyStartBlocked))}
+                  title={
+                    row.status === "TODO" && row.dependencyStartBlocked
+                      ? dependencyStartExplanation(row.startBlockers)
+                      : undefined
+                  }
                   onClick={() => void runCommand(row.status === "BLOCKED" ? "unblock" : "start", {}, canUpdate)}
                 >
                   {row.status === "BLOCKED" ? "Desbloquear" : "Iniciar"}

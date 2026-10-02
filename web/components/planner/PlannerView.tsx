@@ -406,6 +406,11 @@ export function PlannerView({ projectId }: { projectId: string }) {
                                   Atrasada
                                 </span>
                               ) : null}
+                              {row.dependencyStartBlocked && row.status !== "BLOCKED" ? (
+                                <span className="planner-dep-wait" title="Início bloqueado por predecessor incompleto">
+                                  Aguardando predecessor
+                                </span>
+                              ) : null}
                             </td>
                           </tr>
                         );

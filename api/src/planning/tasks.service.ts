@@ -2,12 +2,14 @@ import { Injectable } from "@nestjs/common";
 import {
   DenyByDefaultError,
   OUTBOX_EVENT_TYPES,
+  PLANNING_DEPENDENCY_CANDIDATE_PAGE_MAX,
   PlanningStateError,
   assertAcyclicDependency,
   assertEstimatedMinutes,
   assertFinishToStartType,
   assertTaskProgressPercent,
   assertTaskTransition,
+  incompletePredecessorBlockers,
   isTaskLate,
   isTaskPriority,
   isTaskStatus,
@@ -15,6 +17,7 @@ import {
   prerequisitesBlockStart,
   redactSecrets,
   resolveTaskDeliveryRefs,
+  successorRejectsUnfinishedPredecessor,
   taskCompleteCascadesToDeliverable,
   taskCompleteCascadesToIssue,
   taskCompleteCascadesToMilestone,
@@ -25,6 +28,7 @@ import {
   type TaskPriority,
   type TaskStatus,
 } from "@amber/shared";
+import { Prisma } from "@prisma/client";
 import { AuditService } from "../audit/audit.service";
 import type { RequestSession } from "../auth/session.types";
 import { FoundationService } from "../foundation/foundation.service";
@@ -487,12 +491,13 @@ export class TasksService {
         throw new PlanningStateError("BLOCKED requires a blocked reason");
       }
     }
-    if (input.status === "IN_PROGRESS") {
-      await this.assertPrerequisitesDone(bound.task.id, bound.organizationId, bound.project.id);
-    }
     const sourceIssueId = bound.task.issueId;
     const sourceMilestoneId = bound.task.milestoneId;
     const body = await this.prisma.$transaction(async (tx) => {
+      if (input.status === "IN_PROGRESS" || input.status === "DONE") {
+        await this.lockProjectDependencyGraph(tx, bound.project.id);
+        await this.assertPrerequisitesDone(bound.task.id, bound.organizationId, bound.project.id, tx);
+      }
       const now = new Date();
       const updated = await tx.task.update({
         where: { id: bound.task.id },
@@ -699,8 +704,16 @@ export class TasksService {
       where: {
         organizationId,
         projectId,
-        resourceType: "task",
-        resourceId: taskId,
+        OR: [
+          { resourceType: "task", resourceId: taskId },
+          {
+            resourceType: "task_dependency",
+            OR: [
+              { payload: { path: ["predecessorTaskId"], equals: taskId } },
+              { payload: { path: ["successorTaskId"], equals: taskId } },
+            ],
+          },
+        ],
       },
       orderBy: { createdAt: "asc" },
       take: 100,
@@ -727,51 +740,68 @@ export class TasksService {
     if (!UUID_RE.test(input.predecessorTaskId)) {
       throw new DenyByDefaultError("Client predecessorTaskId is not authoritative");
     }
-    const predecessor = await this.prisma.task.findUnique({ where: { id: input.predecessorTaskId } });
-    if (
-      !predecessor ||
-      predecessor.projectId !== bound.project.id ||
-      predecessor.organizationId !== bound.organizationId
-    ) {
-      throw new DenyByDefaultError("Task dependency endpoint is not bound to the authorized Project");
-    }
     const started = await this.idempotency.begin(bound.organizationId, idempotencyKey, {
       successorTaskId: bound.task.id,
-      predecessorTaskId: predecessor.id,
+      predecessorTaskId: input.predecessorTaskId,
       type: "FINISH_TO_START",
     });
     if (started.replay) {
       return started.replay.responseBody;
     }
-    const existing = await this.prisma.taskDependency.findMany({
-      where: { projectId: bound.project.id, organizationId: bound.organizationId },
-      select: { predecessorTaskId: true, successorTaskId: true },
-    });
-    if (
-      existing.some(
-        (edge) => edge.predecessorTaskId === predecessor.id && edge.successorTaskId === bound.task.id,
-      )
-    ) {
-      throw new PlanningStateError("Task dependency already exists");
-    }
-    assertAcyclicDependency(existing, predecessor.id, bound.task.id);
-    if (
-      (bound.task.status === "IN_PROGRESS" || bound.task.status === "BLOCKED") &&
-      predecessor.status !== "DONE"
-    ) {
-      throw new PlanningStateError("Cannot add an unfinished prerequisite to a Task that has already started");
-    }
-    const created = await this.prisma.$transaction(async (tx) => {
-      const dependency = await tx.taskDependency.create({
-        data: {
-          organizationId: bound.organizationId,
-          projectId: bound.project.id,
-          predecessorTaskId: predecessor.id,
-          successorTaskId: bound.task.id,
-          type: "FINISH_TO_START",
-          createdByUserId: session.userId,
-        },
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockProjectDependencyGraph(tx, bound.project.id);
+      const predecessor = await tx.task.findUnique({ where: { id: input.predecessorTaskId } });
+      if (
+        !predecessor ||
+        predecessor.projectId !== bound.project.id ||
+        predecessor.organizationId !== bound.organizationId
+      ) {
+        throw new DenyByDefaultError("Task dependency endpoint is not bound to the authorized Project");
+      }
+      const successor = await tx.task.findUnique({ where: { id: bound.task.id } });
+      if (
+        !successor ||
+        successor.projectId !== bound.project.id ||
+        successor.organizationId !== bound.organizationId
+      ) {
+        throw new DenyByDefaultError("Task is not bound to the authorized Project");
+      }
+      const existing = await tx.taskDependency.findMany({
+        where: { projectId: bound.project.id, organizationId: bound.organizationId },
+        select: { predecessorTaskId: true, successorTaskId: true },
       });
+      if (
+        existing.some(
+          (edge) => edge.predecessorTaskId === predecessor.id && edge.successorTaskId === successor.id,
+        )
+      ) {
+        throw new PlanningStateError("Task dependency already exists", { reason: "DEPENDENCY_DUPLICATE" });
+      }
+      assertAcyclicDependency(existing, predecessor.id, successor.id);
+      if (successorRejectsUnfinishedPredecessor(successor.status) && predecessor.status !== "DONE") {
+        throw new PlanningStateError(
+          "Cannot add an unfinished prerequisite to a Task that has already started or completed",
+          { reason: "DEPENDENCY_RETROACTIVE" },
+        );
+      }
+      let dependency;
+      try {
+        dependency = await tx.taskDependency.create({
+          data: {
+            organizationId: bound.organizationId,
+            projectId: bound.project.id,
+            predecessorTaskId: predecessor.id,
+            successorTaskId: successor.id,
+            type: "FINISH_TO_START",
+            createdByUserId: session.userId,
+          },
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+          throw new PlanningStateError("Task dependency already exists", { reason: "DEPENDENCY_DUPLICATE" });
+        }
+        throw error;
+      }
       await this.audit.insert(
         {
           organizationId: dependency.organizationId,
@@ -793,7 +823,62 @@ export class TasksService {
       await this.idempotency.commit(bound.organizationId, started.key, started.hash, 201, body, tx);
       return body;
     });
-    return created;
+  }
+
+  async removeDependency(
+    session: RequestSession,
+    projectId: string,
+    taskId: string,
+    dependencyId: string,
+    idempotencyKey: string | undefined,
+  ) {
+    const bound = await this.requireTask(session, "task.update", projectId, taskId);
+    this.access.rejectArchivedProject(bound.project);
+    if (!UUID_RE.test(dependencyId)) {
+      throw new DenyByDefaultError("Client dependencyId is not authoritative");
+    }
+    const started = await this.idempotency.begin(bound.organizationId, idempotencyKey, {
+      action: "remove_dependency",
+      taskId: bound.task.id,
+      dependencyId,
+    });
+    if (started.replay) {
+      return started.replay.responseBody;
+    }
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockProjectDependencyGraph(tx, bound.project.id);
+      const edge = await tx.taskDependency.findUnique({ where: { id: dependencyId } });
+      if (
+        !edge ||
+        edge.projectId !== bound.project.id ||
+        edge.organizationId !== bound.organizationId ||
+        (edge.predecessorTaskId !== bound.task.id && edge.successorTaskId !== bound.task.id)
+      ) {
+        throw new DenyByDefaultError("Task dependency is not bound to the authorized Task");
+      }
+      await tx.taskDependency.delete({ where: { id: edge.id } });
+      await this.audit.insert(
+        {
+          organizationId: edge.organizationId,
+          projectId: edge.projectId,
+          actorUserId: session.userId,
+          eventType: "TASK_DEPENDENCY_REMOVED",
+          resourceType: "task_dependency",
+          resourceId: edge.id,
+          correlationId: currentCorrelationId(),
+          payload: redactSecrets({
+            predecessorTaskId: edge.predecessorTaskId,
+            successorTaskId: edge.successorTaskId,
+            type: edge.type,
+            action: "REMOVED",
+          }),
+        },
+        tx,
+      );
+      const body = this.toDependencyDto(edge);
+      await this.idempotency.commit(bound.organizationId, started.key, started.hash, 200, body, tx);
+      return body;
+    });
   }
 
   async listDependencies(session: RequestSession, projectId: string, taskId: string) {
@@ -806,7 +891,47 @@ export class TasksService {
       },
       orderBy: { createdAt: "asc" },
     });
-    return rows.map((row) => this.toDependencyDto(row));
+    const neighbors = await this.loadAuthorizedNeighbors(
+      bound.organizationId,
+      bound.project.id,
+      rows.flatMap((row) => [row.predecessorTaskId, row.successorTaskId]),
+    );
+    return rows.map((row) => this.toDependencyDto(row, neighbors));
+  }
+
+  async listDependencyCandidates(
+    session: RequestSession,
+    projectId: string,
+    taskId: string,
+    query: { q?: string; pageSize?: string } = {},
+  ) {
+    const bound = await this.requireTask(session, "project.read", projectId, taskId);
+    const q = query.q?.trim() ?? "";
+    const pageSize = Math.min(
+      PLANNING_DEPENDENCY_CANDIDATE_PAGE_MAX,
+      Math.max(1, Number.parseInt(query.pageSize ?? "", 10) || PLANNING_DEPENDENCY_CANDIDATE_PAGE_MAX),
+    );
+    const existing = await this.prisma.taskDependency.findMany({
+      where: {
+        organizationId: bound.organizationId,
+        projectId: bound.project.id,
+        successorTaskId: bound.task.id,
+      },
+      select: { predecessorTaskId: true },
+    });
+    const excluded = [bound.task.id, ...existing.map((row) => row.predecessorTaskId)];
+    const items = await this.prisma.task.findMany({
+      where: {
+        organizationId: bound.organizationId,
+        projectId: bound.project.id,
+        id: { notIn: excluded },
+        ...(q ? { title: { contains: q, mode: "insensitive" as const } } : {}),
+      },
+      select: { id: true, title: true, status: true },
+      orderBy: { title: "asc" },
+      take: pageSize,
+    });
+    return { items, page: { pageSize, total: items.length } };
   }
 
   private async requireTask(
@@ -969,14 +1094,43 @@ export class TasksService {
     }
   }
 
-  private async assertPrerequisitesDone(taskId: string, organizationId: string, projectId: string) {
-    const edges = await this.prisma.taskDependency.findMany({
+  private async assertPrerequisitesDone(
+    taskId: string,
+    organizationId: string,
+    projectId: string,
+    tx: Prisma.TransactionClient | PrismaService = this.prisma,
+  ) {
+    const edges = await tx.taskDependency.findMany({
       where: { successorTaskId: taskId, organizationId, projectId },
-      include: { predecessor: { select: { status: true } } },
+      include: { predecessor: { select: { id: true, status: true, title: true } } },
     });
-    if (prerequisitesBlockStart(edges.map((edge) => edge.predecessor))) {
-      throw new PlanningStateError("Task cannot move to IN_PROGRESS while a finish-to-start prerequisite is not DONE");
+    const predecessors = edges.map((edge) => edge.predecessor);
+    if (!prerequisitesBlockStart(predecessors)) {
+      return;
     }
+    throw new PlanningStateError(
+      "Task cannot move to IN_PROGRESS or DONE while a finish-to-start prerequisite is not DONE",
+      {
+        reason: "DEPENDENCY_PREDECESSOR_INCOMPLETE",
+        blockers: incompletePredecessorBlockers(predecessors),
+      },
+    );
+  }
+
+  private async lockProjectDependencyGraph(tx: Prisma.TransactionClient, projectId: string) {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`planning.deps:${projectId}`}))`;
+  }
+
+  private async loadAuthorizedNeighbors(organizationId: string, projectId: string, ids: string[]) {
+    const unique = [...new Set(ids.filter(Boolean))];
+    if (unique.length === 0) {
+      return new Map<string, { id: string; title: string; status: string }>();
+    }
+    const rows = await this.prisma.task.findMany({
+      where: { id: { in: unique }, organizationId, projectId },
+      select: { id: true, title: true, status: true },
+    });
+    return new Map(rows.map((row) => [row.id, row]));
   }
 
   private parseOptionalPriority(value: string | null | undefined): TaskPriority | null {
@@ -1057,16 +1211,19 @@ export class TasksService {
     };
   }
 
-  toDependencyDto(row: {
-    id: string;
-    organizationId: string;
-    projectId: string;
-    predecessorTaskId: string;
-    successorTaskId: string;
-    type: string;
-    createdByUserId: string;
-    createdAt: Date;
-  }) {
+  toDependencyDto(
+    row: {
+      id: string;
+      organizationId: string;
+      projectId: string;
+      predecessorTaskId: string;
+      successorTaskId: string;
+      type: string;
+      createdByUserId: string;
+      createdAt: Date;
+    },
+    neighbors?: Map<string, { id: string; title: string; status: string }>,
+  ) {
     return {
       id: row.id,
       organizationId: row.organizationId,
@@ -1076,6 +1233,8 @@ export class TasksService {
       type: row.type,
       createdByUserId: row.createdByUserId,
       createdAt: row.createdAt,
+      predecessor: neighbors?.get(row.predecessorTaskId),
+      successor: neighbors?.get(row.successorTaskId),
     };
   }
 }

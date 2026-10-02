@@ -39,6 +39,24 @@ export interface PlanningTaskRow {
   updatedAt: string;
   previews: PlanningPreview;
   history?: PlanningHistoryEvent[];
+  dependencyStartBlocked?: boolean;
+  startBlockers?: PlanningStartBlocker[];
+  predecessors?: PlanningNeighborLink[];
+  successors?: PlanningNeighborLink[];
+}
+
+export interface PlanningStartBlocker {
+  predecessorTaskId: string;
+  status: string;
+  title?: string;
+  message: string;
+}
+
+export interface PlanningNeighborLink {
+  dependencyId: string;
+  taskId: string;
+  title?: string;
+  status: string;
 }
 
 export interface PlanningHistoryEvent {
@@ -239,9 +257,21 @@ export function auditEventLabel(eventType: string): string {
       return "Cancelada";
     case "TASK_DELIVERY_REFS_UPDATED":
       return "Relações atualizadas";
+    case "TASK_DEPENDENCY_CREATED":
+      return "Dependência criada";
+    case "TASK_DEPENDENCY_REMOVED":
+      return "Dependência removida";
     default:
       return eventType;
   }
+}
+
+export function dependencyStartExplanation(blockers: PlanningStartBlocker[] | undefined): string {
+  if (!blockers?.length) {
+    return "Início bloqueado por predecessor incompleto (término-início). Isto não é o estado Bloqueada.";
+  }
+  const names = blockers.map((item) => item.title || item.predecessorTaskId).join(", ");
+  return `Início bloqueado: predecessor${blockers.length === 1 ? "" : "es"} ${names} ainda não concluído${blockers.length === 1 ? "" : "s"}. Isto não é o estado Bloqueada.`;
 }
 
 export function newIdempotencyKey(prefix: string): string {

@@ -303,6 +303,7 @@ function requireProject(session, projectId, res) {
 
 const mockTasks = [];
 const mockTaskHistory = new Map();
+const mockDependencies = [];
 
 function seedMockTasks() {
   if (mockTasks.length > 0) {
@@ -377,11 +378,118 @@ function seedMockTasks() {
         phase: { id: "phase-concept", name: "Concept" },
       },
     },
+    {
+      id: "task-survey",
+      organizationId: ORG_A,
+      projectId: PROJECT_A,
+      issueId: null,
+      milestoneId: null,
+      phaseId: "phase-concept",
+      deliverableId: null,
+      workPackageId: null,
+      title: "Levantamento topográfico",
+      description: "",
+      status: "TODO",
+      late: false,
+      kanbanColumn: "PLANEJADAS",
+      priority: "NORMAL",
+      responsibleDisciplineId: null,
+      assigneeUserId: null,
+      dueDate: null,
+      plannedStartAt: null,
+      estimatedMinutes: null,
+      progressPercent: 0,
+      startedAt: null,
+      completedAt: null,
+      blockedReason: null,
+      version: 1,
+      createdAt: "2026-01-03T00:00:00.000Z",
+      updatedAt: "2026-01-03T00:00:00.000Z",
+      previews: { phase: { id: "phase-concept", name: "Concept" } },
+    },
+    {
+      id: "task-waiting",
+      organizationId: ORG_A,
+      projectId: PROJECT_A,
+      issueId: null,
+      milestoneId: null,
+      phaseId: "phase-concept",
+      deliverableId: null,
+      workPackageId: null,
+      title: "Lançar fundações",
+      description: "",
+      status: "TODO",
+      late: false,
+      kanbanColumn: "PLANEJADAS",
+      priority: "NORMAL",
+      responsibleDisciplineId: null,
+      assigneeUserId: null,
+      dueDate: null,
+      plannedStartAt: null,
+      estimatedMinutes: null,
+      progressPercent: 0,
+      startedAt: null,
+      completedAt: null,
+      blockedReason: null,
+      version: 1,
+      createdAt: "2026-01-04T00:00:00.000Z",
+      updatedAt: "2026-01-04T00:00:00.000Z",
+      previews: { phase: { id: "phase-concept", name: "Concept" } },
+    },
   );
+  mockDependencies.push({
+    id: "dep-survey-waiting",
+    organizationId: ORG_A,
+    projectId: PROJECT_A,
+    predecessorTaskId: "task-survey",
+    successorTaskId: "task-waiting",
+    type: "FINISH_TO_START",
+    createdByUserId: USER,
+    createdAt: "2026-01-04T00:00:00.000Z",
+    predecessor: { id: "task-survey", title: "Levantamento topográfico", status: "TODO" },
+    successor: { id: "task-waiting", title: "Lançar fundações", status: "TODO" },
+  });
   mockTaskHistory.set("task-grid", [
     { id: "h-grid-1", eventType: "TASK_CREATED", actorUserId: USER, createdAt: "2026-01-01T00:00:00.000Z", payload: {} },
     { id: "h-grid-2", eventType: "TASK_STATUS_CHANGED", actorUserId: USER, createdAt: "2026-01-02T00:00:00.000Z", payload: { to: "IN_PROGRESS" } },
   ]);
+}
+
+function graphForTask(taskId) {
+  const predecessors = mockDependencies
+    .filter((edge) => edge.successorTaskId === taskId)
+    .map((edge) => ({
+      dependencyId: edge.id,
+      taskId: edge.predecessorTaskId,
+      title: edge.predecessor?.title,
+      status: edge.predecessor?.status ?? mockTasks.find((row) => row.id === edge.predecessorTaskId)?.status ?? "TODO",
+    }));
+  const successors = mockDependencies
+    .filter((edge) => edge.predecessorTaskId === taskId)
+    .map((edge) => ({
+      dependencyId: edge.id,
+      taskId: edge.successorTaskId,
+      title: edge.successor?.title,
+      status: edge.successor?.status ?? mockTasks.find((row) => row.id === edge.successorTaskId)?.status ?? "TODO",
+    }));
+  const startBlockers = predecessors
+    .filter((item) => item.status !== "DONE")
+    .map((item) => ({
+      predecessorTaskId: item.taskId,
+      status: item.status,
+      title: item.title,
+      message: `Predecessor is ${item.status}, not DONE`,
+    }));
+  return {
+    predecessors,
+    successors,
+    startBlockers,
+    dependencyStartBlocked: startBlockers.length > 0,
+  };
+}
+
+function withGraph(task) {
+  return { ...task, ...graphForTask(task.id) };
 }
 
 function appendHistory(taskId, eventType) {
@@ -1092,6 +1200,124 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  const dependencyItem = /^\/api\/v1\/projects\/([^/]+)\/tasks\/([^/]+)\/dependencies\/([^/]+)$/.exec(path);
+  if (dependencyItem) {
+    const project = requireProject(session, dependencyItem[1], res);
+    if (!project) {
+      return;
+    }
+    const task = mockTasks.find((row) => row.id === dependencyItem[2] && row.projectId === project.id);
+    const edge = mockDependencies.find((row) => row.id === dependencyItem[3] && row.projectId === project.id);
+    if (!task || !edge || (edge.predecessorTaskId !== task.id && edge.successorTaskId !== task.id)) {
+      problem(res, 403, "TENANCY_DENIED", "Task dependency is not bound to the authorized Task");
+      return;
+    }
+    if (req.method === "DELETE") {
+      const index = mockDependencies.findIndex((row) => row.id === edge.id);
+      if (index >= 0) {
+        mockDependencies.splice(index, 1);
+      }
+      appendHistory(task.id, "TASK_DEPENDENCY_REMOVED");
+      json(res, 200, edge);
+      return;
+    }
+    problem(res, 405, "METHOD_NOT_ALLOWED", "Unsupported dependency method");
+    return;
+  }
+
+  const dependencyCollection = /^\/api\/v1\/projects\/([^/]+)\/tasks\/([^/]+)\/dependencies$/.exec(path);
+  if (dependencyCollection) {
+    const project = requireProject(session, dependencyCollection[1], res);
+    if (!project) {
+      return;
+    }
+    const task = mockTasks.find((row) => row.id === dependencyCollection[2] && row.projectId === project.id);
+    if (!task) {
+      problem(res, 403, "TENANCY_DENIED", "Task is not bound to the authorized Project");
+      return;
+    }
+    if (req.method === "GET") {
+      json(
+        res,
+        200,
+        mockDependencies.filter(
+          (edge) =>
+            edge.projectId === project.id && (edge.predecessorTaskId === task.id || edge.successorTaskId === task.id),
+        ),
+      );
+      return;
+    }
+    if (req.method === "POST") {
+      const body = await readBody(req);
+      if (body.type && body.type !== "FINISH_TO_START") {
+        problem(res, 409, "PLANNING_STATE", "Only finish-to-start Task dependencies are supported");
+        return;
+      }
+      if (body.predecessorTaskId === task.id) {
+        problem(res, 409, "PLANNING_STATE", "A Task cannot depend on itself");
+        return;
+      }
+      const predecessor = mockTasks.find((row) => row.id === body.predecessorTaskId && row.projectId === project.id);
+      if (!predecessor) {
+        problem(res, 403, "TENANCY_DENIED", "Task dependency endpoint is not bound to the authorized Project");
+        return;
+      }
+      if (mockDependencies.some((edge) => edge.predecessorTaskId === predecessor.id && edge.successorTaskId === task.id)) {
+        problem(res, 409, "PLANNING_STATE", "Task dependency already exists");
+        return;
+      }
+      if (["IN_PROGRESS", "BLOCKED", "DONE"].includes(task.status) && predecessor.status !== "DONE") {
+        problem(res, 409, "PLANNING_STATE", "Cannot add an unfinished prerequisite to a Task that has already started or completed");
+        return;
+      }
+      const created = {
+        id: `dep-${Date.now()}`,
+        organizationId: project.organizationId,
+        projectId: project.id,
+        predecessorTaskId: predecessor.id,
+        successorTaskId: task.id,
+        type: "FINISH_TO_START",
+        createdByUserId: USER,
+        createdAt: new Date().toISOString(),
+        predecessor: { id: predecessor.id, title: predecessor.title, status: predecessor.status },
+        successor: { id: task.id, title: task.title, status: task.status },
+      };
+      mockDependencies.push(created);
+      appendHistory(task.id, "TASK_DEPENDENCY_CREATED");
+      json(res, 201, created);
+      return;
+    }
+  }
+
+  const candidateMatch = /^\/api\/v1\/projects\/([^/]+)\/tasks\/([^/]+)\/dependency-candidates$/.exec(path);
+  if (candidateMatch) {
+    const project = requireProject(session, candidateMatch[1], res);
+    if (!project) {
+      return;
+    }
+    const task = mockTasks.find((row) => row.id === candidateMatch[2] && row.projectId === project.id);
+    if (!task) {
+      problem(res, 403, "TENANCY_DENIED", "Task is not bound to the authorized Project");
+      return;
+    }
+    const q = (url.searchParams.get("q") ?? "").toLowerCase();
+    const taken = new Set(
+      mockDependencies.filter((edge) => edge.successorTaskId === task.id).map((edge) => edge.predecessorTaskId),
+    );
+    taken.add(task.id);
+    const items = mockTasks.filter((row) => {
+      if (row.projectId !== project.id || taken.has(row.id)) {
+        return false;
+      }
+      if (q && !row.title.toLowerCase().includes(q)) {
+        return false;
+      }
+      return true;
+    });
+    json(res, 200, { items: items.map((row) => ({ id: row.id, title: row.title, status: row.status })), page: { pageSize: 50, total: items.length } });
+    return;
+  }
+
   const taskAction = /^\/api\/v1\/projects\/([^/]+)\/tasks\/([^/]+)(?:\/([^/]+))?$/.exec(path);
   if (taskAction) {
     const project = requireProject(session, taskAction[1], res);
@@ -1149,6 +1375,19 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (req.method === "POST" && (action === "start" || action === "unblock" || (action === "status" && body.status === "IN_PROGRESS"))) {
+      const graph = graphForTask(task.id);
+      if (graph.dependencyStartBlocked) {
+        json(res, 409, {
+          type: "https://amber.invalid/problems/planning_state",
+          title: "PlanningStateError",
+          status: 409,
+          detail: "Task cannot move to IN_PROGRESS or DONE while a finish-to-start prerequisite is not DONE",
+          code: "PLANNING_STATE",
+          reason: "DEPENDENCY_PREDECESSOR_INCOMPLETE",
+          blockers: graph.startBlockers,
+        });
+        return;
+      }
       if (task.status === "TODO" || task.status === "BLOCKED") {
         task.status = "IN_PROGRESS";
         task.startedAt = task.startedAt ?? new Date().toISOString();
@@ -1236,7 +1475,7 @@ const server = http.createServer(async (req, res) => {
     });
     const inspectedRow = inspect ? tasks.find((row) => row.id === inspect) ?? null : null;
     const inspected = inspectedRow
-      ? { ...inspectedRow, history: mockTaskHistory.get(inspectedRow.id) ?? [] }
+      ? { ...withGraph(inspectedRow), history: mockTaskHistory.get(inspectedRow.id) ?? [] }
       : null;
     json(res, 200, {
       projectId: project.id,
@@ -1244,11 +1483,11 @@ const server = http.createServer(async (req, res) => {
       generatedAt: new Date().toISOString(),
       view: url.searchParams.get("view") ?? "list",
       project: { archivedAt: project.archivedAt, readOnly: Boolean(project.archivedAt) },
-      tasks: rows,
+      tasks: rows.map(withGraph),
+      dependencies: mockDependencies.filter((edge) => edge.projectId === project.id),
       milestones: project.id === PROJECT_A
         ? [{ id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED", targetDate: null, phaseId: "phase-concept", deliverableId: null }]
         : [],
-      dependencies: [],
       page: { page: 1, pageSize: 20, total: rows.length, sort: "createdAt", order: "asc" },
       counts: { total: rows.length, late: rows.filter((row) => row.late).length, byStatus: Object.fromEntries(rows.map((row) => [row.status, 1])) },
       inspected,

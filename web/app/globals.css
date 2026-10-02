@@ -1101,6 +1101,66 @@ button.btn {
   border: 1px solid #fdba74;
 }
 
+.planner-dep-block {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+}
+
+.planner-task-blocked {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+}
+
+.planner-dep-wait {
+  display: inline-flex;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 11px;
+  border: 1px solid #c7d2fe;
+}
+
+.planner-deps {
+  margin: 20px 0 0;
+}
+
+.planner-deps h3,
+.planner-deps h4 {
+  margin: 0 0 8px;
+}
+
+.planner-dep-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.planner-dep-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planner-dep-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  margin: 6px 0;
+}
+
+.planner-dep-add {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .planner-readonly {
   margin: 0 0 16px;
   padding: 10px 12px;
@@ -1222,7 +1282,8 @@ button.btn {
     display: none;
   }
 
-  .planner-dl {
+  .planner-dl,
+  .planner-dep-columns {
     grid-template-columns: 1fr;
   }
 

@@ -35,4 +35,14 @@ describe("M4.2 planning system states", () => {
     expect(src).toMatch(/canCreateTask/);
     expect(src).toMatch(/TaskInspector/);
   });
+
+  it("M4.4 inspector distinguishes dependency blockage from stored BLOCKED", () => {
+    const inspector = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "TaskInspector.tsx"), "utf8");
+    expect(inspector).toMatch(/Dependências \(término-início\)/);
+    expect(inspector).toMatch(/Aguardando predecessor/);
+    expect(inspector).toMatch(/não é o estado Bloqueada/);
+    expect(inspector).toMatch(/Adicionar dependência/);
+    expect(inspector).toMatch(/Remover predecessor/);
+    expect(inspector).not.toMatch(/draggable/);
+  });
 });

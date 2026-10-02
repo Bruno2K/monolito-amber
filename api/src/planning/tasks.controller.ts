@@ -1,5 +1,15 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
-import { ApiCookieAuth, ApiHeader, ApiOperation, ApiParam, ApiProperty, ApiPropertyOptional, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import {
+  ApiCookieAuth,
+  ApiHeader,
+  ApiOperation,
+  ApiParam,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { IsInt, IsOptional, IsString, Max, Min, MinLength, ValidateIf } from "class-validator";
 import { AuthService } from "../auth/auth.service";
@@ -244,6 +254,18 @@ class CreateDependencyDto {
   type?: string;
 }
 
+class DependencyCandidatesQueryDto {
+  @ApiPropertyOptional({ description: "Case-insensitive title search. Foreign Tasks are omitted, not counted." })
+  @IsOptional()
+  @IsString()
+  q?: string;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 50 })
+  @IsOptional()
+  @IsString()
+  pageSize?: string;
+}
+
 @ApiTags("planning")
 @Controller("projects/:projectId/tasks")
 export class TasksController {
@@ -361,6 +383,11 @@ export class TasksController {
   @ApiParam({ name: "projectId", format: "uuid" })
   @ApiParam({ name: "taskId", format: "uuid" })
   @ApiOperation({ summary: "Start a Task (TODO or BLOCKED → IN_PROGRESS). Blocked by unfinished FS predecessors." })
+  @ApiResponse({
+    status: 409,
+    description:
+      "PLANNING_STATE reason DEPENDENCY_PREDECESSOR_INCOMPLETE with blockers[] — not the same as stored Task BLOCKED",
+  })
   start(
     @CurrentSession() session: RequestSession,
     @Param("projectId") projectId: string,
@@ -464,13 +491,32 @@ export class TasksController {
   @ApiCookieAuth()
   @ApiParam({ name: "projectId", format: "uuid" })
   @ApiParam({ name: "taskId", format: "uuid" })
-  @ApiOperation({ summary: "List finish-to-start dependencies for a Task" })
+  @ApiOperation({ summary: "List finish-to-start predecessors and successors for a Task. Re-authorized; omit-not-leak." })
   listDependencies(
     @CurrentSession() session: RequestSession,
     @Param("projectId") projectId: string,
     @Param("taskId") taskId: string,
   ) {
     return this.tasks.listDependencies(this.auth.requireSession(session), projectId, taskId);
+  }
+
+  @Get(":taskId/dependency-candidates")
+  @UseGuards(SessionGuard, PermissionGuard)
+  @RequirePermission("project.read")
+  @ApiCookieAuth()
+  @ApiParam({ name: "projectId", format: "uuid" })
+  @ApiParam({ name: "taskId", format: "uuid" })
+  @ApiQuery({ name: "q", required: false })
+  @ApiOperation({
+    summary: "Search same-Project predecessor candidates. Hidden/foreign Tasks are omitted, never counted.",
+  })
+  listDependencyCandidates(
+    @CurrentSession() session: RequestSession,
+    @Param("projectId") projectId: string,
+    @Param("taskId") taskId: string,
+    @Query() query: DependencyCandidatesQueryDto,
+  ) {
+    return this.tasks.listDependencyCandidates(this.auth.requireSession(session), projectId, taskId, query);
   }
 
   @Post(":taskId/dependencies")
@@ -480,7 +526,16 @@ export class TasksController {
   @ApiHeader({ name: "Idempotency-Key", required: true })
   @ApiParam({ name: "projectId", format: "uuid" })
   @ApiParam({ name: "taskId", format: "uuid" })
-  @ApiOperation({ summary: "Add a finish-to-start predecessor. Rejects self, duplicate, cycle, and cross-project." })
+  @ApiOperation({
+    summary:
+      "Add a finish-to-start predecessor. Rejects self, duplicate, cycle, non-FS, cross-tenant, and invalid retroactive edges. Never shifts dates.",
+  })
+  @ApiResponse({
+    status: 409,
+    description:
+      "PLANNING_STATE with reason DEPENDENCY_SELF | DEPENDENCY_DUPLICATE | DEPENDENCY_CYCLE | DEPENDENCY_KIND_UNSUPPORTED | DEPENDENCY_RETROACTIVE",
+  })
+  @ApiResponse({ status: 403, description: "TENANCY_DENIED — missing, cross-Project, or cross-Organization id (omit-not-leak)" })
   addDependency(
     @CurrentSession() session: RequestSession,
     @Param("projectId") projectId: string,
@@ -489,5 +544,34 @@ export class TasksController {
     @Body() body: CreateDependencyDto,
   ) {
     return this.tasks.addDependency(this.auth.requireSession(session), projectId, taskId, idempotencyKey, body);
+  }
+
+  @Delete(":taskId/dependencies/:dependencyId")
+  @UseGuards(SessionGuard, PermissionGuard)
+  @RequirePermission("task.update")
+  @ApiCookieAuth()
+  @ApiHeader({ name: "Idempotency-Key", required: true })
+  @ApiParam({ name: "projectId", format: "uuid" })
+  @ApiParam({ name: "taskId", format: "uuid" })
+  @ApiParam({ name: "dependencyId", format: "uuid" })
+  @ApiOperation({
+    summary:
+      "Remove a finish-to-start edge when taskId is either end. Never shifts dates. Idempotent retry replays the stored body.",
+  })
+  @ApiResponse({ status: 403, description: "TENANCY_DENIED — unknown or foreign dependencyId (omit-not-leak)" })
+  removeDependency(
+    @CurrentSession() session: RequestSession,
+    @Param("projectId") projectId: string,
+    @Param("taskId") taskId: string,
+    @Param("dependencyId") dependencyId: string,
+    @Headers("idempotency-key") idempotencyKey: string | undefined,
+  ) {
+    return this.tasks.removeDependency(
+      this.auth.requireSession(session),
+      projectId,
+      taskId,
+      dependencyId,
+      idempotencyKey,
+    );
   }
 }
