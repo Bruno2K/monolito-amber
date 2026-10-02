@@ -277,7 +277,7 @@ test.describe("M4.2 Local RC Planning List", () => {
 
     await page.goto(`/projects/${IDS.projectA1}/planner?view=milestones`);
     await expect(page.getByRole("tab", { name: "Marcos" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByText(title)).toBeVisible();
+    await expect(page.getByRole("button", { name: title, exact: true })).toBeVisible();
     await expect(page.getByText(/não são controles de status/i)).toBeVisible();
     const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
     await page.screenshot({ path: path.join(EVIDENCE_M47, `marcos-${tag}.png`), fullPage: true });

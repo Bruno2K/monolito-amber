@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { expect, type APIRequestContext, type Cookie, type Page, type TestInfo } from "@playwright/test";
 
@@ -83,20 +84,37 @@ export async function closeInspectorIfOpen(page: Page): Promise<void> {
 /**
  * Login POSTs share one in-memory IP bucket (20 / 15 min). Local RC runs two
  * viewports serially, so reuse the session cookie after the first UI login.
+ * Persist to disk so a worker restart between projects does not burn a new POST.
  */
-const loginCookieCache = new Map<string, Cookie[]>();
+const COOKIE_CACHE_FILE = path.resolve(process.cwd(), "../test-results/local-rc-login-cookies.json");
+const loginCookieCache = loadCookieCache();
+
+function loadCookieCache(): Map<string, Cookie[]> {
+  try {
+    const raw = JSON.parse(readFileSync(COOKIE_CACHE_FILE, "utf8")) as Record<string, Cookie[]>;
+    return new Map(Object.entries(raw));
+  } catch {
+    return new Map();
+  }
+}
+
+function persistCookieCache(): void {
+  mkdirSync(path.dirname(COOKIE_CACHE_FILE), { recursive: true });
+  writeFileSync(COOKIE_CACHE_FILE, JSON.stringify(Object.fromEntries(loginCookieCache)));
+}
 
 export async function signIn(page: Page, userKey: string): Promise<void> {
   const cached = loginCookieCache.get(userKey);
   if (cached && cached.length > 0) {
     await page.context().addCookies(cached);
     await page.goto("/");
-    const path = new URL(page.url()).pathname;
-    if (!path.includes("/sign-in")) {
+    const pathName = new URL(page.url()).pathname;
+    if (!pathName.includes("/sign-in")) {
       await expectPostAuthLanded(page);
       return;
     }
     loginCookieCache.delete(userKey);
+    persistCookieCache();
   }
 
   await page.goto("/sign-in");
@@ -118,6 +136,7 @@ export async function signIn(page: Page, userKey: string): Promise<void> {
   }, { timeout: 20_000 });
   await expectPostAuthLanded(page);
   loginCookieCache.set(userKey, await page.context().cookies());
+  persistCookieCache();
 }
 
 export async function selectOrg(page: Page, orgName: string): Promise<void> {
