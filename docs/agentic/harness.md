@@ -49,7 +49,7 @@ curl -sf http://127.0.0.1:3001/api/v1/ready
 kill $API_PID
 ```
 
-M3 Local RC (real Postgres + MinIO + seed + Playwright): [m3.8-local-rc-runbook.md](../development/m3.8-local-rc-runbook.md). Windows: [m3-windows-local-rc.md](../development/m3-windows-local-rc.md). RC1 evidence: [m3-rc1-evidence/INDEX.md](../development/m3-rc1-evidence/INDEX.md).
+M3 Local RC (real Postgres + MinIO + seed + Playwright): [m3.8-local-rc-runbook.md](../development/m3.8-local-rc-runbook.md). Windows: [m3-windows-local-rc.md](../development/m3-windows-local-rc.md). RC1 evidence: [m3-rc1-evidence/INDEX.md](../development/m3-rc1-evidence/INDEX.md). M4.8 Local RC: [m4.8-local-rc-test-guide.md](../release/m4.8-local-rc-test-guide.md). M4.9 audit: [m4.9-evidence/INDEX.md](../development/m4.9-evidence/INDEX.md).
 
 `pnpm --filter @amber/web build` is included in `pnpm build`.
 

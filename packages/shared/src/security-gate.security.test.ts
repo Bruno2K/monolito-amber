@@ -17,6 +17,7 @@ const REQUIRED = [
   "governance.security.test.ts",
   "operations.security.test.ts",
   "m39-adversarial.test.ts",
+  "m49-audit.test.ts",
 ];
 
 const SKIP_RE = /\.skip\s*\(|describe\.skip|it\.skip|xit\s*\(|xdescribe\s*\(/;

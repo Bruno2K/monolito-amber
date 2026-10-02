@@ -147,3 +147,13 @@ Do not skip isolation / SoD / session / audit / malware / CAS / MFA / member-man
 | Full WI matrix | `docs/domain/m3.9-requirements-traceability.md` |
 | Evidence index / recommendation | `docs/development/m3.9-evidence/` |
 
+### M4.9 Exit Gate audit evidence
+
+| Test | Where |
+| --- | --- |
+| Matrix + Quality Gates floors | `packages/shared/src/m49-audit.test.ts`, `api/test/security/m49-audit.security.test.ts` |
+| HTTP golden / ADV reuse | `api/test/integration/m48-local-rc.integration.test.ts` (`M4.9-*`) |
+| Local RC golden / AuthZ / a11y | `web/e2e/local-rc/m4-8-*.spec.ts`, `a11y.spec.ts` |
+| Full WI matrix | `docs/domain/m4.9-requirements-traceability.md` |
+| Evidence index / recommendation | `docs/development/m4.9-evidence/` |
+

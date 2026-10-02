@@ -4,25 +4,36 @@
 
 **M2 — Product Experience Foundation is COMPLETE, Exit Gate PASS, and integrated into `main` at `4972176442bdb2631ea1f1710a86191109e79dab`.**
 
-**M3 — Project Operations is ACTIVE / LOCAL ONLY with Exit Gate FAIL — ACCEPTED.** Audit WI Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51) squash-merged to `main` @ `762c3f3ba85ff899623cf4c3682e6bddad062bab`. Disposition sync #52 brought `main` to `a3eaadcd61c8f8153f61c6a51f920e37b8f362a0`. Reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Independent Reviewer **PASS (audit WI only)**. Homologated Local RC narrative tip remains `6104276754607334c53c6864135d29c539db813e`. **This is not M3 COMPLETE.**
+**M3 — Project Operations is ACTIVE / LOCAL ONLY with Exit Gate FAIL — ACCEPTED.** Audit WI Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51) squash-merged. **This is not M3 COMPLETE.**
 
-**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** M4.1–M4.7 are MERGED (M4.7 @ `0c1cc2632b47685e3e7bb9107e1eb51be361512d`). **M4.8** is in flight (Issue [#68](https://github.com/Bruno2K/monolito-amber/issues/68), branch `m4-8-cross-domain-local-rc`): Cross-domain integration, E2E, Local RC. M4.9 remains LOCKED.
+**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** M4.1–M4.8.1 are MERGED. Homologated Local RC tip `76d44de81857db5a25cd6bf285a3eda19c8aded1` (Bruno accepted 2026-10-02). **M4.9** is in flight (Issue [#76](https://github.com/Bruno2K/monolito-amber/issues/76), branch `m4-9-final-audit-exit-gate`): Final Product, Security & UX Audit / Exit Gate. Feature freeze. **Not M4 COMPLETE.**
 
-Authorization: Bruno runway M4.1→M4.9 autonomous; LOCAL ONLY. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring Exit Gate PASS or M3/M4 completion.
+Authorization: Altair UNLOCK M4.9 after Bruno Local RC accept; LOCAL ONLY. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring Exit Gate PASS or M3/M4 completion; opening M5.
 
 Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (supported path = Docker Desktop + WSL2 + bash). M3 cloud residuals are **accepted debt**, not M4 scope.
 
-## M4.8 (IN FLIGHT — LOCAL ONLY)
+## M4.9 (IN FLIGHT — FINAL AUDIT ONLY · LOCAL ONLY)
 
-- Issue [#68](https://github.com/Bruno2K/monolito-amber/issues/68)
-- Branch `m4-8-cross-domain-local-rc` from `0c1cc2632b47685e3e7bb9107e1eb51be361512d`
-- Canonical Notion: https://app.notion.com/p/3ec678e54c8d81319b25f4a0c317612c
+- Issue [#76](https://github.com/Bruno2K/monolito-amber/issues/76)
+- Branch `m4-9-final-audit-exit-gate` from `accce915f25d73d4da13f7505ac47d1abaa05590`
+- Canonical Notion: https://app.notion.com/p/3ec678e54c8d81c98327d5bec34db1c9
 - Pack: https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7
-- Plan: `docs/domain/m4.8-requirement-to-change-plan.md`
-- Matrix: `docs/domain/m4.8-requirements-traceability.md`
+- Matrix: `docs/domain/m4.9-requirements-traceability.md`
+- Evidence: `docs/development/m4.9-evidence/`
+- Stop: Engineer recommendation only. Do not self-PASS Exit Gate. Do not mark M4 COMPLETE. Do not open M5.
+- Non-goals: cloud/PaaS/M5; new Planning features; absorbing UI Polish B/D/C
+
+## M4.8.1 (MERGED — homologated Local RC)
+
+- Issue [#70](https://github.com/Bruno2K/monolito-amber/issues/70) / PR [#71](https://github.com/Bruno2K/monolito-amber/pull/71)
+- Merge tip `76d44de81857db5a25cd6bf285a3eda19c8aded1`
+- Product: Marcos Novo Marco create handoff + hide Gantt decorative sort/order
+
+## M4.8 (MERGED — LOCAL RC pack)
+
+- Issue [#68](https://github.com/Bruno2K/monolito-amber/issues/68) / PR [#69](https://github.com/Bruno2K/monolito-amber/pull/69)
+- Merge tip `230ccbcac1833a006f7ac6452c6e9fa37e04ac96`
 - Product: Local RC spanning every M4 projection/command; golden path; evidence pack
-- Stop: **LOCAL RC READY FOR BRUNO**. Do not self-homologate. Do not begin M4.9.
-- Non-goals: cloud/PaaS/M5; silent status; auto-achieve; auto date propagation
 
 ## M4.7 (MERGED — LOCAL ONLY)
 
@@ -65,57 +76,13 @@ Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (s
 - Issue [#54](https://github.com/Bruno2K/monolito-amber/issues/54)
 - Merge tip `6e47d9fb050dcc49b120dd511b9de55634cd4e13`
 - Canonical Notion: https://app.notion.com/p/3ec678e54c8d8103beafc69c3bb51edc
-- Pack: https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7
 - Matrix: `docs/domain/m4.1-requirements-traceability.md`
 - Contract: `docs/domain/m4-planning-scheduling-contract.md`
 
 ## M3.9 (MERGED — Exit Gate FAIL — ACCEPTED)
 
 - Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51)
-- Squash-merge tip `762c3f3ba85ff899623cf4c3682e6bddad062bab`
-- Reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Reviewer PASS (audit WI only)
-- Canonical Notion: https://app.notion.com/p/3ec678e54c8d81dab5fceda13242a69b
-- Pack: https://app.notion.com/p/3ec678e54c8d81c49efeccb527b3e2bd
-- Matrix: `docs/domain/m3.9-requirements-traceability.md`
-- Evidence: `docs/development/m3.9-evidence/`
-- Engineer recommendation: FAIL (staging). Former branch `m3-9-exit-gate-audit` is closed.
-
-## RC1 (MERGED → homologated)
-
-- Issue [#46](https://github.com/Bruno2K/monolito-amber/issues/46) / PR [#47](https://github.com/Bruno2K/monolito-amber/pull/47)
-- Homologated merge SHA `6104276754607334c53c6864135d29c539db813e`
-- Evidence index: `docs/development/m3-rc1-evidence/INDEX.md`
-- Canonical: https://app.notion.com/p/3ec678e54c8d818e8c8fd4fc619059a8
-
-## M3.8 (merged on main)
-
-M3.8 delivered the localhost pack. RC1 restored evidence; Bruno homologated LOCAL RC. Canonical: https://app.notion.com/p/3ec678e54c8d8136be51cc5a7b7720a6
-
-## M3.1 (merged)
-
-M3.1 froze executable repo artifacts. Canonical: https://app.notion.com/p/3ec678e54c8d812d9f92d02f9f153568
-
-## M2 final evidence (KEEP / INTEGRATED)
-
-- Final WI: M2.10 — Final UX/UI Audit & Exit Gate — PASS / COMPLETE
-- Issue: [#27](https://github.com/Bruno2K/monolito-amber/issues/27)
-- PR: [#28](https://github.com/Bruno2K/monolito-amber/pull/28) — MERGED
-- Final reviewed branch tip: `09c79789660c3221d102d8d37b4a78d168a785da`
-- Final merge commit: `4e410b11c8712873ace558b931ea141762ee15bb`
-- Integration tip on `main` for M3.1 base: `4972176442bdb2631ea1f1710a86191109e79dab`
-- CI: Foundation & Security Gates SUCCESS on final M2 branch tip, run `36822378274`
-- Figma: `fkE9SwcNlQG7m0HvcGQBw9`, page `04 — Telas`
-- Scope: M2 was documentation, Figma evidence and PNGs only
-
-## Integrated M2 stack
-
-| PR | WI | Merge commit | Status |
-| --- | --- | --- | --- |
-| #20 | M2.6 Governance Gates & Exceptions | `23aeadeec53ffb5713d5d680015adf9bc59e9b3d` | MERGED |
-| #22 | M2.7 Overview & Portfolio Health | `58453e63234aebb427e7fe748a4e2f69ceb8e066` | MERGED |
-| #24 | M2.8 Activity Experience | `130d9602ce103c685ee7fe60434fbde21bd6e` | MERGED |
-| #26 | M2.9 Prototype & State Coverage | `64223fa361bf2600f9e1a1799278e3ddc3e056e5` | MERGED |
-| #28 | M2.10 Final UX/UI Audit & Exit Gate | `4e410b11c8712873ace558b931ea141762ee15bb` | MERGED |
+- Engineer recommendation: FAIL (staging). **Not M3 COMPLETE.**
 
 ## Preserved invariants
 
@@ -123,4 +90,4 @@ Formal Exception is the sole bypass; READY ≠ RELEASED; Exception ≠ SATISFIED
 
 ## Next boundary
 
-M4.1 documentary freeze is in flight. Independent Reviewer required. Do not start M4.2+. Do not invent a shared staging URL or chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA. Only Governor may mark the M4.1 Exit Gate / unlock M4.2 after merge.
+M4.9 audit is in flight. Independent Reviewer required. Do not start M5. Do not invent a shared staging URL. Only Governor may mark the M4 Exit Gate / M4 COMPLETE after Reviewer PASS.

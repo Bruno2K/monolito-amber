@@ -413,5 +413,59 @@ describe("M4.8 Local RC integration", () => {
     }
     expect(Math.max(...Object.values(observations))).toBeLessThan(8_000);
     process.stdout.write(`M4.8-PERF-01 observations_ms=${JSON.stringify(observations)}\n`);
+    process.stdout.write(`M4.9-PERF-01 observations_ms=${JSON.stringify(observations)}\n`);
+  });
+
+  it("M4.9-ADV-01 / M4.9-REG-01 repeats Quality Gates adversarial floors on this harness", async () => {
+    const created = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks`)
+      .set("Idempotency-Key", key("m49-create"))
+      .send({ title: `M49 adv ${suffix}`, dueDate: "2000-01-01T00:00:00.000Z" });
+    expect(created.status).toBeLessThan(400);
+    expect(created.body.status).toBe("TODO");
+    expect(created.body.late).toBe(true);
+
+    const progress = await coordinator
+      .patch(`/api/v1/projects/${projectA}/tasks/${created.body.id}`)
+      .set("Idempotency-Key", key("m49-progress"))
+      .send({ progressPercent: 100, expectedVersion: created.body.version });
+    expect(progress.status).toBe(200);
+    expect(progress.body.status).toBe("TODO");
+
+    const shifted = await coordinator
+      .patch(`/api/v1/projects/${projectA}/tasks/${created.body.id}`)
+      .set("Idempotency-Key", key("m49-propagate"))
+      .send({ propagateDates: true, expectedVersion: progress.body.version });
+    expect(shifted.status).toBeGreaterThanOrEqual(400);
+
+    const stale = await coordinator
+      .patch(`/api/v1/projects/${projectA}/tasks/${created.body.id}`)
+      .set("Idempotency-Key", key("m49-stale"))
+      .send({ title: "stale", expectedVersion: 999 });
+    expect(stale.status).toBe(409);
+
+    const pred = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks`)
+      .set("Idempotency-Key", key("m49-pred"))
+      .send({ title: `M49 pred ${suffix}` });
+    const linked = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks/${created.body.id}/dependencies`)
+      .set("Idempotency-Key", key("m49-dep"))
+      .send({ predecessorTaskId: pred.body.id, type: "FINISH_TO_START" });
+    expect(linked.status).toBeLessThan(400);
+    const blocked = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks/${created.body.id}/start`)
+      .set("Idempotency-Key", key("m49-start"))
+      .send({ expectedVersion: progress.body.version });
+    expect(blocked.status).toBeGreaterThanOrEqual(400);
+
+    const siblings = await snapshotSiblings();
+    expect(siblings.issue).toBe("OPEN");
+    expect(siblings.milestone).toBe("PLANNED");
+
+    const cross = await coordinator.get(`/api/v1/projects/${projectB}/planning?q=${encodeURIComponent(`M49 adv ${suffix}`)}`);
+    expect(cross.status).toBe(403);
+    expect(JSON.stringify(cross.body)).not.toContain(`M49 adv ${suffix}`);
+    expect(JSON.stringify(cross.body)).not.toContain("1 item oculto");
   });
 });
