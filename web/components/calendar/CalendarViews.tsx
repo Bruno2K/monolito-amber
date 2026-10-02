@@ -5,6 +5,7 @@ import {
   FIGMA_CALENDAR_NODES,
   formatDayHeading,
   formatEventTime,
+  formatMonthHeading,
   hoursInDay,
   monthGridDays,
   pad2,
@@ -57,57 +58,66 @@ export function CalendarMonthView({
 }) {
   const days = monthGridDays(anchorDate);
   const monthPrefix = startOfMonth(anchorDate).slice(0, 7);
+  const weeks = Array.from({ length: 6 }, (_, week) => days.slice(week * 7, week * 7 + 7));
   return (
-    <div
+    <table
       className="calendar-month"
       data-node-id={FIGMA_CALENDAR_NODES.month}
-      role="grid"
       aria-labelledby="calendar-tab-month"
       id="calendar-panel-month"
     >
-      <div className="calendar-weekdays" role="row">
-        {WEEKDAY_LABELS.map((label) => (
-          <div key={label} role="columnheader" className="calendar-weekday">
-            {label}
-          </div>
+      <caption className="sr-only">{formatMonthHeading(anchorDate)}</caption>
+      <thead>
+        <tr>
+          {WEEKDAY_LABELS.map((label) => (
+            <th key={label} scope="col" className="calendar-weekday">
+              {label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {weeks.map((week) => (
+          <tr key={week[0]}>
+            {week.map((isoDate) => {
+              const inMonth = isoDate.startsWith(monthPrefix);
+              const dayEvents = events.filter((item) => eventOverlapsDate(item, isoDate, timeZone));
+              return (
+                <td key={isoDate} className={inMonth ? "calendar-day-cell" : "calendar-day-cell is-outside"}>
+                  <button
+                    type="button"
+                    className="calendar-day-number"
+                    onClick={() => onSelectDay(isoDate)}
+                    aria-label={`${formatDayHeading(isoDate)}${dayEvents.length ? `, ${dayEvents.length} evento(s)` : ""}`}
+                  >
+                    {Number(isoDate.slice(8))}
+                  </button>
+                  <ul className="calendar-day-events">
+                    {dayEvents.slice(0, 3).map((item) => (
+                      <li key={item.id || item.sourceIdentity}>
+                        <button
+                          type="button"
+                          className={item.kind === "REFERENCED" ? "calendar-chip is-referenced" : "calendar-chip"}
+                          onClick={() => onOpenEvent(item)}
+                        >
+                          <span className="sr-only">
+                            {eventAccessibleName(item, timeZone)} em {isoDate}
+                          </span>
+                          <span aria-hidden="true">
+                            {formatEventTime(item, timeZone)} {item.title}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                    {dayEvents.length > 3 ? <li className="calendar-more">+{dayEvents.length - 3}</li> : null}
+                  </ul>
+                </td>
+              );
+            })}
+          </tr>
         ))}
-      </div>
-      <div className="calendar-month-grid">
-        {days.map((isoDate) => {
-          const inMonth = isoDate.startsWith(monthPrefix);
-          const dayEvents = events.filter((item) => eventOverlapsDate(item, isoDate, timeZone));
-          return (
-            <div key={isoDate} className={inMonth ? "calendar-day-cell" : "calendar-day-cell is-outside"} role="gridcell">
-              <button
-                type="button"
-                className="calendar-day-number"
-                onClick={() => onSelectDay(isoDate)}
-                aria-label={`${formatDayHeading(isoDate)}${dayEvents.length ? `, ${dayEvents.length} evento(s)` : ""}`}
-              >
-                {Number(isoDate.slice(8))}
-              </button>
-              <ul className="calendar-day-events">
-                {dayEvents.slice(0, 3).map((item) => (
-                  <li key={item.id || item.sourceIdentity}>
-                    <button
-                      type="button"
-                      className={item.kind === "REFERENCED" ? "calendar-chip is-referenced" : "calendar-chip"}
-                      onClick={() => onOpenEvent(item)}
-                    >
-                      <span className="sr-only">{eventAccessibleName(item, timeZone)} em {isoDate}</span>
-                      <span aria-hidden="true">
-                        {formatEventTime(item, timeZone)} {item.title}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-                {dayEvents.length > 3 ? <li className="calendar-more">+{dayEvents.length - 3}</li> : null}
-              </ul>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+      </tbody>
+    </table>
   );
 }
 
@@ -127,7 +137,7 @@ export function CalendarWeekView({
   const days = weekDays(anchorDate);
   const hours = hoursInDay();
   return (
-    <div className="calendar-week" data-node-id={FIGMA_CALENDAR_NODES.week} id="calendar-panel-week" role="grid" aria-labelledby="calendar-tab-week">
+    <div className="calendar-week" data-node-id={FIGMA_CALENDAR_NODES.week} id="calendar-panel-week" aria-labelledby="calendar-tab-week">
       <div className="calendar-allday-row">
         <div className="calendar-time-gutter">Dia inteiro</div>
         {days.map((isoDate) => (
@@ -143,16 +153,16 @@ export function CalendarWeekView({
         ))}
       </div>
       <div className="calendar-week-scroll">
-        <div className="calendar-week-head" role="row">
+        <div className="calendar-week-head">
           <div className="calendar-time-gutter" />
           {days.map((isoDate) => (
-            <div key={isoDate} role="columnheader" className="calendar-week-day">
+            <div key={isoDate} className="calendar-week-day">
               {formatDayHeading(isoDate)}
             </div>
           ))}
         </div>
         {hours.map((hour) => (
-          <div key={hour} className="calendar-week-row" role="row">
+          <div key={hour} className="calendar-week-row">
             <div className="calendar-time-gutter">{pad2(hour)}:00</div>
             {days.map((isoDate) => {
               const slotEvents = events.filter((item) => {

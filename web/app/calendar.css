@@ -94,6 +94,18 @@
   overflow: auto;
 }
 
+.calendar-month {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 52rem;
+}
+
+.calendar-month th,
+.calendar-month td {
+  vertical-align: top;
+}
+
 .calendar-weekdays,
 .calendar-month-grid,
 .calendar-week-head,
@@ -288,6 +300,7 @@
     grid-template-columns: 1fr;
   }
 
+  .calendar-month,
   .calendar-weekdays,
   .calendar-month-grid,
   .calendar-week-head,

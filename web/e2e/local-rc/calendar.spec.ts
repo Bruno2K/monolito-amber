@@ -92,9 +92,10 @@ test.describe("M5.3 Calendar UX / My Schedule", () => {
     await clearBrowserToSignIn(page);
     await signInToOrg(page, "contributor-a", "Amber Demo Alpha");
     await page.goto("/calendars");
-    await expect(page.getByRole("link", { name: new RegExp(calendarName) })).toBeVisible();
-    await expect(page.getByText(/Visualizador · compartilhamento direto/)).toBeVisible();
-    await page.getByRole("link", { name: new RegExp(calendarName) }).click();
+    const sharedCard = page.getByRole("link", { name: new RegExp(calendarName) });
+    await expect(sharedCard).toBeVisible();
+    await expect(sharedCard).toContainText("Visualizador · compartilhamento direto");
+    await sharedCard.click();
     await expect(page.getByText(eventTitle).first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Novo evento" })).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Compartilhar" })).toHaveCount(0);
@@ -106,7 +107,7 @@ test.describe("M5.3 Calendar UX / My Schedule", () => {
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByText(/não pode compartilhar/i)).toBeVisible();
     await page.getByRole("dialog").getByRole("button", { name: "Confirmar" }).click();
-    await expect(page.getByText(/Editor/)).toBeVisible();
+    await expect(page.locator(".calendar-grant-row").filter({ hasText: "Seed Contributor A" })).toContainText("Editor");
 
     await clearBrowserToSignIn(page);
     await signInToOrg(page, "contributor-a", "Amber Demo Alpha");
@@ -153,8 +154,9 @@ test.describe("M5.3 Calendar UX / My Schedule", () => {
     await clearBrowserToSignIn(page);
     await signInToOrg(page, "team-only-a", "Amber Demo Alpha");
     await page.goto("/calendars");
-    await expect(page.getByRole("link", { name: new RegExp(teamCalendarName) })).toBeVisible();
-    await expect(page.getByText(/herdado via equipe/)).toBeVisible();
+    const teamCard = page.getByRole("link", { name: new RegExp(teamCalendarName) });
+    await expect(teamCard).toBeVisible();
+    await expect(teamCard).toContainText("herdado via equipe");
     await page.goto(`/calendars/${teamCalendarId}/share`);
     await expect(page.getByText(/Não editável diretamente|Somente o proprietário/)).toBeVisible();
 
