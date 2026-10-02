@@ -101,7 +101,7 @@ export interface CalendarOwnerContext {
   ownerMembershipStatus: MembershipStatus;
 }
 
-const IANA_NAME = /^(UTC|Etc\/UTC|[A-Za-z_]+\/[A-Za-z0-9_+\-\/]+)$/;
+const IANA_NAME = /^(UTC|Etc[/]UTC|[A-Za-z_]+[/][A-Za-z0-9_+/-]+)$/;
 const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function assertCalendarName(name: string): void {
