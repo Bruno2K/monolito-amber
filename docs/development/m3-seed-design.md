@@ -21,7 +21,7 @@ Emails use `@amber.test` only (`coordinator.a@amber.test`, …). Display names a
 
 ## Reset
 
-- Local: `pnpm prisma migrate reset` then `pnpm prisma:seed` (catalog) and `AMBER_SEED_M3=1 pnpm prisma:seed` (this dataset). Default catalog seed stays user-empty so integration tests can bootstrap the first User.
+- Local: `pnpm prisma migrate reset` then `pnpm prisma:seed` (catalog) and `AMBER_SEED_M3=1 AMBER_ALLOW_DEMO_SEED=1 pnpm prisma:seed` (this dataset). Default catalog seed stays user-empty so integration tests can bootstrap the first User.
 - Keys are stable slugs (`org-a`, `project-a1`, `del-a1-planned-user`) so re-runs upsert.
 - Cloud/shared staging seed is **not** authorized in M3.1 (LOCAL ONLY).
 

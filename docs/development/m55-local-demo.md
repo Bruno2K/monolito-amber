@@ -1,20 +1,49 @@
 # M5.5 local demo dataset
 
-Fictional portfolio for a local product demonstration. It is written only when `AMBER_SEED_M3=1` and the process is not production (`NODE_ENV` or `AMBER_ENV` equal to `production` refuses the seed). It does not run as part of the catalog-only seed and it does not add production accounts.
+Fictional portfolio for a local, disposable database. The catalog-only seed does not write these accounts. Demo data is written only when all of the following are true:
 
-## Reset
+1. `AMBER_SEED_M3=1`
+2. `AMBER_ALLOW_DEMO_SEED=1`
+3. `DATABASE_URL` parses as a PostgreSQL URL
+4. the host is loopback (`localhost`, `127.0.0.1`, `::1`) or the repository Compose service name `postgres`
 
-From a disposable local database:
+`NODE_ENV=production` or `AMBER_ENV=production` always refuses the demo seed. A remote host is refused. There is no override that points this seed at a remote or production database. Error text names the failed check and does not include the database URL or password.
+
+Confirm the target before seeding. Print only the host:
+
+```bash
+node -e "const u=new URL(process.env.DATABASE_URL); console.log(u.hostname)"
+```
+
+```powershell
+node -e "const u=new URL(process.env.DATABASE_URL); console.log(u.hostname)"
+```
+
+Continue only when that host is `localhost`, `127.0.0.1`, or `::1`.
+
+## Reset and reseed
+
+Bash, from a disposable local database:
 
 ```bash
 pnpm exec prisma migrate reset --force --skip-seed
 pnpm prisma:migrate
-AMBER_SEED_M3=1 pnpm prisma:seed
+AMBER_SEED_M3=1 AMBER_ALLOW_DEMO_SEED=1 pnpm prisma:seed
+```
+
+PowerShell:
+
+```powershell
+pnpm exec prisma migrate reset --force --skip-seed
+pnpm prisma:migrate
+$env:AMBER_SEED_M3='1'; $env:AMBER_ALLOW_DEMO_SEED='1'; pnpm prisma:seed
 ```
 
 Running the seed again is idempotent. Drop, migrate, and seed again reproduce the same ids. Existing Alpha/Beta fixture ids used by tests stay unchanged.
 
-The shared local password for seeded accounts is the existing development password `correct-horse-12`. Emails use `@amber.test` only.
+## Sign in
+
+Start the API and web app against that same local database, then open the sign-in page. Use the persona email below and the existing development password `correct-horse-12`. Emails use `@amber.test` only. Choose Amber Demo Alpha unless the walkthrough says Beta.
 
 ## Personas
 
@@ -22,11 +51,11 @@ The shared local password for seeded accounts is the existing development passwo
 | --- | --- | --- | --- |
 | Seed Coordinator A | `coordinator.a@amber.test` | Amber Demo Alpha | Inbox, hospital project, calendars |
 | Helena Admin | `admin.a@amber.test` | Amber Demo Alpha | Organization administrator |
-| Caio BIM | `bim.a@amber.test` | Amber Demo Alpha | BIM coordination, unread direct message |
+| Caio BIM | `bim.a@amber.test` | Amber Demo Alpha | BIM coordination; unread direct reply from Rui |
 | Lia Arquitetura | `architect.a@amber.test` | Amber Demo Alpha | Architecture model and team chat |
 | Rui Estruturas | `structural.a@amber.test` | Amber Demo Alpha | Blocked structural work |
 | Nara Instalações | `mep.a@amber.test` | Amber Demo Alpha | MEP package |
-| Oto Obra | `contractor.a@amber.test` | Amber Demo Alpha | External contributor, archived Obra team |
+| Oto Obra | `contractor.a@amber.test` | Amber Demo Alpha | EXTERNAL membership, hospital project only, archived Obra team |
 | Seed Viewer A | `viewer.a@amber.test` | Amber Demo Alpha | Read-only project access |
 | Seed External Collaborator A | `external.a@amber.test` | Amber Demo Alpha | Existing external fixture |
 | Seed Suspended Member A | `suspended.a@amber.test` | Amber Demo Alpha | Negative: suspended membership |
@@ -37,7 +66,7 @@ The shared local password for seeded accounts is the existing development passwo
 
 1. Sign in as Seed Coordinator A on Amber Demo Alpha.
 2. Open Mensagens. The BIM team thread has recent coordination notes and links to the hospital, a deliverable, and a milestone. One older direct message is edited and one is tombstoned (“Mensagem removida”).
-3. Sign in as Caio BIM and show the unread direct conversation with Rui Estruturas.
+3. Sign in as Caio BIM. The direct conversation with Rui Estruturas is unread because Rui replied after Caio's note. Rui's own reply does not count as unread for Rui. Opening the conversation as Caio clears Caio's unread count.
 4. Open Hospital Santa Clara. Show the overdue clash task, the blocked structural task, and the dependency chain from the survey.
 5. Open the hospital calendar: a past site visit, a future review, an all-day deadline, and an overlapping personal event.
 6. Show Campus Corporativo Aurora as the on-track project and Centro Logístico Vale as blocked. Torre Residencial Leme is still in planning. Retrofit Estação Norte is archived.

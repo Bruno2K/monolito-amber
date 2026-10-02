@@ -1,17 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { M3_SEED_PASSWORD, M3_SEED_USERS } from "./m3-seed-design.js";
-import { directConversationPairKey } from "./messaging.js";
+import { countUnread, directConversationPairKey } from "./messaging.js";
 import {
   M55_DEMO_CONVERSATIONS,
   M55_DEMO_DELIVERABLES,
   M55_DEMO_DEPENDENCIES,
   M55_DEMO_MESSAGES,
   M55_DEMO_MILESTONES,
+  M55_DEMO_ORG_MEMBERSHIPS,
+  M55_DEMO_PROJECT_MEMBERS,
   M55_DEMO_PROJECTS,
   M55_DEMO_REFERENCE_ISO,
   M55_DEMO_TASKS,
   M55_DEMO_TEAMS,
   M55_DEMO_USERS,
+  assertLocalDemoSeedTarget,
+  demoSeedEnabled,
   demoSeedUuid,
 } from "./m55-demo-seed-design.js";
 
@@ -65,5 +69,79 @@ describe("M5.5 local demo seed design", () => {
     expect(M55_DEMO_PROJECTS.filter((project) => project.archived)).toHaveLength(1);
     expect(M55_DEMO_MESSAGES.some((message) => message.tombstone)).toBe(true);
     expect(M55_DEMO_MESSAGES.some((message) => message.edited)).toBe(true);
+  });
+
+  it("keeps Oto external and Caio unread on Rui's later direct message", () => {
+    expect(M55_DEMO_ORG_MEMBERSHIPS.find((row) => row.userKey === "contractor-a")?.membershipType).toBe("EXTERNAL");
+    expect(M55_DEMO_ORG_MEMBERSHIPS.filter((row) => row.userKey !== "contractor-a").every((row) => row.membershipType === "INTERNAL")).toBe(true);
+    expect(M55_DEMO_ORG_MEMBERSHIPS.find((row) => row.userKey === "contractor-a")?.templateKey).toBeNull();
+    const otoProjects = M55_DEMO_PROJECT_MEMBERS.filter((row) => row.userKey === "contractor-a");
+    expect(otoProjects).toEqual([{ projectKey: "demo-hospital", userKey: "contractor-a", templateKey: "EXTERNAL_CONTRIBUTOR" }]);
+    const direct = M55_DEMO_CONVERSATIONS.find((row) => row.key === "dm-bim-structural");
+    const messages = M55_DEMO_MESSAGES.filter((row) => row.conversationKey === "dm-bim-structural");
+    const latest = messages.at(-1);
+    expect(latest?.authorKey).toBe("structural-a");
+    expect(latest?.at > (messages[0]?.at ?? "")).toBe(true);
+    expect(direct?.readBy).toEqual(["structural-a"]);
+    const bim = demoSeedUuid("orgmem:bim-a");
+    const rui = demoSeedUuid("orgmem:structural-a");
+    const rows = messages.map((message) => ({
+      id: message.key,
+      createdAt: message.at,
+      authorMembershipId: message.authorKey === "bim-a" ? bim : rui,
+    }));
+    const watermark = { id: latest?.key ?? "", createdAt: latest?.at ?? "" };
+    expect(countUnread({ readerMembershipId: bim, messages: rows, watermark: null })).toBeGreaterThan(0);
+    expect(countUnread({ readerMembershipId: rui, messages: rows, watermark })).toBe(0);
+    expect(countUnread({ readerMembershipId: bim, messages: rows, watermark })).toBe(0);
+  });
+
+  it("refuses a demo seed unless the target is explicitly local", () => {
+    const local = "postgresql://amber:correct-horse-12@127.0.0.1:5432/amber";
+    expect(demoSeedEnabled({})).toBe(false);
+    expect(demoSeedEnabled({ AMBER_SEED_M3: "0" })).toBe(false);
+    expect(demoSeedEnabled({ AMBER_SEED_M3: "1" })).toBe(true);
+    expect(() =>
+      assertLocalDemoSeedTarget({
+        AMBER_ALLOW_DEMO_SEED: "1",
+        DATABASE_URL: "postgresql://amber:correct-horse-12@localhost:5432/amber",
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertLocalDemoSeedTarget({
+        AMBER_ALLOW_DEMO_SEED: "1",
+        DATABASE_URL: "postgresql://amber:correct-horse-12@[::1]:5432/amber",
+      }),
+    ).not.toThrow();
+    expect(() => assertLocalDemoSeedTarget({ AMBER_ALLOW_DEMO_SEED: "1" })).toThrow(/DATABASE_URL is missing/);
+    expect(() => assertLocalDemoSeedTarget({ AMBER_ALLOW_DEMO_SEED: "1", DATABASE_URL: "not a url" })).toThrow(/malformed/);
+    expect(() =>
+      assertLocalDemoSeedTarget({
+        AMBER_ALLOW_DEMO_SEED: "1",
+        NODE_ENV: "production",
+        DATABASE_URL: local,
+      }),
+    ).toThrow(/production/);
+    expect(() =>
+      assertLocalDemoSeedTarget({
+        AMBER_ALLOW_DEMO_SEED: "1",
+        DATABASE_URL: local,
+      }),
+    ).not.toThrow();
+    const remote = "postgresql://amber:super-secret-password@db.example.com:5432/amber";
+    expect(() => assertLocalDemoSeedTarget({ AMBER_ALLOW_DEMO_SEED: "1", DATABASE_URL: remote })).toThrow(/db\.example\.com/);
+    try {
+      assertLocalDemoSeedTarget({ AMBER_ALLOW_DEMO_SEED: "1", DATABASE_URL: remote });
+    } catch (error) {
+      expect(String(error)).not.toContain("super-secret-password");
+      expect(String(error)).not.toContain("postgresql://");
+    }
+    expect(() =>
+      assertLocalDemoSeedTarget({
+        AMBER_ALLOW_DEMO_SEED: "1",
+        DATABASE_URL: "postgresql://amber:super-secret-password@localhost.example.com:5432/amber",
+      }),
+    ).toThrow(/localhost\.example\.com/);
+    expect(() => assertLocalDemoSeedTarget({ DATABASE_URL: local })).toThrow(/AMBER_ALLOW_DEMO_SEED=1 is required/);
   });
 });

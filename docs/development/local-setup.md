@@ -13,7 +13,7 @@ pnpm prisma:generate
 pnpm prisma:migrate
 pnpm prisma:seed
 # M3 synthetic dataset (Local RC / homologation):
-AMBER_SEED_M3=1 pnpm prisma:seed
+AMBER_SEED_M3=1 AMBER_ALLOW_DEMO_SEED=1 pnpm prisma:seed
 pnpm --filter @amber/api start:dev   # 0.0.0.0:3001
 pnpm --filter @amber/web dev         # 0.0.0.0:3000
 # Worker is idle unless REDIS_URL is set. Local RC does not start Redis.

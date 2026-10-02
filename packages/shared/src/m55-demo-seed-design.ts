@@ -23,13 +23,52 @@ export const M55_DEMO_USERS = [
 ] as const;
 
 export const M55_DEMO_ORG_MEMBERSHIPS = [
-  { userKey: "admin-a", templateKey: "ORGANIZATION_ADMINISTRATOR" },
-  { userKey: "bim-a", templateKey: null },
-  { userKey: "architect-a", templateKey: null },
-  { userKey: "structural-a", templateKey: null },
-  { userKey: "mep-a", templateKey: null },
-  { userKey: "contractor-a", templateKey: null },
+  { userKey: "admin-a", templateKey: "ORGANIZATION_ADMINISTRATOR", membershipType: "INTERNAL" },
+  { userKey: "bim-a", templateKey: null, membershipType: "INTERNAL" },
+  { userKey: "architect-a", templateKey: null, membershipType: "INTERNAL" },
+  { userKey: "structural-a", templateKey: null, membershipType: "INTERNAL" },
+  { userKey: "mep-a", templateKey: null, membershipType: "INTERNAL" },
+  { userKey: "contractor-a", templateKey: null, membershipType: "EXTERNAL" },
 ] as const;
+
+const DEMO_SEED_LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+/** Compose service name from docker-compose.yml. Not a configurable remote bypass. */
+const DEMO_SEED_COMPOSE_HOST = "postgres";
+
+export function demoSeedEnabled(env: { AMBER_SEED_M3?: string }): boolean {
+  return env.AMBER_SEED_M3 === "1";
+}
+
+export function assertLocalDemoSeedTarget(env: {
+  NODE_ENV?: string;
+  AMBER_ENV?: string;
+  AMBER_ALLOW_DEMO_SEED?: string;
+  DATABASE_URL?: string;
+}): void {
+  if (env.NODE_ENV === "production" || env.AMBER_ENV === "production") {
+    throw new Error("Refusing demo seed: NODE_ENV or AMBER_ENV is production");
+  }
+  if (env.AMBER_ALLOW_DEMO_SEED !== "1") {
+    throw new Error("Refusing demo seed: AMBER_ALLOW_DEMO_SEED=1 is required");
+  }
+  const raw = env.DATABASE_URL;
+  if (!raw?.trim()) {
+    throw new Error("Refusing demo seed: DATABASE_URL is missing");
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new Error("Refusing demo seed: DATABASE_URL is malformed");
+  }
+  if (parsed.protocol !== "postgresql:" && parsed.protocol !== "postgres:") {
+    throw new Error("Refusing demo seed: DATABASE_URL must use the postgresql protocol");
+  }
+  const host = parsed.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (!DEMO_SEED_LOOPBACK_HOSTS.has(host) && host !== DEMO_SEED_COMPOSE_HOST) {
+    throw new Error(`Refusing demo seed: database host "${host}" is not a local or disposable target`);
+  }
+}
 
 export const M55_DEMO_PROJECTS = [
   { key: "demo-hospital", name: "Hospital Santa Clara — expansão", archived: false, story: "Ativo e em risco: clash de instalações atrasado." },
@@ -149,7 +188,7 @@ export const M55_DEMO_EVENTS = [
 
 export const M55_DEMO_CONVERSATIONS = [
   { key: "dm-coord-architect", kind: "DIRECT" as const, userKeys: ["coord-a", "architect-a"] as const, readBy: ["coord-a", "architect-a"] as const },
-  { key: "dm-bim-structural", kind: "DIRECT" as const, userKeys: ["bim-a", "structural-a"] as const, readBy: ["bim-a"] as const },
+  { key: "dm-bim-structural", kind: "DIRECT" as const, userKeys: ["bim-a", "structural-a"] as const, readBy: ["structural-a"] as const },
   { key: "team-bim", kind: "TEAM" as const, teamKey: "demo-bim", readBy: ["coord-a"] as const },
   { key: "team-site", kind: "TEAM" as const, teamKey: "demo-site", readBy: ["coord-a", "contractor-a"] as const },
 ] as const;
@@ -163,6 +202,7 @@ export const M55_DEMO_MESSAGES = [
   { key: "dm-arch-6", conversationKey: "dm-coord-architect", authorKey: "architect-a", body: "Vou publicar o pacote no projeto executivo ainda hoje.", edited: false, tombstone: false, at: "2026-10-01T18:10:00.000Z" },
   { key: "dm-arch-7", conversationKey: "dm-coord-architect", authorKey: "coord-a", body: "Perfeito. Amanhã cruzamos com estruturas antes da visita.", edited: false, tombstone: false, at: "2026-10-01T18:25:00.000Z" },
   { key: "dm-str-1", conversationKey: "dm-bim-structural", authorKey: "bim-a", body: "Rui, o clash do shaft com a viga V12 continua aberto. Não é decisão de gate — é só o apontamento da sessão.", edited: false, tombstone: false, at: "2026-10-02T11:00:00.000Z", link: { type: "TASK", taskKey: "hosp-clash" } },
+  { key: "dm-str-2", conversationKey: "dm-bim-structural", authorKey: "structural-a", body: "Caio, vi o apontamento. A viga V12 ainda não cabe no shaft; devolvo o modelo amanhã cedo.", edited: false, tombstone: false, at: "2026-10-02T15:10:00.000Z" },
   { key: "team-bim-1", conversationKey: "team-bim", authorKey: "bim-a", body: "Sessão de amanhã fica no modelo federado da ala clínica. Links de colaboração, não o registro da decisão.", edited: false, tombstone: false, at: "2026-10-02T10:00:00.000Z", link: { type: "PROJECT", projectKey: "demo-hospital" } },
   { key: "team-bim-2", conversationKey: "team-bim", authorKey: "architect-a", body: "Publiquei o pacote de arquitetura para a coordenação.", edited: false, tombstone: false, at: "2026-10-02T10:20:00.000Z", link: { type: "DELIVERABLE", deliverableKey: "hosp-arch-model" } },
   { key: "team-bim-3", conversationKey: "team-bim", authorKey: "coord-a", body: "O marco de coordenação continua na segunda quinzena.", edited: false, tombstone: false, at: "2026-10-02T10:40:00.000Z", link: { type: "MILESTONE", milestoneKey: "hosp-coord" } },

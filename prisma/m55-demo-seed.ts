@@ -125,10 +125,16 @@ export async function seedM55DemoDataset(prisma: PrismaClient): Promise<void> {
     const row =
       existing ??
       (await prisma.organizationMembership.create({
-        data: { id, organizationId: org.id, userId, type: "INTERNAL", status: "ACTIVE" },
+        data: { id, organizationId: org.id, userId, type: membership.membershipType, status: "ACTIVE" },
       }));
     if (existing && existing.id !== id) {
       throw new Error(`Demo membership ${membership.userKey} already exists with a different id`);
+    }
+    if (existing && existing.type !== membership.membershipType) {
+      await prisma.organizationMembership.update({
+        where: { id: existing.id },
+        data: { type: membership.membershipType },
+      });
     }
     membershipIds.set(membership.userKey, row.id);
     if (membership.templateKey) {
@@ -601,5 +607,11 @@ export async function seedM55DemoDataset(prisma: PrismaClient): Promise<void> {
         },
       });
     }
+    const keep = conversation.readBy
+      .map((reader) => membershipIds.get(reader))
+      .filter((id): id is string => Boolean(id));
+    await prisma.messageReadState.deleteMany({
+      where: { conversationId, organizationMembershipId: { notIn: keep } },
+    });
   }
 }

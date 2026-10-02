@@ -5,6 +5,8 @@ import {
   PERMISSION_DESCRIPTIONS,
   ROLE_TEMPLATES,
   assertClosedCatalog,
+  assertLocalDemoSeedTarget,
+  demoSeedEnabled,
 } from "../packages/shared/src/index.ts";
 import { seedM3Dataset } from "./m3-seed.ts";
 import { seedM4PlanningDataset } from "./m4-seed.ts";
@@ -121,10 +123,8 @@ async function main() {
     }
   }
 
-  if (process.env.AMBER_SEED_M3 === "1") {
-    if (process.env.NODE_ENV === "production" || process.env.AMBER_ENV === "production") {
-      throw new Error("AMBER_SEED_M3 is local/demo only and must not run in production");
-    }
+  if (demoSeedEnabled(process.env)) {
+    assertLocalDemoSeedTarget(process.env);
     await seedM3Dataset(prisma);
     await seedM4PlanningDataset(prisma);
     await seedM5CalendarDataset(prisma);

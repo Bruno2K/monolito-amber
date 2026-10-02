@@ -21,7 +21,7 @@ echo "==> migrate"
 pnpm prisma:migrate
 
 echo "==> catalog seed + M3 synthetic dataset"
-AMBER_SEED_M3=1 pnpm prisma:seed
+AMBER_SEED_M3=1 AMBER_ALLOW_DEMO_SEED=1 pnpm prisma:seed
 
 echo "bootstrap data plane ready"
 echo "  postgres  localhost:5432  (service: postgres)"

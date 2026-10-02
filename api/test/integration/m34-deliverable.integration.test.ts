@@ -166,7 +166,7 @@ describe("M3.4 Deliverable", () => {
   it("applies M3 seed Deliverables onto the migrated schema", async () => {
     execFileSync("pnpm", ["exec", "tsx", "prisma/seed.ts"], {
       cwd: resolve(__dirname, "../../.."),
-      env: { ...process.env, DATABASE_URL: db.url, AMBER_SEED_M3: "1" },
+      env: { ...process.env, DATABASE_URL: db.url, AMBER_SEED_M3: "1", AMBER_ALLOW_DEMO_SEED: "1" },
       stdio: "inherit",
     });
     const orgs = await prisma.organization.findMany({

@@ -3,7 +3,24 @@ import { PrismaClient } from "@prisma/client";
 import { M3_SEED_ORGANIZATIONS, M3_SEED_PROJECTS, M3_SEED_USERS } from "../../packages/shared/src/m3-seed-design.ts";
 import { M4_SEED_MILESTONES, M4_SEED_PRE_M4_TASK, M4_SEED_TASKS } from "../../packages/shared/src/m4-seed-design.ts";
 import { M5_SEED_CALENDARS, M5_SEED_CONVERSATIONS } from "../../packages/shared/src/m5-seed-design.ts";
-import { M55_DEMO_CONVERSATIONS, M55_DEMO_PROJECTS, demoSeedUuid } from "../../packages/shared/src/m55-demo-seed-design.ts";
+import { countUnread } from "../../packages/shared/src/messaging.ts";
+import {
+  M55_DEMO_CALENDARS,
+  M55_DEMO_CONVERSATIONS,
+  M55_DEMO_DELIVERABLES,
+  M55_DEMO_DEPENDENCIES,
+  M55_DEMO_EVENTS,
+  M55_DEMO_GATES,
+  M55_DEMO_MILESTONES,
+  M55_DEMO_PHASES,
+  M55_DEMO_PROJECT_MEMBERS,
+  M55_DEMO_PROJECTS,
+  M55_DEMO_TASKS,
+  M55_DEMO_TEAM_MEMBERS,
+  M55_DEMO_TEAMS,
+  M55_DEMO_USERS,
+  demoSeedUuid,
+} from "../../packages/shared/src/m55-demo-seed-design.ts";
 
 function seedUuid(namespace: string, key: string): string {
   const digest = createHash("sha256").update(`${namespace}${key}`).digest("hex");
@@ -19,6 +36,229 @@ function m5Id(key: string): string {
 }
 
 const prisma = new PrismaClient();
+
+async function membershipFor(organizationId: string, email: string) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    throw new Error(`missing user ${email}`);
+  }
+  const membership = await prisma.organizationMembership.findUnique({
+    where: { organizationId_userId: { organizationId, userId: user.id } },
+  });
+  if (!membership) {
+    throw new Error(`missing membership for ${email}`);
+  }
+  return membership;
+}
+
+async function assertDemoPortfolio(orgAId: string, orgBId: string): Promise<void> {
+  for (const project of M55_DEMO_PROJECTS) {
+    const row = await prisma.project.findUnique({ where: { id: demoSeedUuid(`project:${project.key}`) } });
+    if (!row || row.name !== project.name || row.organizationId !== orgAId) {
+      throw new Error(`demo project ${project.key} missing`);
+    }
+    if (Boolean(row.archivedAt) !== project.archived) {
+      throw new Error(`demo project ${project.key} archive state drifted`);
+    }
+  }
+  for (const team of M55_DEMO_TEAMS) {
+    const row = await prisma.team.findUnique({ where: { id: demoSeedUuid(`team:${team.key}`) } });
+    if (!row || row.name !== team.name || row.organizationId !== orgAId || Boolean(row.archivedAt) !== team.archived) {
+      throw new Error(`demo team ${team.key} drifted`);
+    }
+  }
+  const emails = new Map<string, string>([
+    ["coord-a", "coordinator.a@amber.test"],
+    ["viewer-a", "viewer.a@amber.test"],
+    ...M55_DEMO_USERS.map((user) => [user.key, user.email] as const),
+  ]);
+  const memberships = new Map<string, string>();
+  for (const [key, email] of emails) {
+    memberships.set(key, (await membershipFor(orgAId, email)).id);
+  }
+  const oto = await membershipFor(orgAId, emails.get("contractor-a")!);
+  if (oto.type !== "EXTERNAL" || oto.status !== "ACTIVE") {
+    throw new Error("Oto Obra must stay an active EXTERNAL membership");
+  }
+  const otoOrgRole = await prisma.roleBinding.findFirst({ where: { membershipId: oto.id } });
+  if (otoOrgRole) {
+    throw new Error("Oto Obra must not have an organization-wide role binding");
+  }
+  for (const member of M55_DEMO_PROJECT_MEMBERS) {
+    const organizationMembershipId = memberships.get(member.userKey);
+    const projectId = demoSeedUuid(`project:${member.projectKey}`);
+    const row = await prisma.projectMembership.findUnique({
+      where: { projectId_organizationMembershipId: { projectId, organizationMembershipId: organizationMembershipId! } },
+    });
+    if (!row || row.status !== "ACTIVE") {
+      throw new Error(`missing project membership ${member.userKey} on ${member.projectKey}`);
+    }
+    const assignment = await prisma.projectRoleAssignment.findFirst({
+      where: { projectMembershipId: row.id },
+      include: { role: true },
+    });
+    if (assignment?.role.templateKey !== member.templateKey) {
+      throw new Error(`project role drifted for ${member.userKey} on ${member.projectKey}`);
+    }
+  }
+  for (const member of M55_DEMO_TEAM_MEMBERS) {
+    const row = await prisma.teamMembership.findUnique({
+      where: {
+        teamId_organizationMembershipId: {
+          teamId: demoSeedUuid(`team:${member.teamKey}`),
+          organizationMembershipId: memberships.get(member.userKey)!,
+        },
+      },
+    });
+    if (!row) {
+      throw new Error(`missing team membership ${member.userKey} on ${member.teamKey}`);
+    }
+  }
+  for (const phase of M55_DEMO_PHASES) {
+    const row = await prisma.phase.findUnique({ where: { id: demoSeedUuid(`phase:${phase.key}`) } });
+    if (!row || row.status !== phase.status) {
+      throw new Error(`phase ${phase.key} drifted`);
+    }
+  }
+  for (const milestone of M55_DEMO_MILESTONES) {
+    const row = await prisma.milestone.findUnique({ where: { id: demoSeedUuid(`milestone:${milestone.key}`) } });
+    if (!row || row.status !== milestone.status) {
+      throw new Error(`milestone ${milestone.key} drifted`);
+    }
+  }
+  for (const task of M55_DEMO_TASKS) {
+    const row = await prisma.task.findUnique({ where: { id: demoSeedUuid(`task:${task.key}`) } });
+    if (!row || row.status !== task.status) {
+      throw new Error(`task ${task.key} drifted`);
+    }
+  }
+  for (const edge of M55_DEMO_DEPENDENCIES) {
+    const row = await prisma.taskDependency.findFirst({
+      where: {
+        predecessorTaskId: demoSeedUuid(`task:${edge.predecessor}`),
+        successorTaskId: demoSeedUuid(`task:${edge.successor}`),
+      },
+    });
+    if (!row) {
+      throw new Error(`dependency ${edge.predecessor} -> ${edge.successor} missing`);
+    }
+  }
+  for (const deliverable of M55_DEMO_DELIVERABLES) {
+    const row = await prisma.deliverable.findUnique({ where: { id: demoSeedUuid(`deliverable:${deliverable.key}`) } });
+    if (!row || row.status !== deliverable.status) {
+      throw new Error(`deliverable ${deliverable.key} drifted`);
+    }
+  }
+  for (const gate of M55_DEMO_GATES) {
+    const row = await prisma.gate.findUnique({ where: { id: demoSeedUuid(`gate:${gate.key}`) } });
+    if (!row || row.status !== gate.status) {
+      throw new Error(`gate ${gate.key} drifted`);
+    }
+  }
+  if (M55_DEMO_GATES.find((gate) => gate.status === "READY")?.status === M55_DEMO_GATES.find((gate) => gate.status === "RELEASED")?.status) {
+    throw new Error("READY and RELEASED gates must stay distinct");
+  }
+  const blocked = await prisma.gate.findUnique({ where: { id: demoSeedUuid("gate:hosp-coord-gate") } });
+  const exception = await prisma.formalException.findUnique({ where: { id: demoSeedUuid("exception:hosp-shaft") } });
+  if (!blocked || blocked.status !== "BLOCKED" || exception?.status !== "REQUESTED") {
+    throw new Error("requested formal exception must not release the blocked gate");
+  }
+  for (const calendar of M55_DEMO_CALENDARS) {
+    const row = await prisma.calendar.findUnique({ where: { id: demoSeedUuid(`calendar:${calendar.key}`) } });
+    if (!row || row.name !== calendar.name || row.status !== calendar.status) {
+      throw new Error(`calendar ${calendar.key} drifted`);
+    }
+  }
+  for (const event of M55_DEMO_EVENTS) {
+    const row = await prisma.calendarEvent.findUnique({ where: { id: demoSeedUuid(`event:${event.key}`) } });
+    if (!row || row.title !== event.title) {
+      throw new Error(`calendar event ${event.key} drifted`);
+    }
+  }
+  const edited = await prisma.message.findUnique({ where: { id: demoSeedUuid("message:dm-arch-2") } });
+  const tombstone = await prisma.message.findUnique({ where: { id: demoSeedUuid("message:dm-arch-3") } });
+  if (!edited?.editedAt) {
+    throw new Error("edited demo message drifted");
+  }
+  if (!tombstone?.deletedAt || (tombstone.deletedAt ? null : tombstone.body) !== null) {
+    throw new Error("tombstoned demo message still exposes a body");
+  }
+  const linkedTask = await prisma.task.findUnique({ where: { id: demoSeedUuid("task:hosp-clash") } });
+  const linkedProject = await prisma.project.findUnique({ where: { id: demoSeedUuid("project:demo-hospital") } });
+  const linkedDeliverable = await prisma.deliverable.findUnique({ where: { id: demoSeedUuid("deliverable:hosp-arch-model") } });
+  const linkedMilestone = await prisma.milestone.findUnique({ where: { id: demoSeedUuid("milestone:hosp-coord") } });
+  if (!linkedTask || !linkedProject || !linkedDeliverable || !linkedMilestone) {
+    throw new Error("authorized message links must reference existing resources");
+  }
+  const directId = demoSeedUuid("conversation:dm-bim-structural");
+  const directMessages = await prisma.message.findMany({ where: { conversationId: directId }, orderBy: { createdAt: "asc" } });
+  if (directMessages.length !== 2) {
+    throw new Error(`unread direct fixture duplicated or incomplete (${directMessages.length})`);
+  }
+  const latest = directMessages[1];
+  if (!latest || latest.authorOrganizationMembershipId !== memberships.get("structural-a")) {
+    throw new Error("inbox tail must be Rui's later message");
+  }
+  const bimId = memberships.get("bim-a")!;
+  const ruiId = memberships.get("structural-a")!;
+  const bimRead = await prisma.messageReadState.findUnique({
+    where: { conversationId_organizationMembershipId: { conversationId: directId, organizationMembershipId: bimId } },
+  });
+  const ruiRead = await prisma.messageReadState.findUnique({
+    where: { conversationId_organizationMembershipId: { conversationId: directId, organizationMembershipId: ruiId } },
+  });
+  const unreadRows = directMessages.map((message) => ({
+    id: message.id,
+    createdAt: message.createdAt.toISOString(),
+    authorMembershipId: message.authorOrganizationMembershipId,
+  }));
+  const bimUnread = countUnread({
+    readerMembershipId: bimId,
+    messages: unreadRows,
+    watermark: bimRead ? { id: bimRead.lastReadMessageId, createdAt: bimRead.lastReadCreatedAt.toISOString() } : null,
+  });
+  const ruiUnread = countUnread({
+    readerMembershipId: ruiId,
+    messages: unreadRows,
+    watermark: ruiRead ? { id: ruiRead.lastReadMessageId, createdAt: ruiRead.lastReadCreatedAt.toISOString() } : null,
+  });
+  if (bimUnread < 1 || ruiUnread !== 0 || ruiRead?.lastReadMessageId !== latest.id) {
+    throw new Error("Caio must have an unread direct message and Rui must not be unread on his own reply");
+  }
+  const read = countUnread({
+    readerMembershipId: bimId,
+    messages: unreadRows,
+    watermark: { id: latest.id, createdAt: latest.createdAt.toISOString() },
+  });
+  if (read !== 0 || ruiRead?.lastReadMessageId !== latest.id) {
+    throw new Error("reading as Caio must be able to clear unread without moving Rui's watermark");
+  }
+  const site = await prisma.team.findUnique({ where: { id: demoSeedUuid("team:demo-site") } });
+  const siteConversation = await prisma.conversation.findUnique({ where: { id: demoSeedUuid("conversation:team-site") } });
+  if (!site?.archivedAt || siteConversation?.kind !== "TEAM" || siteConversation.teamId !== site.id) {
+    throw new Error("archived Obra team conversation must stay read-only");
+  }
+  const removed = await prisma.organizationMembership.findFirst({
+    where: { id: m3Id("orgmem:org-a:removed-a"), status: "REMOVED" },
+  });
+  if (!removed) {
+    throw new Error("removed-a must remain removed");
+  }
+  const beta = await prisma.organizationMembership.findUnique({ where: { id: m3Id("orgmem:org-b:coord-b") } });
+  const betaOnHospital = beta
+    ? await prisma.projectMembership.findUnique({
+        where: {
+          projectId_organizationMembershipId: {
+            projectId: demoSeedUuid("project:demo-hospital"),
+            organizationMembershipId: beta.id,
+          },
+        },
+      })
+    : null;
+  if (!beta || beta.organizationId !== orgBId || betaOnHospital) {
+    throw new Error("Alpha demo data must stay isolated from Beta");
+  }
+}
 
 async function main(): Promise<void> {
   const expectedOrgA = m3Id("org:org-a");
@@ -112,11 +352,15 @@ async function main(): Promise<void> {
   if (!suspended) {
     throw new Error("suspended-a must remain suspended");
   }
-  const conversationCount = await prisma.conversation.count();
-  const expectedConversations = M5_SEED_CONVERSATIONS.length + M55_DEMO_CONVERSATIONS.length;
-  if (conversationCount !== expectedConversations) {
-    throw new Error(`expected ${expectedConversations} seed conversations, found ${conversationCount}`);
+  const seedConversationIds = [
+    ...M5_SEED_CONVERSATIONS.map((row) => m5Id(`conversation:${row.key}`)),
+    ...M55_DEMO_CONVERSATIONS.map((row) => demoSeedUuid(`conversation:${row.key}`)),
+  ];
+  const conversationCount = await prisma.conversation.count({ where: { id: { in: seedConversationIds } } });
+  if (conversationCount !== seedConversationIds.length) {
+    throw new Error(`expected ${seedConversationIds.length} seeded conversations, found ${conversationCount}`);
   }
+  await assertDemoPortfolio(expectedOrgA, expectedOrgB);
   console.log(`seed_org_a=${expectedOrgA}`);
   console.log(`seed_org_b=${expectedOrgB}`);
   console.log(`seed_project_a1=${expectedProjectA1}`);

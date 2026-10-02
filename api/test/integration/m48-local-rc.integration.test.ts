@@ -195,7 +195,7 @@ describe("M4.8 Local RC integration", () => {
   it("M4.8-R01/R02 upgrade chain + additive seed preserve pre-M4 and M3 ids", async () => {
     execFileSync("pnpm", ["exec", "tsx", "prisma/seed.ts"], {
       cwd: ROOT,
-      env: { ...process.env, DATABASE_URL: db.url, AMBER_SEED_M3: "1" },
+      env: { ...process.env, DATABASE_URL: db.url, AMBER_SEED_M3: "1", AMBER_ALLOW_DEMO_SEED: "1" },
       stdio: "inherit",
     });
     const projectA1 = seedUuid("project:project-a1");
@@ -225,7 +225,7 @@ describe("M4.8 Local RC integration", () => {
     });
     execFileSync("pnpm", ["exec", "tsx", "prisma/seed.ts"], {
       cwd: ROOT,
-      env: { ...process.env, DATABASE_URL: db.url, AMBER_SEED_M3: "1" },
+      env: { ...process.env, DATABASE_URL: db.url, AMBER_SEED_M3: "1", AMBER_ALLOW_DEMO_SEED: "1" },
       stdio: "inherit",
     });
     const preserved = await prisma.task.findUnique({ where: { id: preId } });
