@@ -31,20 +31,23 @@ test.describe("M4.8 Local RC golden path + cross-view consistency", () => {
 
     await page.getByRole("button", { name: "Nova Tarefa" }).click();
     await expect(page.getByRole("heading", { name: "Nova tarefa" })).toBeVisible();
-    const title = `RC golden ${stamp}`;
+    const title = `M48-gp ${stamp}`;
     await page.getByLabel("Título").fill(title);
     await page.getByRole("button", { name: "Criar tarefa" }).click();
-    await expect(page.getByRole("heading", { name: title })).toBeVisible();
-    // Assign form mounts only when `row && !creating`. After create the List
-    // filter is still "Seed outline programme", so reopen unfiltered inspect.
-    const listed = await apiJson(
-      page,
-      "GET",
-      `/api/v1/projects/${IDS.projectA1}/planning?q=${encodeURIComponent(title)}`,
-    );
-    expect(listed.status).toBe(200);
-    const created = ((listed.body.tasks as Array<{ id: string; title: string }>) ?? []).find((row) => row.title === title);
-    expect(created?.id).toBeTruthy();
+    // Do not wait for the inspector heading here: List is still filtered to
+    // "Seed outline programme", so create→inspect is racy. Resolve via SoT.
+    let created: { id: string; title: string } | undefined;
+    await expect
+      .poll(async () => {
+        const listed = await apiJson(
+          page,
+          "GET",
+          `/api/v1/projects/${IDS.projectA1}/planning?q=${encodeURIComponent(title)}`,
+        );
+        created = ((listed.body.tasks as Array<{ id: string; title: string }>) ?? []).find((row) => row.title === title);
+        return created?.id ?? null;
+      })
+      .toBeTruthy();
     await page.goto(`/projects/${IDS.projectA1}/planner?inspect=${created!.id}`);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.locator("#task-assignee")).toContainText("Seed Contributor A");
@@ -58,12 +61,12 @@ test.describe("M4.8 Local RC golden path + cross-view consistency", () => {
 
     const pred = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
       headers: { "Idempotency-Key": `m48-pred-${stamp}` },
-      data: { title: `RC pred ${stamp}` },
+      data: { title: `M48-pred ${stamp}` },
     });
     const succ = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
       headers: { "Idempotency-Key": `m48-succ-${stamp}` },
       data: {
-        title: `RC succ ${stamp}`,
+        title: `M48-succ ${stamp}`,
         plannedStartAt: "2026-10-10T00:00:00.000Z",
         dueDate: "2026-10-20T00:00:00.000Z",
       },
@@ -77,7 +80,7 @@ test.describe("M4.8 Local RC golden path + cross-view consistency", () => {
     expect(linked.status).toBeLessThan(400);
 
     await page.goto(`/projects/${IDS.projectA1}/planner?inspect=${succ.body.id}`);
-    await expect(page.getByRole("heading", { name: `RC succ ${stamp}` })).toBeVisible();
+    await expect(page.getByRole("heading", { name: `M48-succ ${stamp}` })).toBeVisible();
     await expect(page.locator(".planner-dep-block")).toBeVisible();
     await expect(page.getByRole("button", { name: "Iniciar" })).toBeDisabled();
     await page.screenshot({ path: path.join(EVIDENCE, `inspector-start-block-${tag}.png`), fullPage: true });
@@ -100,7 +103,7 @@ test.describe("M4.8 Local RC golden path + cross-view consistency", () => {
     await expect(page.getByRole("button", { name: "Iniciar" })).toBeEnabled();
     await page.getByRole("button", { name: "Fechar", exact: true }).click();
 
-    await page.goto(`/projects/${IDS.projectA1}/planner?view=gantt&q=${encodeURIComponent(`RC succ ${stamp}`)}`);
+    await page.goto(`/projects/${IDS.projectA1}/planner?view=gantt&q=${encodeURIComponent(`M48-succ ${stamp}`)}`);
     await expect(page.getByRole("region", { name: "Cronograma Gantt" })).toBeVisible();
     await page.getByLabel("Tarefa cujas datas serão salvas").selectOption(String(succ.body.id));
     const startInput = page.locator(`#gantt-dates-${succ.body.id}`);
@@ -112,7 +115,7 @@ test.describe("M4.8 Local RC golden path + cross-view consistency", () => {
     await page.screenshot({ path: path.join(EVIDENCE, `gantt-date-${tag}.png`), fullPage: true });
     await capture(page, testInfo, "m48-gantt");
 
-    const riskTitle = `RC marco ${stamp}`;
+    const riskTitle = `M48-ms ${stamp}`;
     const milestone = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/milestones`, {
       headers: { "Idempotency-Key": `m48-ms-${stamp}` },
       data: { title: riskTitle, targetDate: "2099-01-01T00:00:00.000Z" },

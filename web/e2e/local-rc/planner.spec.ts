@@ -88,7 +88,7 @@ test.describe("M4.2 Local RC Planning List", () => {
     await expect(page.getByRole("heading", { name: "Dependências (término-início)" })).toBeVisible();
     await expect(page.locator(".planner-dep-block")).toBeVisible();
     await expect(page.locator(".planner-dep-block")).toContainText(/não é o estado Bloqueada/i);
-    await expect(page.locator(".planner-deps").getByText(`RC Pred ${testInfo.project.name}`)).toBeVisible();
+    await expect(page.locator(".planner-dep-list").getByText(`RC Pred ${testInfo.project.name}`)).toBeVisible();
     await expect(page.getByRole("button", { name: "Remover predecessor" })).toBeVisible();
     await page.screenshot({ path: path.join(EVIDENCE_M44, `inspector-deps-${tag}.png`), fullPage: true });
     await page.getByRole("button", { name: "Remover predecessor" }).focus();
