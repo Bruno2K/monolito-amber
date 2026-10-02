@@ -138,6 +138,29 @@ describe("M4.2 planning system states", () => {
     expect(gantt).not.toMatch(/Atualizar Cronograma|caminho crítico|critical path/i);
   });
 
+  it("UI Polish D keeps risk off the week grid and paints short bars as pills", () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const gantt = readFileSync(join(here, "TaskGantt.tsx"), "utf8");
+    const globals = readFileSync(join(here, "../../app/globals.css"), "utf8");
+    const overlay = readFileSync(join(here, "../../app/gantt-m46.css"), "utf8");
+    const planner = readFileSync(join(here, "PlannerView.tsx"), "utf8");
+    expect(gantt).not.toMatch(/className="gantt-row-risk"|gantt-row-risk/);
+    expect(gantt).toMatch(/title=\{risk \|\|/);
+    expect(gantt).toMatch(/Sem datas/);
+    expect(gantt).toMatch(/scheduleRiskLabel\(lane\) \|\| "—"/);
+    expect(gantt).toMatch(/gantt-body-grid/);
+    expect(gantt).toMatch(/onOpen\(lane\.id\)/);
+    expect(gantt).toMatch(/ganttBarOffset/);
+    expect(gantt).not.toMatch(/ganttBarRange|planningScheduleDateRange|buildScheduleLanes/);
+    expect(planner).toMatch(/view !== "gantt" \? \([\s\S]*aria-label="Ordenar lista"/);
+    expect(globals).toMatch(/\.gantt-hierarchy-row,\s*\n\.gantt-row \{[\s\S]*height:\s*40px/);
+    expect(globals).toMatch(/\.gantt-bar \{[\s\S]*min-width:\s*36px[\s\S]*overflow:\s*hidden/);
+    expect(globals).toMatch(/\.gantt-timeline \.gantt-diamond/);
+    expect(overlay).toMatch(/container-name:\s*gantt-bar/);
+    expect(overlay).toMatch(/@container gantt-bar \(max-width: 120px\)/);
+    expect(overlay).toMatch(/\.gantt-timeline \.gantt-body-grid/);
+  });
+
   it("M4.5 Kanban is a projection over the same planner, not a coming-later placeholder", () => {
     const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "PlannerView.tsx"), "utf8");
     expect(src).toMatch(/TaskKanban/);

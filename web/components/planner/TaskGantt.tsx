@@ -310,6 +310,15 @@ export function TaskGantt({
               ))}
             </div>
             <div className="gantt-rows">
+              <div className="gantt-body-grid" aria-hidden="true">
+                {weeks.map((week) => (
+                  <span
+                    key={`grid-${week.key}`}
+                    className="gantt-body-grid-cell"
+                    style={{ left: `${week.left}%`, width: `${week.width}%` }}
+                  />
+                ))}
+              </div>
               {schedule.lanes.map((lane) => {
                 const bar = ganttBarOffset({
                   start: lane.start,
@@ -343,6 +352,7 @@ export function TaskGantt({
                           className={`gantt-bar gantt-bar-${lane.kind.toLowerCase()}${lane.late ? " is-late" : ""}`}
                           style={{ left: `${bar.left}%`, width: `${bar.width}%` }}
                           aria-label={name}
+                          title={risk || undefined}
                           draggable={lane.kind === "TASK" && canUpdate && !reduceMotion}
                           onClick={() => {
                             if (lane.kind === "TASK") {
@@ -374,7 +384,6 @@ export function TaskGantt({
                     ) : (
                       <span className="gantt-undated">Sem datas</span>
                     )}
-                    {risk ? <span className="gantt-row-risk">{risk}</span> : null}
                   </div>
                 );
               })}

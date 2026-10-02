@@ -31,3 +31,46 @@
   gap: 8px;
   align-items: center;
 }
+
+/* UI Polish D — G-01/G-02/G-05: pills clip; hide ISO that cannot fit. */
+.gantt-bar {
+  container-type: inline-size;
+  container-name: gantt-bar;
+}
+
+.gantt-bar time,
+.gantt-bar > span[aria-hidden="true"] {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  opacity: 0.62;
+  flex-shrink: 0;
+}
+
+@container gantt-bar (max-width: 120px) {
+  time,
+  span[aria-hidden="true"] {
+    display: none;
+  }
+}
+
+/* UI Polish D — G-04: faint week columns in the body, not just the header. */
+.gantt-timeline .gantt-body-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.gantt-timeline .gantt-body-grid-cell {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  border-right: 1px solid #f3f4f6;
+}
+
+.gantt-timeline .gantt-row,
+.gantt-timeline .gantt-links {
+  z-index: 1;
+}
