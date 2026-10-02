@@ -6,6 +6,7 @@ import {
   canCreateTask,
   canUpdateTask,
   contextLabel,
+  dependencyStartExplanation,
   lateExplanation,
   plannerPath,
   taskStatusLabel,
@@ -78,6 +79,8 @@ describe("planner URL + labels", () => {
     expect(canAssignTask(["task.assign"])).toBe(true);
     expect(canCompleteTask(["task.complete"])).toBe(true);
     expect(auditEventLabel("TASK_UNBLOCKED")).toBe("Desbloqueada");
+    expect(auditEventLabel("TASK_DEPENDENCY_CREATED")).toBe("Dependência criada");
+    expect(auditEventLabel("TASK_DEPENDENCY_REMOVED")).toBe("Dependência removida");
     expect(auditEventLabel("TASK_PROGRESS_CHANGED")).toBe("Progresso alterado");
   });
 
@@ -93,5 +96,15 @@ describe("planner URL + labels", () => {
         }),
       ),
     ).toBe("Concept · DEL-1");
+  });
+
+  it("distinguishes dependency start blockage from stored BLOCKED", () => {
+    expect(dependencyStartExplanation([{ predecessorTaskId: "p1", status: "TODO", title: "Survey", message: "x" }])).toMatch(
+      /Survey/,
+    );
+    expect(dependencyStartExplanation([{ predecessorTaskId: "p1", status: "TODO", title: "Survey", message: "x" }])).toMatch(
+      /não é o estado Bloqueada/,
+    );
+    expect(taskStatusLabel("BLOCKED")).toBe("Bloqueada");
   });
 });

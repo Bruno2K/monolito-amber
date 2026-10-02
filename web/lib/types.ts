@@ -63,6 +63,8 @@ export interface AmberProblem {
   detail: string;
   correlationId?: string;
   instance?: string;
+  reason?: string;
+  blockers?: Array<{ predecessorTaskId?: string; status?: string; title?: string; message?: string }>;
 }
 
 export type UiStateKind =

@@ -4341,8 +4341,8 @@
           }
         ],
         "responses": {
-          "201": {
-            "description": ""
+          "409": {
+            "description": "PLANNING_STATE reason DEPENDENCY_PREDECESSOR_INCOMPLETE with blockers[] — not the same as stored Task BLOCKED"
           }
         },
         "security": [
@@ -4604,7 +4604,7 @@
             "cookie": []
           }
         ],
-        "summary": "List finish-to-start dependencies for a Task",
+        "summary": "List finish-to-start predecessors and successors for a Task. Re-authorized; omit-not-leak.",
         "tags": [
           "planning"
         ]
@@ -4638,7 +4638,53 @@
           }
         ],
         "responses": {
-          "201": {
+          "403": {
+            "description": "TENANCY_DENIED — missing, cross-Project, or cross-Organization id (omit-not-leak)"
+          },
+          "409": {
+            "description": "PLANNING_STATE with reason DEPENDENCY_SELF | DEPENDENCY_DUPLICATE | DEPENDENCY_CYCLE | DEPENDENCY_KIND_UNSUPPORTED | DEPENDENCY_RETROACTIVE"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Add a finish-to-start predecessor. Rejects self, duplicate, cycle, non-FS, cross-tenant, and invalid retroactive edges. Never shifts dates.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/dependency-candidates": {
+      "get": {
+        "operationId": "TasksController_listDependencyCandidates",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": ""
           }
         },
@@ -4647,7 +4693,60 @@
             "cookie": []
           }
         ],
-        "summary": "Add a finish-to-start predecessor. Rejects self, duplicate, cycle, and cross-project.",
+        "summary": "Search same-Project predecessor candidates. Hidden/foreign Tasks are omitted, never counted.",
+        "tags": [
+          "planning"
+        ]
+      }
+    },
+    "/api/v1/projects/{projectId}/tasks/{taskId}/dependencies/{dependencyId}": {
+      "delete": {
+        "operationId": "TasksController_removeDependency",
+        "parameters": [
+          {
+            "name": "dependencyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "taskId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "projectId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "TENANCY_DENIED — unknown or foreign dependencyId (omit-not-leak)"
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Remove a finish-to-start edge when taskId is either end. Never shifts dates. Idempotent retry replays the stored body.",
         "tags": [
           "planning"
         ]

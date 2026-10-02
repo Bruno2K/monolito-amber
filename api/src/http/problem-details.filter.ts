@@ -51,6 +51,11 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       logger.error({ err: exception, correlationId, path: req.originalUrl }, "unhandled exception");
     }
 
+    const extras =
+      isAmberError(exception) && exception.extras && typeof exception.extras === "object"
+        ? pickProblemExtras(exception.extras)
+        : {};
+
     res.status(status).type("application/problem+json").json({
       type: `https://amber.invalid/problems/${code.toLowerCase()}`,
       title,
@@ -59,6 +64,19 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       instance: req.originalUrl,
       correlationId,
       code,
+      ...extras,
     });
   }
+}
+
+const PROBLEM_EXTRA_KEYS = ["reason", "blockers"] as const;
+
+function pickProblemExtras(extras: Record<string, unknown>): Record<string, unknown> {
+  const picked: Record<string, unknown> = {};
+  for (const key of PROBLEM_EXTRA_KEYS) {
+    if (key in extras && extras[key] !== undefined) {
+      picked[key] = extras[key];
+    }
+  }
+  return picked;
 }

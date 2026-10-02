@@ -155,27 +155,67 @@ export function wouldCreateCycle(
   return false;
 }
 
+export const PLANNING_REJECTION_REASONS = [
+  "DEPENDENCY_SELF",
+  "DEPENDENCY_DUPLICATE",
+  "DEPENDENCY_CYCLE",
+  "DEPENDENCY_KIND_UNSUPPORTED",
+  "DEPENDENCY_RETROACTIVE",
+  "DEPENDENCY_PREDECESSOR_INCOMPLETE",
+  "DEPENDENCY_DATE_SHIFT_REJECTED",
+] as const;
+export type PlanningRejectionReason = (typeof PLANNING_REJECTION_REASONS)[number];
+
+export const PLANNING_DEPENDENCY_CANDIDATE_PAGE_MAX = 50;
+
+export interface DependencyStartBlocker {
+  predecessorTaskId: string;
+  status: string;
+  title?: string;
+  message: string;
+}
+
+export function incompletePredecessorBlockers(
+  predecessors: readonly { id: string; status: string; title?: string }[],
+): DependencyStartBlocker[] {
+  return predecessors
+    .filter((row) => row.status !== "DONE")
+    .map((row) => ({
+      predecessorTaskId: row.id,
+      status: row.status,
+      ...(row.title ? { title: row.title } : {}),
+      message: `Predecessor is ${row.status}, not DONE`,
+    }));
+}
+
 export function assertAcyclicDependency(
   edges: readonly TaskDependencyEdge[],
   predecessorTaskId: string,
   successorTaskId: string,
 ): void {
   if (predecessorTaskId === successorTaskId) {
-    throw new PlanningStateError("A Task cannot depend on itself");
+    throw new PlanningStateError("A Task cannot depend on itself", { reason: "DEPENDENCY_SELF" });
   }
   if (wouldCreateCycle(edges, predecessorTaskId, successorTaskId)) {
-    throw new PlanningStateError("Task dependency would create a cycle");
+    throw new PlanningStateError("Task dependency would create a cycle", { reason: "DEPENDENCY_CYCLE" });
   }
 }
 
 export function assertFinishToStartType(value: string | undefined): asserts value is TaskDependencyType | undefined {
   if (value != null && value !== "FINISH_TO_START") {
-    throw new PlanningStateError("Only finish-to-start Task dependencies are supported");
+    throw new PlanningStateError("Only finish-to-start Task dependencies are supported", {
+      reason: "DEPENDENCY_KIND_UNSUPPORTED",
+    });
   }
 }
 
 export function prerequisitesBlockStart(predecessors: readonly { status: string }[]): boolean {
   return predecessors.some((row) => row.status !== "DONE");
+}
+
+/** Successor already started or completed cannot receive an unfinished predecessor. */
+export function successorRejectsUnfinishedPredecessor(successorStatus: string): boolean {
+  return successorStatus === "IN_PROGRESS" || successorStatus === "BLOCKED" || successorStatus === "DONE";
 }
 
 /** M3.7 additive Task schedule fields. Status remains an explicit transition. */

@@ -5,11 +5,13 @@ import { apiJson, capture, IDS, signInToOrg } from "./helpers";
 
 const EVIDENCE_M42 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.2");
 const EVIDENCE_M43 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.3");
+const EVIDENCE_M44 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.4");
 
 test.describe("M4.2 Local RC Planning List", () => {
   test("M4.2-UI-01/NARROW-01 Planejamento is reachable and List matches the query", async ({ page }, testInfo) => {
     mkdirSync(EVIDENCE_M42, { recursive: true });
     mkdirSync(EVIDENCE_M43, { recursive: true });
+    mkdirSync(EVIDENCE_M44, { recursive: true });
     await signInToOrg(page, "coord-a", "Amber Demo Alpha");
     await page.getByRole("link", { name: "Alpha Tower" }).click();
     await page.waitForURL(`**/projects/${IDS.projectA1}/overview`);
@@ -61,6 +63,35 @@ test.describe("M4.2 Local RC Planning List", () => {
     await capture(page, testInfo, `planner-inspector`);
     await page.getByRole("button", { name: "Fechar", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
+
+    const pred = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
+      headers: { "Idempotency-Key": `m44-pred-${testInfo.project.name}-${Date.now()}` },
+      data: { title: `RC Pred ${testInfo.project.name}` },
+    });
+    const succ = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
+      headers: { "Idempotency-Key": `m44-succ-${testInfo.project.name}-${Date.now()}` },
+      data: { title: `RC Succ ${testInfo.project.name}` },
+    });
+    expect(pred.status).toBeLessThan(400);
+    expect(succ.status).toBeLessThan(400);
+    const linked = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks/${succ.body.id}/dependencies`, {
+      headers: { "Idempotency-Key": `m44-dep-${testInfo.project.name}-${Date.now()}` },
+      data: { predecessorTaskId: pred.body.id, type: "FINISH_TO_START" },
+    });
+    expect(linked.status).toBeLessThan(400);
+
+    await page.goto(`/projects/${IDS.projectA1}/planner?inspect=${succ.body.id}`);
+    await expect(page.getByRole("heading", { name: "Dependências (término-início)" })).toBeVisible();
+    await expect(page.getByText("Aguardando predecessor")).toBeVisible();
+    await expect(page.getByText(/não é o estado Bloqueada/i)).toBeVisible();
+    await expect(page.getByText(`RC Pred ${testInfo.project.name}`)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Remover predecessor" })).toBeVisible();
+    await page.screenshot({ path: path.join(EVIDENCE_M44, `inspector-deps-${tag}.png`), fullPage: true });
+    await page.getByRole("button", { name: "Remover predecessor" }).focus();
+    await expect(page.getByRole("button", { name: "Remover predecessor" })).toBeFocused();
+    await page.getByRole("button", { name: "Remover predecessor" }).click();
+    await expect(page.getByText("Nenhum predecessor.")).toBeVisible();
+    await page.getByRole("button", { name: "Fechar", exact: true }).click();
 
     await page.getByRole("button", { name: "Nova Tarefa" }).click();
     await expect(page.getByRole("heading", { name: "Nova tarefa" })).toBeVisible();

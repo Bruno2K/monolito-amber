@@ -6,10 +6,12 @@ import {
   assertTaskTransition,
   deriveKanbanColumn,
   deriveMilestoneStatus,
+  incompletePredecessorBlockers,
   isTaskLate,
   isTaskPriority,
   planningListSortCompare,
   prerequisitesBlockStart,
+  successorRejectsUnfinishedPredecessor,
   taskStatusRequiresBlockedReason,
   taskStatusRequiresCompletePermission,
   wouldCreateCycle,
@@ -167,10 +169,38 @@ describe("Finish-to-start dependencies", () => {
     expect(() => assertAcyclicDependency(edges, "c", "a")).toThrow(/cycle/);
   });
 
+  it("M4.4-UNIT-01 rejects a long transitive cycle in one walk", () => {
+    const edges = Array.from({ length: 40 }, (_, index) => ({
+      predecessorTaskId: `n${index}`,
+      successorTaskId: `n${index + 1}`,
+    }));
+    expect(wouldCreateCycle(edges, "n40", "n0")).toBe(true);
+    expect(wouldCreateCycle(edges, "n40", "n41")).toBe(false);
+    expect(() => assertAcyclicDependency(edges, "n40", "n0")).toThrow(/cycle/);
+  });
+
   it("blocks IN_PROGRESS while any prerequisite is not DONE", () => {
     expect(prerequisitesBlockStart([{ status: "DONE" }])).toBe(false);
     expect(prerequisitesBlockStart([{ status: "TODO" }])).toBe(true);
     expect(prerequisitesBlockStart([{ status: "CANCELLED" }])).toBe(true);
     expect(prerequisitesBlockStart([{ status: "DONE" }, { status: "IN_PROGRESS" }])).toBe(true);
+  });
+
+  it("explains incomplete predecessors without treating them as Task BLOCKED", () => {
+    const blockers = incompletePredecessorBlockers([
+      { id: "p1", status: "TODO", title: "Survey" },
+      { id: "p2", status: "DONE", title: "Done pred" },
+      { id: "p3", status: "CANCELLED" },
+    ]);
+    expect(blockers).toHaveLength(2);
+    expect(blockers[0]).toMatchObject({
+      predecessorTaskId: "p1",
+      status: "TODO",
+      title: "Survey",
+      message: "Predecessor is TODO, not DONE",
+    });
+    expect(blockers[1]?.title).toBeUndefined();
+    expect(successorRejectsUnfinishedPredecessor("DONE")).toBe(true);
+    expect(successorRejectsUnfinishedPredecessor("TODO")).toBe(false);
   });
 });

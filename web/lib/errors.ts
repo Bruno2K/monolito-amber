@@ -34,6 +34,9 @@ export function normalizeProblem(status: number, raw: unknown): AmberProblem {
     };
   }
   const code = asString(record.code) ?? (status === 401 ? "UNAUTHENTICATED" : status === 403 ? "TENANCY_DENIED" : "HTTP_EXCEPTION");
+  const blockers = Array.isArray(record.blockers)
+    ? record.blockers.filter((item): item is Record<string, unknown> => item !== null && typeof item === "object")
+    : undefined;
   return {
     status: asNumber(record.status) ?? status,
     code,
@@ -41,6 +44,13 @@ export function normalizeProblem(status: number, raw: unknown): AmberProblem {
     detail: asString(record.detail) ?? asString(record.message) ?? "Request failed",
     correlationId: asString(record.correlationId),
     instance: asString(record.instance),
+    reason: asString(record.reason),
+    blockers: blockers?.map((item) => ({
+      predecessorTaskId: asString(item.predecessorTaskId),
+      status: asString(item.status),
+      title: asString(item.title),
+      message: asString(item.message),
+    })),
   };
 }
 

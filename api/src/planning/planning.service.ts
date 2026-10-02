@@ -2,9 +2,11 @@ import { Injectable } from "@nestjs/common";
 import {
   clampPlanningPageSize,
   deriveKanbanColumn,
+  incompletePredecessorBlockers,
   isPlanningListSort,
   isPlanningView,
   isTaskStatus,
+  prerequisitesBlockStart,
   type PlanningListSort,
   type PlanningView,
   type TaskStatus,
@@ -133,6 +135,12 @@ export class PlanningService {
     const milestoneDtos = milestoneRows.map((row) => this.milestones.toDto(row, linkedTaskSignals));
     const previewSource = inspectedRow && !rows.some((row) => row.id === inspectedRow.id) ? [...rows, inspectedRow] : rows;
     const previews = await this.loadPreviews(bound.organizationId, bound.project.id, previewSource, milestoneDtos);
+    const graph = await this.loadDependencyProjection(
+      bound.organizationId,
+      bound.project.id,
+      previewSource.map((row) => row.id),
+      dependencyRows,
+    );
 
     const byStatus: Record<string, number> = {};
     for (const group of statusGroups) {
@@ -148,12 +156,14 @@ export class PlanningService {
         archivedAt: bound.project.archivedAt,
         readOnly: Boolean(bound.project.archivedAt),
       },
-      tasks: rows.map((row) => this.toPlanningTask(row, previews)),
+      tasks: rows.map((row) => this.toPlanningTask(row, previews, graph)),
       milestones: milestoneDtos,
       dependencies: dependencyRows.map((row) => this.tasks.toDependencyDto(row)),
       page: { page, pageSize, total, sort, order },
       counts: { total, late: lateCount, byStatus },
-      inspected: inspectedRow ? { ...this.toPlanningTask(inspectedRow, previews), history: inspectedHistory } : null,
+      inspected: inspectedRow
+        ? { ...this.toPlanningTask(inspectedRow, previews, graph), history: inspectedHistory }
+        : null,
     };
   }
 
@@ -366,12 +376,93 @@ export class PlanningService {
     };
   }
 
-  private toPlanningTask(row: TaskRow, previews: PreviewMap) {
+  private async loadDependencyProjection(
+    organizationId: string,
+    projectId: string,
+    taskIds: string[],
+    dependencyRows: Array<{
+      id: string;
+      predecessorTaskId: string;
+      successorTaskId: string;
+    }>,
+  ) {
+    const relevant = dependencyRows.filter(
+      (row) => taskIds.includes(row.predecessorTaskId) || taskIds.includes(row.successorTaskId),
+    );
+    const neighborIds = [
+      ...new Set(relevant.flatMap((row) => [row.predecessorTaskId, row.successorTaskId])),
+    ];
+    const neighbors = neighborIds.length
+      ? await this.prisma.task.findMany({
+          where: { id: { in: neighborIds }, organizationId, projectId },
+          select: { id: true, title: true, status: true },
+        })
+      : [];
+    const neighborMap = new Map(neighbors.map((row) => [row.id, row]));
+    const byTask = new Map<
+      string,
+      {
+        predecessors: Array<{ dependencyId: string; taskId: string; title?: string; status: string }>;
+        successors: Array<{ dependencyId: string; taskId: string; title?: string; status: string }>;
+      }
+    >();
+    const ensure = (id: string) => {
+      const current = byTask.get(id) ?? { predecessors: [], successors: [] };
+      byTask.set(id, current);
+      return current;
+    };
+    const neighborView = (id: string) => {
+      const row = neighborMap.get(id);
+      if (!row) {
+        return null;
+      }
+      return { taskId: row.id, title: row.title, status: row.status };
+    };
+    for (const edge of relevant) {
+      const predecessor = neighborView(edge.predecessorTaskId);
+      const successor = neighborView(edge.successorTaskId);
+      if (predecessor) {
+        ensure(edge.successorTaskId).predecessors.push({
+          dependencyId: edge.id,
+          ...predecessor,
+        });
+      }
+      if (successor) {
+        ensure(edge.predecessorTaskId).successors.push({
+          dependencyId: edge.id,
+          ...successor,
+        });
+      }
+    }
+    return byTask;
+  }
+
+  private toPlanningTask(
+    row: TaskRow,
+    previews: PreviewMap,
+    graph?: Map<
+      string,
+      {
+        predecessors: Array<{ dependencyId: string; taskId: string; title?: string; status: string }>;
+        successors: Array<{ dependencyId: string; taskId: string; title?: string; status: string }>;
+      }
+    >,
+  ) {
     const dto = this.tasks.toDto(row);
     const late = Boolean(dto.late);
+    const links = graph?.get(row.id) ?? { predecessors: [], successors: [] };
+    const startBlockers = incompletePredecessorBlockers(
+      links.predecessors.map((item) => ({ id: item.taskId, status: item.status, title: item.title })),
+    );
     return {
       ...dto,
       kanbanColumn: deriveKanbanColumn({ status: dto.status as TaskStatus, late }),
+      dependencyStartBlocked: prerequisitesBlockStart(
+        links.predecessors.map((item) => ({ status: item.status })),
+      ),
+      startBlockers,
+      predecessors: links.predecessors,
+      successors: links.successors,
       previews: {
         ...(row.issueId && previews.issues.has(row.issueId)
           ? { issue: { ...previews.issues.get(row.issueId)!, relation: "issue" as const } }
