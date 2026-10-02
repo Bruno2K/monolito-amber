@@ -211,7 +211,9 @@ describe("M4.2 unified Planning read-model", () => {
 
   it("M4.2-HTTP-02 / ADV omits unauthorized projects and inspect ids without a count leak", async () => {
     const anon = await request(app.getHttpServer()).get(`/api/v1/projects/${projectA}/planning`);
-    expect(anon.status).toBe(401);
+    expect(anon.status).toBe(403);
+    expect(anon.body.tasks).toBeUndefined();
+    expect(JSON.stringify(anon.body)).not.toContain("Update grid");
 
     const cross = await ownerB.get(`/api/v1/projects/${projectA}/planning`);
     expect(cross.status).toBe(403);

@@ -60,7 +60,7 @@ test.describe("M4.2 Local RC Planning List", () => {
 
     await page.goto(`/projects/${IDS.projectB1}/planner?inspect=${IDS.projectA1}`);
     await expect(page.getByRole("heading", { name: "Acesso negado" })).toBeVisible();
-    await expect(page.getByText("Alpha Tower")).toHaveCount(0);
+    await expect(page.getByText("Beta Campus")).toHaveCount(0);
     await expect(page.getByText("1 item oculto")).toHaveCount(0);
     await capture(page, testInfo, "planner-forbidden");
   });
