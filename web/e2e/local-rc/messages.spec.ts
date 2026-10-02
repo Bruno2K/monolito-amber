@@ -244,7 +244,7 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     await composer.press("Enter");
     await expect.poll(() => posts).toBe(1);
     release();
-    await expect(page.getByText(once)).toHaveCount(1);
+    await expect(transcript.getByText(once, { exact: true })).toHaveCount(1);
     await page.unroute(`**/api/v1/conversations/${conversationId}/messages`);
 
     const second = await apiJson(page, "POST", "/api/v1/conversations/direct", {
