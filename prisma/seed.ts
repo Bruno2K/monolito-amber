@@ -8,6 +8,7 @@ import {
 } from "../packages/shared/src/index.ts";
 import { seedM3Dataset } from "./m3-seed.ts";
 import { seedM4PlanningDataset } from "./m4-seed.ts";
+import { seedM5CalendarDataset } from "./m5-seed.ts";
 
 const prisma = new PrismaClient();
 
@@ -121,6 +122,7 @@ async function main() {
   if (process.env.AMBER_SEED_M3 === "1") {
     await seedM3Dataset(prisma);
     await seedM4PlanningDataset(prisma);
+    await seedM5CalendarDataset(prisma);
   }
 }
 

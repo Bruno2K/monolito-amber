@@ -5007,6 +5007,483 @@
         ]
       }
     },
+    "/api/v1/calendars": {
+      "get": {
+        "operationId": "CalendarsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "List calendars the caller owns or is granted. Org membership alone does not enumerate private calendars.",
+        "tags": [
+          "calendars"
+        ]
+      },
+      "post": {
+        "operationId": "CalendarsController_create",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a private user-owned Calendar. Unlimited per ACTIVE membership.",
+        "tags": [
+          "calendars"
+        ]
+      }
+    },
+    "/api/v1/calendars/{calendarId}/share-targets": {
+      "get": {
+        "operationId": "CalendarsController_shareTargets",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Owner-only share-target autocomplete. EXTERNAL callers never receive an unrestricted org directory.",
+        "tags": [
+          "calendars"
+        ]
+      }
+    },
+    "/api/v1/calendars/{calendarId}/grants": {
+      "get": {
+        "operationId": "CalendarsController_listGrants",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Grant provenance. Owner sees all paths; grantees see their own. Owner is not a grant row.",
+        "tags": [
+          "calendars"
+        ]
+      },
+      "post": {
+        "operationId": "CalendarsController_createGrant",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Owner-only USER or TEAM VIEWER/EDITOR grant. Same Organization only.",
+        "tags": [
+          "calendars"
+        ]
+      }
+    },
+    "/api/v1/calendars/{calendarId}/grants/{grantId}": {
+      "patch": {
+        "operationId": "CalendarsController_changeGrant",
+        "parameters": [
+          {
+            "name": "grantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Change one grant role. Other paths remain.",
+        "tags": [
+          "calendars"
+        ]
+      },
+      "delete": {
+        "operationId": "CalendarsController_revokeGrant",
+        "parameters": [
+          {
+            "name": "grantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Revoke one grant path immediately. Other valid paths remain.",
+        "tags": [
+          "calendars"
+        ]
+      }
+    },
+    "/api/v1/calendars/{calendarId}/events": {
+      "get": {
+        "operationId": "CalendarsController_listEvents",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Windowed events. Unauthorized referenced source details are omitted.",
+        "tags": [
+          "calendars"
+        ]
+      },
+      "post": {
+        "operationId": "CalendarsController_createEvent",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Create a MANUAL or REFERENCED event. Referenced write does not mutate the source.",
+        "tags": [
+          "calendars"
+        ]
+      }
+    },
+    "/api/v1/calendars/{calendarId}/events/{eventId}": {
+      "patch": {
+        "operationId": "CalendarsController_updateEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Update a manual event. Cannot silently mutate Task/Milestone/Deliverable/Gate.",
+        "tags": [
+          "calendars"
+        ]
+      },
+      "delete": {
+        "operationId": "CalendarsController_deleteEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Archive an event. Never cascade-deletes source objects.",
+        "tags": [
+          "calendars"
+        ]
+      }
+    },
+    "/api/v1/calendars/{calendarId}/archive": {
+      "post": {
+        "operationId": "CalendarsController_archive",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Archive a Calendar. Events and referenced sources are preserved.",
+        "tags": [
+          "calendars"
+        ]
+      }
+    },
+    "/api/v1/calendars/{calendarId}": {
+      "get": {
+        "operationId": "CalendarsController_get",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Calendar metadata. Inaccessible ids deny without existence leak.",
+        "tags": [
+          "calendars"
+        ]
+      },
+      "patch": {
+        "operationId": "CalendarsController_update",
+        "parameters": [
+          {
+            "name": "calendarId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Rename or update description. Active owner only. EDITOR cannot rename.",
+        "tags": [
+          "calendars"
+        ]
+      }
+    },
+    "/api/v1/schedule": {
+      "get": {
+        "operationId": "ScheduleController_get",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "My Schedule merge of owned/granted calendars and authorized project dates. Per-source re-auth.",
+        "tags": [
+          "calendars"
+        ]
+      }
+    },
     "/api/v1/projects/{projectId}/gates": {
       "get": {
         "operationId": "GatesController_list",
@@ -5536,7 +6013,7 @@
   "info": {
     "title": "Amber API",
     "description": "Amber Modular Monolith foundation API. Formal Exception is the sole Gate bypass. Closed 0.2A catalog only.",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "contact": {}
   },
   "tags": [
@@ -5566,6 +6043,10 @@
     },
     {
       "name": "planning",
+      "description": ""
+    },
+    {
+      "name": "calendars",
       "description": ""
     },
     {

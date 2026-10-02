@@ -38,8 +38,10 @@ describe("M5.1-R15 scope fence", () => {
     const deploy = readFileSync(join(ROOT, ".github/workflows/deploy-cloud.yml"), "utf8");
     expect(deploy).toMatch(/if:\s*false/);
     expect(M51_CLOUD_FENCE.deployWorkflowMustStayDisabled).toBe(true);
-    expect(existsSync(join(ROOT, "api/src/calendar"))).toBe(false);
+    expect(existsSync(join(ROOT, "api/src/calendar"))).toBe(true);
     expect(existsSync(join(ROOT, "api/src/messaging"))).toBe(false);
+    expect(existsSync(join(ROOT, "web/app/calendars"))).toBe(false);
+    expect(existsSync(join(ROOT, "web/app/messages"))).toBe(false);
   });
 
   it("does not treat reserved collaboration codes as M6 smuggling", () => {

@@ -110,9 +110,21 @@ export function assertCalendarName(name: string): void {
   }
 }
 
-export function assertIanaTimeZone(value: string): void {
+export function isValidIanaTimeZone(value: string): boolean {
   const trimmed = value.trim();
   if (!IANA_NAME.test(trimmed)) {
+    return false;
+  }
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: trimmed }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function assertIanaTimeZone(value: string): void {
+  if (!isValidIanaTimeZone(value)) {
     throw new CalendarStateError(`Invalid or non-IANA time zone '${value}'`);
   }
 }
@@ -392,3 +404,134 @@ export const CALENDAR_MUTATIONS_REQUIRE_CAS = [
   "update_event",
   "delete_event",
 ] as const;
+
+const NAIVE_LOCAL = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/;
+const HAS_OFFSET = /(?:Z|[+-]\d{2}:\d{2})$/i;
+
+export function formatOffsetMinutes(minutes: number): string {
+  const sign = minutes >= 0 ? "+" : "-";
+  const abs = Math.abs(minutes);
+  const hours = String(Math.trunc(abs / 60)).padStart(2, "0");
+  const mins = String(abs % 60).padStart(2, "0");
+  return `${sign}${hours}:${mins}`;
+}
+
+function zoneParts(instant: Date, timeZone: string): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+} {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(instant);
+  const read = (type: string): number => {
+    const value = parts.find((part) => part.type === type)?.value ?? "0";
+    return Number.parseInt(value, 10);
+  };
+  let hour = read("hour");
+  if (hour === 24) {
+    hour = 0;
+  }
+  return {
+    year: read("year"),
+    month: read("month"),
+    day: read("day"),
+    hour,
+    minute: read("minute"),
+    second: read("second"),
+  };
+}
+
+export function offsetMinutesAt(instant: Date, timeZone: string): number {
+  const local = zoneParts(instant, timeZone);
+  const asUtc = Date.UTC(local.year, local.month - 1, local.day, local.hour, local.minute, local.second);
+  return Math.round((asUtc - instant.getTime()) / 60_000);
+}
+
+/**
+ * Convert a naive local wall time in an IANA zone to a UTC instant.
+ * Server is authoritative: ambiguous DST requires chosenOffset; invalid is rejected.
+ */
+export function resolveLocalWallTime(input: {
+  localDateTime: string;
+  timeZone: string;
+  chosenOffset?: string | null;
+}): { instant: Date; resolution: DstResolution; offset: string } {
+  assertIanaTimeZone(input.timeZone);
+  const raw = input.localDateTime.trim();
+  if (HAS_OFFSET.test(raw)) {
+    const instant = new Date(raw);
+    if (Number.isNaN(instant.getTime())) {
+      throw new CalendarStateError("Invalid event instant");
+    }
+    return {
+      instant,
+      resolution: "UNAMBIGUOUS",
+      offset: formatOffsetMinutes(offsetMinutesAt(instant, input.timeZone.trim())),
+    };
+  }
+  const match = NAIVE_LOCAL.exec(raw);
+  if (!match) {
+    throw new CalendarStateError("Local wall time must be YYYY-MM-DDTHH:mm:ss");
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const ms = match[7] ? Number(match[7].padEnd(3, "0").slice(0, 3)) : 0;
+  const wanted = Date.UTC(year, month - 1, day, hour, minute, second, ms);
+  const guesses = new Set<number>();
+  for (const probe of [wanted, wanted + 12 * 3600_000, wanted - 12 * 3600_000]) {
+    const parts = zoneParts(new Date(probe), input.timeZone.trim());
+    const got = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second, ms);
+    const instantMs = probe - (got - wanted);
+    const check = zoneParts(new Date(instantMs), input.timeZone.trim());
+    const checkUtc = Date.UTC(check.year, check.month - 1, check.day, check.hour, check.minute, check.second, ms);
+    if (checkUtc === wanted) {
+      guesses.add(instantMs);
+    }
+  }
+  const instants = [...guesses].sort((a, b) => a - b).map((value) => new Date(value));
+  if (instants.length === 0) {
+    assertAuthoritativeInstant({ resolution: "INVALID" });
+  }
+  if (instants.length === 1) {
+    const instant = instants[0]!;
+    return {
+      instant,
+      resolution: "UNAMBIGUOUS",
+      offset: formatOffsetMinutes(offsetMinutesAt(instant, input.timeZone.trim())),
+    };
+  }
+  const chosen = input.chosenOffset?.trim() ?? "";
+  const matched = instants.find(
+    (instant) => formatOffsetMinutes(offsetMinutesAt(instant, input.timeZone.trim())) === chosen,
+  );
+  if (!matched) {
+    assertAuthoritativeInstant({ resolution: "AMBIGUOUS", chosenOffset: chosen || null });
+  }
+  return {
+    instant: matched!,
+    resolution: "AMBIGUOUS",
+    offset: chosen,
+  };
+}
+
+export function formatAllDayDate(value: Date | string): string {
+  if (typeof value === "string") {
+    return value.slice(0, 10);
+  }
+  return value.toISOString().slice(0, 10);
+}

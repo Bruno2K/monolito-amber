@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { M3_SEED_TEAMS, M3_SEED_USERS } from "./m3-seed-design.js";
 import {
   M5_SEED_APPLIED_IN_M51,
+  M5_SEED_CALENDARS_APPLIED_IN_M52,
   M5_SEED_CALENDARS,
   M5_SEED_CONVERSATIONS,
   M5_SEED_EVENTS,
@@ -13,6 +14,7 @@ import {
 describe("M5.1 seed/fixture plan", () => {
   it("is not applied in this WI and reuses existing M3 identities", () => {
     expect(M5_SEED_APPLIED_IN_M51).toBe(false);
+    expect(M5_SEED_CALENDARS_APPLIED_IN_M52).toBe(true);
     const userKeys = new Set(M3_SEED_USERS.map((user) => user.key));
     const teamKeys = new Set(M3_SEED_TEAMS.map((team) => team.key));
     for (const calendar of M5_SEED_CALENDARS) {
