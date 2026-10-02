@@ -6,7 +6,6 @@ import {
   CALENDAR_MUTATIONS_REQUIRE_IDEMPOTENCY,
   M5_FORBIDDEN_API_PATH_TOKENS,
   M5_PLANNED_CALENDAR_API_ROUTES,
-  M5_PLANNED_MESSAGING_API_ROUTES,
   calendarAccessGrantsProjectAccess,
   calendarActionAllowed,
   calendarEditsMutateSourceLifecycle,
@@ -79,9 +78,8 @@ describe("M5.2 Calendar security floors (fail closed)", () => {
     );
   });
 
-  it("publishes Calendar OpenAPI without Messaging, cloud, or forbidden tokens", () => {
+  it("publishes Calendar OpenAPI without cloud or forbidden tokens", () => {
     expect(existsSync(join(ROOT, "api/src/calendar"))).toBe(true);
-    expect(existsSync(join(ROOT, "api/src/messaging"))).toBe(false);
     const deploy = readFileSync(join(ROOT, ".github/workflows/deploy-cloud.yml"), "utf8");
     expect(deploy).toMatch(/if:\s*false/);
     const openapi = JSON.parse(readFileSync(join(ROOT, "api/openapi/openapi.json"), "utf8")) as {
@@ -90,9 +88,6 @@ describe("M5.2 Calendar security floors (fail closed)", () => {
     const raw = JSON.stringify(openapi);
     for (const row of M5_PLANNED_CALENDAR_API_ROUTES) {
       expect(Object.keys(openapi.paths), row.path).toContain(row.path);
-    }
-    for (const row of M5_PLANNED_MESSAGING_API_ROUTES) {
-      expect(Object.keys(openapi.paths), row.path).not.toContain(row.path);
     }
     for (const token of M5_FORBIDDEN_API_PATH_TOKENS) {
       expect(raw).not.toContain(token);

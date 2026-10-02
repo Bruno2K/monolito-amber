@@ -27,7 +27,7 @@ describe("M5 planned routes", () => {
     expect(FIGMA_PROTOTYPE_ROUTE_MAP.find((row) => row.figmaPath === "/mensagens")?.productPath).toBeNull();
   });
 
-  it("publishes Calendar APIs in OpenAPI while Messaging stays planned-only", () => {
+  it("publishes Calendar and Messaging APIs in OpenAPI without M6+ tokens", () => {
     const openapi = JSON.parse(readFileSync(join(ROOT, "api/openapi/openapi.json"), "utf8")) as {
       paths: Record<string, Record<string, unknown>>;
     };
@@ -44,7 +44,9 @@ describe("M5 planned routes", () => {
       }
     }
     for (const row of M5_PLANNED_MESSAGING_API_ROUTES) {
-      expect(existing, row.path).not.toContain(row.path);
+      expect(existing, row.path).toContain(row.path);
+      const method = row.method.toLowerCase();
+      expect(openapi.paths[row.path]?.[method], `${row.method} ${row.path}`).toBeTruthy();
       for (const token of M5_FORBIDDEN_API_PATH_TOKENS) {
         expect(row.path).not.toContain(token);
       }

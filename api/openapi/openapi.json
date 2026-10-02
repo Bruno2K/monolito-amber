@@ -6008,6 +6008,308 @@
           "exceptions"
         ]
       }
+    },
+    "/api/v1/conversations": {
+      "get": {
+        "operationId": "ConversationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Authorized inbox. Direct participation or current TeamMembership only. Inaccessible conversations are omitted.",
+        "tags": [
+          "messaging"
+        ]
+      }
+    },
+    "/api/v1/conversations/search": {
+      "get": {
+        "operationId": "ConversationsController_search",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Snippet search over currently authorized conversations. No inaccessible existence or count leaks.",
+        "tags": [
+          "messaging"
+        ]
+      }
+    },
+    "/api/v1/conversations/direct": {
+      "post": {
+        "operationId": "ConversationsController_findOrCreateDirect",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Find-or-create a DIRECT conversation for an unordered same-Organization membership pair.",
+        "tags": [
+          "messaging"
+        ]
+      }
+    },
+    "/api/v1/conversations/team": {
+      "post": {
+        "operationId": "ConversationsController_ensureTeam",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Ensure the unique TEAM conversation for a Team the actor currently belongs to.",
+        "tags": [
+          "messaging"
+        ]
+      }
+    },
+    "/api/v1/conversations/{conversationId}": {
+      "get": {
+        "operationId": "ConversationsController_get",
+        "parameters": [
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Conversation metadata. Inaccessible ids omit — no existence leak.",
+        "tags": [
+          "messaging"
+        ]
+      }
+    },
+    "/api/v1/conversations/{conversationId}/messages": {
+      "get": {
+        "operationId": "MessagesController_list",
+        "parameters": [
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Cursor-ordered messages. Server createdAt + id tie-break. Tombstone body is omitted.",
+        "tags": [
+          "messaging"
+        ]
+      },
+      "post": {
+        "operationId": "MessagesController_send",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Send a message. Own send does not create unread for the author.",
+        "tags": [
+          "messaging"
+        ]
+      }
+    },
+    "/api/v1/conversations/{conversationId}/messages/{messageId}": {
+      "patch": {
+        "operationId": "MessagesController_edit",
+        "parameters": [
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Author edit. Sets editedAt. Does not bump others' unread. expectedVersion required.",
+        "tags": [
+          "messaging"
+        ]
+      }
+    },
+    "/api/v1/conversations/{conversationId}/messages/{messageId}/tombstone": {
+      "post": {
+        "operationId": "MessagesController_tombstone",
+        "parameters": [
+          {
+            "name": "messageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Author tombstone. No hard delete. Audit MESSAGE_DELETED without body.",
+        "tags": [
+          "messaging"
+        ]
+      }
+    },
+    "/api/v1/conversations/{conversationId}/read-state": {
+      "put": {
+        "operationId": "MessagesController_updateReadState",
+        "parameters": [
+          {
+            "name": "conversationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "cookie": []
+          }
+        ],
+        "summary": "Advance the per-user watermark. Monotonic. Not audit-critical.",
+        "tags": [
+          "messaging"
+        ]
+      }
     }
   },
   "info": {
@@ -6067,6 +6369,10 @@
     },
     {
       "name": "files",
+      "description": ""
+    },
+    {
+      "name": "messaging",
       "description": ""
     }
   ],

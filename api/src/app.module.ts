@@ -8,6 +8,7 @@ import { DocumentModule } from "./document/document.module";
 import { FilesModule } from "./files/files.module";
 import { FoundationModule } from "./foundation/foundation.module";
 import { HealthModule } from "./health/health.module";
+import { MessagingModule } from "./messaging/messaging.module";
 import { CorrelationMiddleware } from "./observability/correlation";
 import { OrgModule } from "./org/org.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -37,6 +38,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
     FilesModule,
     AuditModule,
     FoundationModule,
+    MessagingModule,
   ],
 })
 export class AppModule implements NestModule {

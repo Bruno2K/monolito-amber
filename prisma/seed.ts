@@ -9,6 +9,7 @@ import {
 import { seedM3Dataset } from "./m3-seed.ts";
 import { seedM4PlanningDataset } from "./m4-seed.ts";
 import { seedM5CalendarDataset } from "./m5-seed.ts";
+import { seedM5MessagingDataset } from "./m5-messaging-seed.ts";
 
 const prisma = new PrismaClient();
 
@@ -123,6 +124,7 @@ async function main() {
     await seedM3Dataset(prisma);
     await seedM4PlanningDataset(prisma);
     await seedM5CalendarDataset(prisma);
+    await seedM5MessagingDataset(prisma);
   }
 }
 
