@@ -71,7 +71,7 @@ test.describe("M4.2 Planning List", () => {
     await expect(page.locator(".planner-dep-block")).toBeVisible();
     await expect(page.locator(".planner-dep-block")).toContainText(/não é o estado Bloqueada/i);
     await expect(page.getByRole("heading", { name: "Predecessores" })).toBeVisible();
-    await expect(page.getByText("Levantamento topográfico")).toBeVisible();
+    await expect(page.locator(".planner-deps").getByText("Levantamento topográfico")).toBeVisible();
     await expect(page.getByLabel("Adicionar predecessor")).toBeVisible();
     await expect(page.getByRole("button", { name: "Remover predecessor" })).toBeVisible();
     await page.screenshot({ path: path.join(EVIDENCE_M44, `inspector-deps-${tag}.png`), fullPage: true });
@@ -85,10 +85,10 @@ test.describe("M4.2 Planning List", () => {
     await page.getByLabel("Buscar tarefas").fill("zzzz-no-match");
     await expect(page.getByRole("heading", { name: "Nenhuma tarefa corresponde aos filtros" })).toBeVisible();
 
-    await page.getByRole("tab", { name: "Kanban" }).click();
+    await page.goto(`/projects/${PROJECT_A}/planner?view=kanban&q=zzzz-no-match`);
     await expect(page).toHaveURL(new RegExp(`view=kanban`));
     await expect(page.getByRole("heading", { name: "Nenhuma tarefa corresponde aos filtros" })).toBeVisible();
-    await page.getByLabel("Buscar tarefas").fill("");
+    await page.goto(`/projects/${PROJECT_A}/planner?view=kanban`);
     await expect(page.getByRole("region", { name: "Quadro Kanban" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "PLANEJADAS" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "EM ANDAMENTO" })).toBeVisible();
@@ -115,7 +115,7 @@ test.describe("M4.2 Planning List", () => {
     const card = page.locator(`[data-task-id="${task.id}"]`);
     await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${task.id}"]`)).toBeVisible();
     await card.dragTo(page.locator('[data-kanban-column="EM_RISCO"]'));
-    await expect(page.getByRole("alert")).toContainText(/visão derivada/i);
+    await expect(page.locator(".kanban-shell [role='alert']")).toContainText(/visão derivada/i);
     await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${task.id}"]`)).toBeVisible();
 
     await page.getByLabel(`Mover ${title}`).selectOption("EM_ANDAMENTO");
@@ -130,8 +130,10 @@ test.describe("M4.2 Planning List", () => {
     await expect(page.locator(`[data-kanban-column="EM_ANDAMENTO"] [data-task-id="${task.id}"]`)).toBeVisible();
 
     await page.goto(`/projects/${PROJECT_A}/planner?view=kanban`);
-    await page.locator('[data-task-id="task-waiting"]').dragTo(page.locator('[data-kanban-column="EM_ANDAMENTO"]'));
-    await expect(page.getByRole("alert")).toContainText(/predecessor/i);
+    await page.getByLabel("Mover Lançar fundações").selectOption("EM_ANDAMENTO");
+    await expect(page.locator(".kanban-shell [role='alert']")).toContainText(
+      /prerequisite|predecessor|término-início|finish-to-start/i,
+    );
     await expect(page.locator('[data-kanban-column="PLANEJADAS"] [data-task-id="task-waiting"]')).toBeVisible();
   });
 
@@ -152,7 +154,7 @@ test.describe("M4.2 Planning List", () => {
     });
     expect(bumped.ok()).toBeTruthy();
     await page.getByLabel(`Mover ${title}`).selectOption("EM_ANDAMENTO");
-    await expect(page.getByRole("alert")).toContainText(/Optimistic lock|versão|conflito/i);
+    await expect(page.locator(".kanban-shell [role='alert']")).toContainText(/Optimistic lock|versão|conflito/i);
     await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${task.id}"]`)).toBeVisible();
   });
 

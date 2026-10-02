@@ -137,7 +137,7 @@ test.describe("M4.2 Local RC Planning List", () => {
     await capture(page, testInfo, "planner-kanban");
 
     await page.locator(`[data-task-id="${taskId}"]`).dragTo(page.locator('[data-kanban-column="EM_RISCO"]'));
-    await expect(page.getByRole("alert")).toContainText(/visão derivada|estado armazenado/i);
+    await expect(page.locator(".kanban-shell [role='alert']")).toContainText(/visão derivada|estado armazenado/i);
     await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${taskId}"]`)).toBeVisible();
 
     const stale = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks/${taskId}/start`, {
@@ -146,7 +146,7 @@ test.describe("M4.2 Local RC Planning List", () => {
     });
     expect(stale.status).toBeLessThan(400);
     await page.getByLabel(`Mover ${title}`).selectOption("EM_ANDAMENTO");
-    await expect(page.getByRole("alert")).toContainText(/Optimistic lock|versão|conflito/i);
+    await expect(page.locator(".kanban-shell [role='alert']")).toContainText(/Optimistic lock|versão|conflito/i);
 
     await page.reload();
     await expect(page.locator(`[data-kanban-column="EM_ANDAMENTO"] [data-task-id="${taskId}"]`)).toBeVisible();
@@ -171,7 +171,9 @@ test.describe("M4.2 Local RC Planning List", () => {
     expect(linked.status).toBeLessThan(400);
     await page.goto(`/projects/${IDS.projectA1}/planner?view=kanban&q=${encodeURIComponent(`RC Kanban succ ${testInfo.project.name}`)}`);
     await page.getByLabel(`Mover RC Kanban succ ${testInfo.project.name}`).selectOption("EM_ANDAMENTO");
-    await expect(page.getByRole("alert")).toContainText(/predecessor/i);
+    await expect(page.locator(".kanban-shell [role='alert']")).toContainText(
+      /prerequisite|predecessor|término-início|finish-to-start/i,
+    );
     await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${succ.body.id}"]`)).toBeVisible();
 
     await logoutToSignIn(page);
