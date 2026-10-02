@@ -53,11 +53,11 @@ test.describe("M4.2 Local RC Planning List", () => {
     await expect(page.getByRole("heading", { name: "Histórico e auditoria" })).toBeVisible();
     await page.screenshot({ path: path.join(EVIDENCE_M43, `inspector-${tag}.png`), fullPage: true });
     await page.getByRole("button", { name: "Iniciar" }).click();
-    await expect(page.getByText("Em andamento")).toBeVisible();
+    await expect(page.getByRole("dialog").locator(".status-pill")).toHaveText("Em andamento");
     await page.getByRole("button", { name: "Concluir" }).click();
     await expect(page.getByText(/não altera Issue/i)).toBeVisible();
     await page.getByRole("button", { name: "Confirmar conclusão" }).click();
-    await expect(page.getByText("Concluída")).toBeVisible();
+    await expect(page.getByRole("dialog").locator(".status-pill")).toHaveText("Concluída");
     await capture(page, testInfo, `planner-inspector`);
     await page.getByRole("button", { name: "Fechar", exact: true }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);

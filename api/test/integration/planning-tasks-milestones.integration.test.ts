@@ -226,7 +226,7 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
     const overdueStatus = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks/${standaloneTaskId}/status`)
       .set("Idempotency-Key", `st-overdue-${suffix}`)
-      .send({ status: "OVERDUE" });
+      .send({ status: "OVERDUE", expectedVersion: await taskVersion(coordinator, standaloneTaskId) });
     expect(overdueStatus.status).toBe(409);
 
     const started = await coordinator

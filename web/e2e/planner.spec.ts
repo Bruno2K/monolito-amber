@@ -58,7 +58,7 @@ test.describe("M4.2 Planning List", () => {
     await expect(page.getByRole("heading", { name: `Mock create ${testInfo.project.name}` })).toBeVisible();
     await expect(page.getByRole("button", { name: "Iniciar" })).toBeVisible();
     await page.getByRole("button", { name: "Iniciar" }).click();
-    await expect(page.getByText("Em andamento")).toBeVisible();
+    await expect(page.getByRole("dialog").locator(".status-pill")).toHaveText("Em andamento");
     await page.screenshot({ path: path.join(EVIDENCE_M43, `create-start-${tag}.png`), fullPage: true });
 
     await page.getByLabel("Buscar tarefas").fill("zzzz-no-match");
