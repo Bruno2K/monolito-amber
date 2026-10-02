@@ -82,7 +82,7 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
       await route.continue();
     });
     await page.getByRole("button", { name: "Enviar" }).click();
-    await expect(page.getByRole("alert")).toContainText("falha temporária");
+    await expect(page.locator(".messages-composer").locator("xpath=preceding-sibling::p[@role='alert'][1]")).toContainText("falha temporária");
     await expect(page.getByText("Falha ao enviar")).toBeVisible();
     await expect(page.getByText("Enviando")).toHaveCount(0);
     const rewritten = `${body} novo`;
