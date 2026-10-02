@@ -26,7 +26,8 @@ This is not the Product Vision landing (`Bruno2K/amber`).
 | **M3 Local RC Audit Corrections RC1** | **MERGED / homologated** | https://app.notion.com/p/3ec678e54c8d818e8c8fd4fc619059a8 |
 | **M3.9 Final Product, Security & UX Audit** | **MERGED**; Exit Gate **FAIL — ACCEPTED** | https://app.notion.com/p/3ec678e54c8d81dab5fceda13242a69b |
 | **M4 Execution Pack** | **ACTIVE / LOCAL ONLY** | https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7 |
-| **M4.1 Contract, Baseline & Read-Model Plan** | **IN FLIGHT** (docs-only) | https://app.notion.com/p/3ec678e54c8d8103beafc69c3bb51edc |
+| **M4.1 Contract, Baseline & Read-Model Plan** | **MERGED** | https://app.notion.com/p/3ec678e54c8d8103beafc69c3bb51edc |
+| **M4.2 Planning Shell & Unified List** | **IN FLIGHT** (LOCAL ONLY) | https://app.notion.com/p/3ec678e54c8d8155b715c1309a86627c |
 
 Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED only. No foundation-only waiver.
 
@@ -40,7 +41,8 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [agentic](./agentic/context.md) — agent operating context, harness, loop, roles
 - [ux](./ux/m2.10-final-ux-ui-audit.md) — product UX evidence (M2 COMPLETE; Exit Gate PASS)
 - [M3.1 Operations contract](./domain/m3-project-operations-contract.md) — MERGED / LOCAL ONLY
-- [M4.1 Planning contract](./domain/m4-planning-scheduling-contract.md) — IN FLIGHT / LOCAL ONLY
+- [M4.1 Planning contract](./domain/m4-planning-scheduling-contract.md) — MERGED / LOCAL ONLY
+- [M4.2 Planning List](./domain/m4.2-requirement-to-change-plan.md) — IN FLIGHT / LOCAL ONLY
 
 ## Product UX evidence (M2)
 
@@ -58,8 +60,10 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [M4.1 migration/seed/rollback plan](./domain/m4.1-migration-seed-rollback-plan.md) — plan only; no applied DDL
 - [M4.1 Figma → route map](./domain/m4.1-figma-route-map.md) — documentary
 - [M4.1 test strategy](./domain/m4.1-test-strategy.md) · [R14 no-feature-code](./domain/m4.1-no-feature-code-evidence.md)
-- [M4.1 matrix](./domain/m4.1-requirements-traceability.md) — target 14 ATENDIDO
-- M3 Exit Gate **FAIL — ACCEPTED** remains accepted debt. **Not M3 COMPLETE.** M4.2–M4.9 LOCKED.
+- [M4.1 matrix](./domain/m4.1-requirements-traceability.md) — 14 ATENDIDO (docs-only WI)
+- [M4.2 requirement-to-change plan](./domain/m4.2-requirement-to-change-plan.md) — Issue [#56](https://github.com/Bruno2K/monolito-amber/issues/56); published first
+- [M4.2 matrix](./domain/m4.2-requirements-traceability.md) · [Figma trace](./domain/m4.2-figma-trace.md) · [UI evidence](./ux/evidence/m4.2/)
+- M3 Exit Gate **FAIL — ACCEPTED** remains accepted debt. **Not M3 COMPLETE.** M4.3–M4.9 remain later WIs.
 
 ## M3 — Project Operations (Exit Gate FAIL — ACCEPTED / LOCAL ONLY)
 

@@ -5,6 +5,8 @@ import {
   assertAcyclicDependency,
   assertFinishToStartType,
   assertTaskTransition,
+  TASK_STATUSES,
+  deriveKanbanColumn,
   deriveMilestoneStatus,
   isTaskLate,
   taskStatusRequiresBlockedReason,
@@ -46,6 +48,13 @@ describe("Planning security floors (fail closed)", () => {
         "tenant-a-task",
       ),
     ).toBe(true);
+  });
+
+  it("keeps Portuguese Kanban words as a projection, never a stored Task status", () => {
+    expect(deriveKanbanColumn({ status: "TODO", late: true })).toBe("EM_RISCO");
+    expect(TASK_STATUSES.includes("OVERDUE" as never)).toBe(false);
+    expect(TASK_STATUSES.includes("EM_RISCO" as never)).toBe(false);
+    expect(TASK_STATUSES.includes("PLANEJADAS" as never)).toBe(false);
   });
 
   it("does not invent AT_RISK business thresholds — only documented derivation", () => {

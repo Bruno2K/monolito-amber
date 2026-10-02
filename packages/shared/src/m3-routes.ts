@@ -10,7 +10,7 @@ export interface UiRoutePlan {
   path: string;
   lifecycle: RouteLifecycle;
   purpose: string;
-    implementedIn: "m3.1-plan" | "foundation" | "m3.2+" | "m3.2" | "m3.3" | "m3.4" | "m3.5" | "m3.6" | "m3.7" | "m4" | "m5+" | "figma-prototype";
+    implementedIn: "m3.1-plan" | "foundation" | "m3.2+" | "m3.2" | "m3.3" | "m3.4" | "m3.5" | "m3.6" | "m3.7" | "m4" | "m4.2" | "m5+" | "figma-prototype";
 }
 
 export interface ApiRoutePlan {
@@ -20,7 +20,7 @@ export interface ApiRoutePlan {
   permission: string;
   idempotency: boolean;
   purpose: string;
-    implementedIn?: "m3.3" | "m3.4" | "m3.5" | "m3.6" | "m3.7";
+    implementedIn?: "m3.3" | "m3.4" | "m3.5" | "m3.6" | "m3.7" | "m4.2";
 }
 
 export const M3_CANONICAL_UI_ROUTES: readonly UiRoutePlan[] = [
@@ -65,22 +65,39 @@ export const M3_2_NEXT_APP_ROUTES = [
 ] as const;
 
 export const M3_5_NEXT_APP_ROUTES = ["/projects/[projectId]/work-packages"] as const;
+export const M4_2_NEXT_APP_ROUTES = ["/projects/[projectId]/planner"] as const;
 
 export const M3_DETAIL_UI_PATTERN = "/projects/:projectId/deliverables?inspect=:deliverableId";
 export const M3_5_WP_DETAIL_UI_PATTERN = "/projects/:projectId/work-packages?inspect=:workPackageId";
 
-export const M4_RESERVED_UI_ROUTES: readonly UiRoutePlan[] = [
+export const M4_CANONICAL_UI_ROUTES: readonly UiRoutePlan[] = [
   {
     path: "/projects/:projectId/planner",
-    lifecycle: "reserved-later",
-    purpose: "Planning Gantt / timeline — M4. Do not implement in M3.",
-    implementedIn: "m4",
+    lifecycle: "add",
+    purpose: "Planning shell + unified List projection (M4.2). Kanban/Gantt/Marcos remain later WIs.",
+    implementedIn: "m4.2",
   },
+];
+
+export const M4_RESERVED_UI_ROUTES: readonly UiRoutePlan[] = [
   {
     path: "/planejamento",
     lifecycle: "prototype-only",
-    purpose: "M2 Figma prototype route; not a product Next.js route in M3",
+    purpose: "M2 Figma prototype route; not a product Next.js route",
     implementedIn: "figma-prototype",
+  },
+];
+
+export const M4_PLANNED_API_ROUTES: readonly ApiRoutePlan[] = [
+  {
+    method: "GET",
+    path: "/api/v1/projects/{projectId}/planning",
+    lifecycle: "add",
+    permission: "project.read",
+    idempotency: false,
+    purpose:
+      "Unified authorized Planning read-model (tasks + milestones + dependencies). view= is a projection hint. Re-authorizes linked previews.",
+    implementedIn: "m4.2",
   },
 ];
 

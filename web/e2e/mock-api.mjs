@@ -913,6 +913,126 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  const planningMatch = /^\/api\/v1\/projects\/([^/]+)\/planning$/.exec(path);
+  if (planningMatch) {
+    const project = requireProject(session, planningMatch[1], res);
+    if (!project) {
+      return;
+    }
+    if (req.method !== "GET") {
+      problem(res, 405, "METHOD_NOT_ALLOWED", "Planning read-model is GET-only");
+      return;
+    }
+    const now = Date.now();
+    const tasks = project.id === PROJECT_A
+      ? [
+          {
+            id: "task-grid",
+            organizationId: ORG_A,
+            projectId: PROJECT_A,
+            issueId: "iss-grid",
+            milestoneId: "ms-concept",
+            phaseId: "phase-concept",
+            deliverableId: "del-arch-001",
+            workPackageId: "wp-outline",
+            title: "Atualizar malha estrutural",
+            description: "Task ≠ Issue",
+            status: "IN_PROGRESS",
+            late: false,
+            kanbanColumn: "EM_ANDAMENTO",
+            priority: "HIGH",
+            responsibleDisciplineId: "STR",
+            assigneeUserId: USER,
+            dueDate: new Date(now + 86400000).toISOString(),
+            plannedStartAt: new Date(now - 86400000).toISOString(),
+            estimatedMinutes: 120,
+            progressPercent: 40,
+            startedAt: new Date(now - 3600000).toISOString(),
+            completedAt: null,
+            blockedReason: null,
+            version: 1,
+            createdAt: new Date(now - 86400000).toISOString(),
+            updatedAt: new Date(now).toISOString(),
+            previews: {
+              issue: { id: "iss-grid", title: "Choque de malha", status: "OPEN", relation: "issue" },
+              phase: { id: "phase-concept", name: "Concept" },
+              deliverable: { id: "del-arch-001", code: "DEL-ARCH-001", title: "Architectural pack" },
+              workPackage: { id: "wp-outline", title: "Outline programme", code: "WP-PLAN-001" },
+              milestone: { id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED" },
+              assignee: { userId: USER, displayName: "M. Santos" },
+            },
+          },
+          {
+            id: "task-late",
+            organizationId: ORG_A,
+            projectId: PROJECT_A,
+            issueId: null,
+            milestoneId: null,
+            phaseId: "phase-concept",
+            deliverableId: null,
+            workPackageId: null,
+            title: "Emitir planta atrasada",
+            description: "",
+            status: "TODO",
+            late: true,
+            kanbanColumn: "EM_RISCO",
+            priority: "NORMAL",
+            responsibleDisciplineId: "ARCH",
+            assigneeUserId: null,
+            dueDate: "2020-01-01T00:00:00.000Z",
+            plannedStartAt: null,
+            estimatedMinutes: null,
+            progressPercent: 0,
+            startedAt: null,
+            completedAt: null,
+            blockedReason: null,
+            version: 1,
+            createdAt: "2020-01-01T00:00:00.000Z",
+            updatedAt: "2020-01-01T00:00:00.000Z",
+            previews: {
+              phase: { id: "phase-concept", name: "Concept" },
+            },
+          },
+        ]
+      : [];
+    const q = (url.searchParams.get("q") ?? "").toLowerCase();
+    const status = url.searchParams.get("status");
+    const late = url.searchParams.get("late");
+    const inspect = url.searchParams.get("inspect");
+    let rows = tasks.filter((row) => {
+      if (q && !row.title.toLowerCase().includes(q)) {
+        return false;
+      }
+      if (status && row.status !== status) {
+        return false;
+      }
+      if (late === "true" && !row.late) {
+        return false;
+      }
+      if (late === "false" && row.late) {
+        return false;
+      }
+      return true;
+    });
+    const inspected = inspect ? tasks.find((row) => row.id === inspect) ?? null : null;
+    json(res, 200, {
+      projectId: project.id,
+      organizationId: project.organizationId,
+      generatedAt: new Date().toISOString(),
+      view: url.searchParams.get("view") ?? "list",
+      project: { archivedAt: project.archivedAt, readOnly: Boolean(project.archivedAt) },
+      tasks: rows,
+      milestones: project.id === PROJECT_A
+        ? [{ id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED", targetDate: null, phaseId: "phase-concept", deliverableId: null }]
+        : [],
+      dependencies: [],
+      page: { page: 1, pageSize: 20, total: rows.length, sort: "createdAt", order: "asc" },
+      counts: { total: rows.length, late: rows.filter((row) => row.late).length, byStatus: Object.fromEntries(rows.map((row) => [row.status, 1])) },
+      inspected,
+    });
+    return;
+  }
+
   const hubMatch = /^\/api\/v1\/projects\/([^/]+)\/hub$/.exec(path);
   if (hubMatch) {
     const project = requireProject(session, hubMatch[1], res);
