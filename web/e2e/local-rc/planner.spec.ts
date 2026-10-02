@@ -1,17 +1,19 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { apiJson, capture, IDS, signInToOrg } from "./helpers";
+import { apiJson, capture, IDS, logoutToSignIn, signInToOrg } from "./helpers";
 
 const EVIDENCE_M42 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.2");
 const EVIDENCE_M43 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.3");
 const EVIDENCE_M44 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.4");
+const EVIDENCE_M45 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.5");
 
 test.describe("M4.2 Local RC Planning List", () => {
   test("M4.2-UI-01/NARROW-01 Planejamento is reachable and List matches the query", async ({ page }, testInfo) => {
     mkdirSync(EVIDENCE_M42, { recursive: true });
     mkdirSync(EVIDENCE_M43, { recursive: true });
     mkdirSync(EVIDENCE_M44, { recursive: true });
+    mkdirSync(EVIDENCE_M45, { recursive: true });
     await signInToOrg(page, "coord-a", "Amber Demo Alpha");
     await page.getByRole("link", { name: "Alpha Tower" }).click();
     await page.waitForURL(`**/projects/${IDS.projectA1}/overview`);
@@ -111,5 +113,71 @@ test.describe("M4.2 Local RC Planning List", () => {
     await expect(page.getByText("Beta Campus")).toHaveCount(0);
     await expect(page.getByText("1 item oculto")).toHaveCount(0);
     await capture(page, testInfo, "planner-forbidden");
+  });
+
+  test("M4.5-UI List↔Kanban consistency, keyboard move, concurrency, viewer cannot move", async ({ page }, testInfo) => {
+    mkdirSync(EVIDENCE_M45, { recursive: true });
+    await signInToOrg(page, "coord-a", "Amber Demo Alpha");
+    const title = `RC Kanban ${testInfo.project.name} ${Date.now()}`;
+    const created = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
+      headers: { "Idempotency-Key": `m45-${testInfo.project.name}-${Date.now()}` },
+      data: { title },
+    });
+    expect(created.status).toBeLessThan(400);
+    const taskId = String(created.body.id);
+    const version = Number(created.body.version);
+
+    await page.goto(`/projects/${IDS.projectA1}/planner?view=kanban&q=${encodeURIComponent(title)}`);
+    await expect(page.getByRole("region", { name: "Quadro Kanban" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "PLANEJADAS" })).toBeVisible();
+    await expect(page.getByText(/EM RISCO é atraso derivado/i)).toBeVisible();
+    await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${taskId}"]`)).toBeVisible();
+    const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
+    await page.screenshot({ path: path.join(EVIDENCE_M45, `kanban-${tag}.png`), fullPage: true });
+    await capture(page, testInfo, "planner-kanban");
+
+    await page.locator(`[data-task-id="${taskId}"]`).dragTo(page.locator('[data-kanban-column="EM_RISCO"]'));
+    await expect(page.getByRole("alert")).toContainText(/visão derivada|estado armazenado/i);
+    await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${taskId}"]`)).toBeVisible();
+
+    const stale = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks/${taskId}/start`, {
+      headers: { "Idempotency-Key": `m45-stale-${testInfo.project.name}-${Date.now()}` },
+      data: { expectedVersion: version },
+    });
+    expect(stale.status).toBeLessThan(400);
+    await page.getByLabel(`Mover ${title}`).selectOption("EM_ANDAMENTO");
+    await expect(page.getByRole("alert")).toContainText(/Optimistic lock|versão|conflito/i);
+
+    await page.reload();
+    await expect(page.locator(`[data-kanban-column="EM_ANDAMENTO"] [data-task-id="${taskId}"]`)).toBeVisible();
+    await page.getByRole("tab", { name: "Lista" }).click();
+    await expect(page.getByRole("button", { name: new RegExp(title) })).toBeVisible();
+    await page.getByRole("button", { name: new RegExp(title) }).click();
+    await expect(page.getByRole("dialog").locator(".status-pill")).toHaveText("Em andamento");
+    await page.getByRole("button", { name: "Fechar", exact: true }).click();
+
+    const pred = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
+      headers: { "Idempotency-Key": `m45-pred-${testInfo.project.name}-${Date.now()}` },
+      data: { title: `RC Kanban pred ${testInfo.project.name}` },
+    });
+    const succ = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
+      headers: { "Idempotency-Key": `m45-succ-${testInfo.project.name}-${Date.now()}` },
+      data: { title: `RC Kanban succ ${testInfo.project.name}` },
+    });
+    const linked = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks/${succ.body.id}/dependencies`, {
+      headers: { "Idempotency-Key": `m45-dep-${testInfo.project.name}-${Date.now()}` },
+      data: { predecessorTaskId: pred.body.id, type: "FINISH_TO_START" },
+    });
+    expect(linked.status).toBeLessThan(400);
+    await page.goto(`/projects/${IDS.projectA1}/planner?view=kanban&q=${encodeURIComponent(`RC Kanban succ ${testInfo.project.name}`)}`);
+    await page.getByLabel(`Mover RC Kanban succ ${testInfo.project.name}`).selectOption("EM_ANDAMENTO");
+    await expect(page.getByRole("alert")).toContainText(/predecessor/i);
+    await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${succ.body.id}"]`)).toBeVisible();
+
+    await logoutToSignIn(page);
+    await signInToOrg(page, "viewer-a", "Amber Demo Alpha");
+    await page.goto(`/projects/${IDS.projectA1}/planner?view=kanban&q=${encodeURIComponent(title)}`);
+    await expect(page.getByRole("region", { name: "Quadro Kanban" })).toBeVisible();
+    await expect(page.getByLabel(`Mover ${title}`)).toBeDisabled();
   });
 });

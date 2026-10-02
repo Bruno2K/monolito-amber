@@ -134,5 +134,6 @@ jobs:
             docs/ux/evidence/m4.2
             docs/ux/evidence/m4.3
             docs/ux/evidence/m4.4
+            docs/ux/evidence/m4.5
           if-no-files-found: warn
 

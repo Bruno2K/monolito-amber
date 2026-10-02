@@ -7,6 +7,7 @@ import {
   assertTaskTransition,
   TASK_STATUSES,
   deriveKanbanColumn,
+  resolveKanbanColumnMove,
   deriveMilestoneStatus,
   isTaskLate,
   taskStatusRequiresBlockedReason,
@@ -55,6 +56,7 @@ describe("Planning security floors (fail closed)", () => {
     expect(TASK_STATUSES.includes("OVERDUE" as never)).toBe(false);
     expect(TASK_STATUSES.includes("EM_RISCO" as never)).toBe(false);
     expect(TASK_STATUSES.includes("PLANEJADAS" as never)).toBe(false);
+    expect(resolveKanbanColumnMove({ status: "TODO", late: false, to: "EM_RISCO" }).kind).toBe("reject");
   });
 
   it("does not invent AT_RISK business thresholds — only documented derivation", () => {

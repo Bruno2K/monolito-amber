@@ -1,8 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import {
   clampPlanningPageSize,
+  countTasksByKanbanColumn,
   deriveKanbanColumn,
   incompletePredecessorBlockers,
+  isTaskLate,
   isPlanningListSort,
   isPlanningView,
   isTaskStatus,
@@ -86,7 +88,8 @@ export class PlanningService {
           now,
         });
 
-    const [total, lateCount, statusGroups, rows, milestoneRows, linkedTaskSignals, dependencyRows] = await Promise.all([
+    const [total, lateCount, statusGroups, rows, milestoneRows, linkedTaskSignals, dependencyRows, countSource] =
+      await Promise.all([
       this.prisma.task.count({ where }),
       this.prisma.task.count({
         where: {
@@ -121,6 +124,10 @@ export class PlanningService {
         orderBy: { createdAt: "asc" },
         take: SUPPORTING_TAKE,
       }),
+      this.prisma.task.findMany({
+        where,
+        select: { status: true, dueDate: true },
+      }),
     ]);
 
     const inspectedRow = await this.loadInspected(
@@ -146,6 +153,12 @@ export class PlanningService {
     for (const group of statusGroups) {
       byStatus[group.status] = group._count._all ?? 0;
     }
+    const byKanbanColumn = countTasksByKanbanColumn(
+      countSource.map((row) => ({
+        status: row.status as TaskStatus,
+        late: isTaskLate({ dueDate: row.dueDate, status: row.status as TaskStatus, now }),
+      })),
+    );
 
     return {
       projectId: bound.project.id,
@@ -160,7 +173,7 @@ export class PlanningService {
       milestones: milestoneDtos,
       dependencies: dependencyRows.map((row) => this.tasks.toDependencyDto(row)),
       page: { page, pageSize, total, sort, order },
-      counts: { total, late: lateCount, byStatus },
+      counts: { total, late: lateCount, byStatus, byKanbanColumn },
       inspected: inspectedRow
         ? { ...this.toPlanningTask(inspectedRow, previews, graph), history: inspectedHistory }
         : null,

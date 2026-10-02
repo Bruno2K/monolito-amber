@@ -271,6 +271,103 @@ export function deriveKanbanColumn(input: { status: TaskStatus; late: boolean })
   return null;
 }
 
+export const KANBAN_MOVE_REASONS = [
+  "KANBAN_DERIVED_COLUMN",
+  "KANBAN_INVALID_TRANSITION",
+  "KANBAN_DATE_SHIFT_REQUIRED",
+  "KANBAN_NOOP",
+] as const;
+export type KanbanMoveReason = (typeof KANBAN_MOVE_REASONS)[number];
+
+export type KanbanLifecycleCommand = "start" | "block" | "unblock";
+
+export type KanbanMoveIntent =
+  | { kind: "command"; command: KanbanLifecycleCommand }
+  | { kind: "noop"; reason: "KANBAN_NOOP"; message: string }
+  | { kind: "reject"; reason: Exclude<KanbanMoveReason, "KANBAN_NOOP">; message: string };
+
+/**
+ * Maps a Kanban column drop/menu choice to an existing M4.3 lifecycle command.
+ * Does not invent a stored Portuguese status and does not shift dates.
+ */
+export function resolveKanbanColumnMove(input: {
+  status: TaskStatus;
+  late: boolean;
+  to: KanbanColumn;
+}): KanbanMoveIntent {
+  const from = deriveKanbanColumn(input);
+  if (from === input.to) {
+    return { kind: "noop", reason: "KANBAN_NOOP", message: "Card already projects to this column." };
+  }
+  if (input.to === "EM_RISCO") {
+    return {
+      kind: "reject",
+      reason: "KANBAN_DERIVED_COLUMN",
+      message: "EM RISCO is a derived view of late TODO or IN_PROGRESS — not a stored Task state.",
+    };
+  }
+  if (input.to === "PLANEJADAS") {
+    if (input.status === "TODO" && input.late) {
+      return {
+        kind: "reject",
+        reason: "KANBAN_DATE_SHIFT_REQUIRED",
+        message: "Leaving EM RISCO requires changing the due date. Dates are not auto-shifted.",
+      };
+    }
+    return {
+      kind: "reject",
+      reason: "KANBAN_INVALID_TRANSITION",
+      message: "Task cannot return to TODO. PLANEJADAS is a projection of stored TODO that is not late.",
+    };
+  }
+  if (input.to === "EM_ANDAMENTO") {
+    if (input.status === "TODO") {
+      return { kind: "command", command: "start" };
+    }
+    if (input.status === "BLOCKED") {
+      return { kind: "command", command: "unblock" };
+    }
+    if (input.status === "IN_PROGRESS" && input.late) {
+      return {
+        kind: "reject",
+        reason: "KANBAN_DATE_SHIFT_REQUIRED",
+        message: "The Task is still late, so it remains in EM RISCO until the due date changes.",
+      };
+    }
+    return {
+      kind: "reject",
+      reason: "KANBAN_INVALID_TRANSITION",
+      message: `Task cannot transition from ${input.status} to IN_PROGRESS via this column.`,
+    };
+  }
+  if (input.status === "IN_PROGRESS") {
+    return { kind: "command", command: "block" };
+  }
+  return {
+    kind: "reject",
+    reason: "KANBAN_INVALID_TRANSITION",
+    message: `Task cannot transition from ${input.status} to BLOCKED.`,
+  };
+}
+
+export function countTasksByKanbanColumn(
+  rows: readonly { status: TaskStatus; late: boolean }[],
+): Record<KanbanColumn, number> {
+  const counts: Record<KanbanColumn, number> = {
+    PLANEJADAS: 0,
+    EM_ANDAMENTO: 0,
+    EM_RISCO: 0,
+    BLOQUEADAS: 0,
+  };
+  for (const row of rows) {
+    const column = deriveKanbanColumn(row);
+    if (column) {
+      counts[column] += 1;
+    }
+  }
+  return counts;
+}
+
 export function clampPlanningPageSize(value: number | undefined): number {
   if (!Number.isFinite(value) || value == null || value < 1) {
     return PLANNING_PAGE_SIZE_DEFAULT;

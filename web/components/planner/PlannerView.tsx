@@ -9,6 +9,7 @@ import { useInspectorEscape } from "../../lib/use-inspector-escape";
 import {
   canCreateTask,
   contextLabel,
+  countVisibleKanbanColumns,
   formatPlanningDate,
   formatProgress,
   lateExplanation,
@@ -18,6 +19,7 @@ import {
 import { type PhaseListResponse, type PhaseRow } from "../../lib/operations";
 import { useShell } from "../session/ShellProvider";
 import { PlanningComingView, PlanningEmpty, PlanningError, PlanningSkeleton } from "./PlanningStates";
+import { TaskKanban } from "./TaskKanban";
 import { TaskInspector } from "./TaskInspector";
 
 const TABS = [
@@ -187,11 +189,11 @@ export function PlannerView({ projectId }: { projectId: string }) {
   }
 
   return (
-    <section className="planner-page" data-surface="planner" data-node-id="242:6526">
+    <section className={`planner-page${view === "kanban" ? " is-kanban" : ""}`} data-surface="planner" data-node-id={view === "kanban" ? "242:6635" : "242:6526"}>
       <header className="structure-header">
         <div>
           <h1>Planejamento</h1>
-          <p>Lista unificada do projeto. Status armazenado é explícito; atraso é derivado.</p>
+          <p>Lista e Kanban projetam as mesmas tarefas. Status armazenado é explícito; atraso é derivado.</p>
         </div>
         <button
           type="button"
@@ -255,9 +257,9 @@ export function PlannerView({ projectId }: { projectId: string }) {
       </div>
 
       <div id={`${tabsId}-panel`} role="tabpanel" aria-labelledby={`${tabsId}-${view || "list"}`}>
-        {view !== "list" ? <PlanningComingView view={view} /> : null}
+        {view === "gantt" || view === "milestones" ? <PlanningComingView view={view} /> : null}
 
-        {view === "list" ? (
+        {view === "list" || view === "kanban" ? (
           <>
             <div className="deliverables-toolbar" role="search">
               <label className="sr-only" htmlFor="planner-search">
@@ -348,13 +350,29 @@ export function PlannerView({ projectId }: { projectId: string }) {
               </label>
             </div>
 
-            <p className="table-count" aria-live="polite">
-              {model.counts.total} autorizada{model.counts.total === 1 ? "" : "s"}
-              {model.counts.late > 0 ? ` · ${model.counts.late} atrasada${model.counts.late === 1 ? "" : "s"}` : ""}
-            </p>
+            {view === "list" ? (
+              <p className="table-count" aria-live="polite">
+                {model.counts.total} autorizada{model.counts.total === 1 ? "" : "s"}
+                {model.counts.late > 0 ? ` · ${model.counts.late} atrasada${model.counts.late === 1 ? "" : "s"}` : ""}
+              </p>
+            ) : null}
 
             <div className={`deliverables-layout${inspectorOpen ? " has-inspector" : ""}`}>
-              {model.tasks.length === 0 ? (
+              {view === "kanban" ? (
+                <TaskKanban
+                  projectId={projectId}
+                  tasks={model.tasks}
+                  columnCounts={model.counts.byKanbanColumn ?? countVisibleKanbanColumns(model.tasks)}
+                  selectedId={selectedId}
+                  readOnly={archived}
+                  permissions={permissions}
+                  filtered={filtered}
+                  onOpen={openItem}
+                  onChanged={async () => {
+                    await load();
+                  }}
+                />
+              ) : model.tasks.length === 0 ? (
                 <PlanningEmpty filtered={filtered} />
               ) : (
                 <div className="deliverables-table-wrap">

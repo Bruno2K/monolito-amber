@@ -1046,6 +1046,140 @@ button.btn {
   max-width: 1120px;
 }
 
+.planner-page.is-kanban {
+  max-width: none;
+}
+
+.kanban-derived-note {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  font-size: 13px;
+}
+
+.kanban-board-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+}
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  gap: 12px;
+  min-width: 1000px;
+  align-items: start;
+}
+
+.kanban-column {
+  background: #f9fafb;
+  border: 1px solid var(--header-border);
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 280px;
+}
+
+.kanban-column.is-derived {
+  background: #fff7ed;
+}
+
+.kanban-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.kanban-column-header h2 {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.kanban-card-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+}
+
+.kanban-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.kanban-card.is-active {
+  outline: 2px solid var(--amber);
+}
+
+.kanban-card:focus-visible,
+.kanban-card-open:focus-visible,
+.kanban-move select:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.kanban-card-open {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.kanban-card-id {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.kanban-card-meta,
+.kanban-card-risk {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.kanban-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.kanban-move {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.kanban-block-prompt {
+  margin: 0 0 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #fdba74;
+  background: #fff7ed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kanban-card,
+  .kanban-column {
+    transition: none;
+  }
+}
+
 .planner-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1285,6 +1419,10 @@ button.btn {
   .planner-dl,
   .planner-dep-columns {
     grid-template-columns: 1fr;
+  }
+
+  .kanban-board {
+    grid-template-columns: repeat(4, minmax(220px, 1fr));
   }
 
   .deliverables-inspector-shell .structure-inspector {

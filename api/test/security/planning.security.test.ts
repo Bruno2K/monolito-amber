@@ -4,6 +4,7 @@ import {
   assertAcyclicDependency,
   assertTaskTransition,
   deriveKanbanColumn,
+  resolveKanbanColumnMove,
   deriveMilestoneStatus,
   isTaskLate,
   prerequisitesBlockStart,
@@ -34,6 +35,7 @@ describe("PF-1.5 Planning security floors (fail closed)", () => {
     expect(deriveKanbanColumn({ status: "TODO", late: true })).toBe("EM_RISCO");
     expect(deriveKanbanColumn({ status: "BLOCKED", late: true })).toBe("BLOQUEADAS");
     expect(deriveKanbanColumn({ status: "DONE", late: false })).toBeNull();
+    expect(resolveKanbanColumnMove({ status: "TODO", late: false, to: "EM_RISCO" }).kind).toBe("reject");
   });
 
   it("derives AT_RISK / MISSED without invented business thresholds", () => {
