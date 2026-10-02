@@ -28,7 +28,9 @@ This is not the Product Vision landing (`Bruno2K/amber`).
 | **M4 Execution Pack** | **ACTIVE / LOCAL ONLY** | https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7 |
 | **M4.1 Contract, Baseline & Read-Model Plan** | **MERGED** | https://app.notion.com/p/3ec678e54c8d8103beafc69c3bb51edc |
 | **M4.2 Planning Shell & Unified List** | **MERGED** | https://app.notion.com/p/3ec678e54c8d8155b715c1309a86627c |
-| **M4.3 Task Operations & Inspector** | **IN FLIGHT** (LOCAL ONLY) | https://app.notion.com/p/3ec678e54c8d81299a9cd44035220532 |
+| **M4.3 Task Operations & Inspector** | **MERGED** | https://app.notion.com/p/3ec678e54c8d81299a9cd44035220532 |
+| **M4.8 Local RC** | **MERGED**; Bruno accepted Local RC | https://app.notion.com/p/3ec678e54c8d81319b25f4a0c317612c |
+| **M4.9 Final Audit / Exit Gate** | **IN FLIGHT** (LOCAL ONLY) | https://app.notion.com/p/3ec678e54c8d81c98327d5bec34db1c9 |
 
 Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED only. No foundation-only waiver.
 
@@ -38,12 +40,13 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [domain](./domain/domain-model.md) — model, state machines, glossary
 - [security](./security/identity-authorization.md) — 0.2A, tenancy, baseline
 - [api](./api/conventions.md) — REST `/api/v1`, OpenAPI 3.1, Problem Details
-- [development](./development/local-setup.md) — local, tests, migrations, [M3.8 runbook](./development/m3.8-local-rc-runbook.md), [Windows path](./development/m3-windows-local-rc.md), [RC1 evidence](./development/m3-rc1-evidence/INDEX.md), [M3.9 evidence](./development/m3.9-evidence/INDEX.md)
+- [development](./development/local-setup.md) — local, tests, migrations, [M3.8 runbook](./development/m3.8-local-rc-runbook.md), [Windows path](./development/m3-windows-local-rc.md), [RC1 evidence](./development/m3-rc1-evidence/INDEX.md), [M3.9 evidence](./development/m3.9-evidence/INDEX.md), [M4.9 evidence](./development/m4.9-evidence/INDEX.md)
 - [agentic](./agentic/context.md) — agent operating context, harness, loop, roles
 - [ux](./ux/m2.10-final-ux-ui-audit.md) — product UX evidence (M2 COMPLETE; Exit Gate PASS)
 - [M3.1 Operations contract](./domain/m3-project-operations-contract.md) — MERGED / LOCAL ONLY
 - [M4.1 Planning contract](./domain/m4-planning-scheduling-contract.md) — MERGED / LOCAL ONLY
-- [M4.2 Planning List](./domain/m4.2-requirement-to-change-plan.md) — IN FLIGHT / LOCAL ONLY
+- [M4.2 Planning List](./domain/m4.2-requirement-to-change-plan.md) — MERGED / LOCAL ONLY
+- [M4.9 matrix](./domain/m4.9-requirements-traceability.md) — IN FLIGHT / Engineer recommendation only
 
 ## Product UX evidence (M2)
 
@@ -71,7 +74,8 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [M4.6 matrix](./domain/m4.6-requirements-traceability.md) · [Figma trace](./domain/m4.6-figma-trace.md) · [UI evidence](./ux/evidence/m4.6/)
 - [M4.7 requirement-to-change plan](./domain/m4.7-requirement-to-change-plan.md) — Issue [#66](https://github.com/Bruno2K/monolito-amber/issues/66); published first
 - [M4.7 matrix](./domain/m4.7-requirements-traceability.md) · [Figma trace](./domain/m4.7-figma-trace.md) · [UI evidence](./ux/evidence/m4.7/)
-- M3 Exit Gate **FAIL — ACCEPTED** remains accepted debt. **Not M3 COMPLETE.** M4.8–M4.9 remain LOCKED.
+- [M4.8 Local RC evidence](./release/m4.8-local-rc-evidence-index.md) · [M4.9 audit](./development/m4.9-evidence/INDEX.md)
+- M3 Exit Gate **FAIL — ACCEPTED** remains accepted debt. **Not M3 COMPLETE.** M4.9 is the Exit Gate audit — **not M4 COMPLETE**.
 
 ## M3 — Project Operations (Exit Gate FAIL — ACCEPTED / LOCAL ONLY)
 

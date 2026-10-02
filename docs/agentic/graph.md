@@ -52,13 +52,20 @@ PF-1.7 DONE
                                                                                                                 main @ 34d1b8e7ce107075b17a6b398762665be9690c8c
                                                                                                                 └─ M4.7 MERGED (Issue #66 / PR #67)
                                                                                                                      main @ 0c1cc2632b47685e3e7bb9107e1eb51be361512d
-                                                                                                                     └─ M4.8 IN FLIGHT (Issue #68)
-                                                                                                                          branch m4-8-cross-domain-local-rc
-                                                                                                                          Cross-domain Local RC
-                                                                                                                          LOCAL ONLY — no Vercel / Railway / M5
-                                                                                                                          LOCAL RC READY FOR BRUNO — not homologated
-                                                                                                                          Independent Reviewer required
-                                                                                                                          M4.9 LOCKED
+                                                                                                                     └─ M4.8 MERGED (Issue #68 / PR #69)
+                                                                                                                          main @ 230ccbcac1833a006f7ac6452c6e9fa37e04ac96
+                                                                                                                          └─ M4.8.1 MERGED (Issue #70 / PR #71)
+                                                                                                                               main @ 76d44de81857db5a25cd6bf285a3eda19c8aded1
+                                                                                                                               Bruno accepted Local RC 2026-10-02
+                                                                                                                               └─ Polish A MERGED (Issue #72 / PR #73)
+                                                                                                                                    main @ accce915f25d73d4da13f7505ac47d1abaa05590
+                                                                                                                                    └─ M4.9 IN FLIGHT (Issue #76)
+                                                                                                                                         branch m4-9-final-audit-exit-gate
+                                                                                                                                         FINAL AUDIT ONLY · LOCAL ONLY
+                                                                                                                                         Engineer recommendation only
+                                                                                                                                         do not self-PASS Exit Gate / M4 COMPLETE
+                                                                                                                                         do not open M5
+                                                                                                                                         Independent Reviewer required
                                                                                                                      do not merge from Engineer pass
 ```
 
@@ -76,13 +83,15 @@ PF-1.7 DONE
 | `main` @ `61042767…` | docs residual #49 | `d01dfc9e…` |
 | `main` @ `d01dfc9e…` | M3.9 PR #51 | squash-merge `762c3f3b…` — Exit Gate FAIL — ACCEPTED |
 | `main` @ `762c3f3b…` | disposition #52 | `a3eaadcd…` |
-| `main` @ `a3eaadcd…` | M4.1 branch `m4-1-contract-baseline` | in flight — docs only |
+| `main` @ `a3eaadcd…` | M4.1 PR #55 | merge `6e47d9fb…` |
+| M4.1…M4.8.1 | Polish A PR #73 | `main` @ `accce915…` |
+| `main` @ `accce915…` | M4.9 branch `m4-9-final-audit-exit-gate` | in flight — final audit |
 
 ## Current boundary
 
 - M2 integration is closed.
 - RC1 is **MERGED** and Bruno homologated LOCAL RC.
 - M3.9 audit WI is **MERGED**. Exit Gate **FAIL — ACCEPTED**. Accepted debt — not M4 scope. **Not M3 COMPLETE.**
-- **M4 ACTIVE / LOCAL ONLY.** M4.1–M4.7 MERGED. M4.8 in flight (Issue #68). M4.9 LOCKED.
+- **M4 ACTIVE / LOCAL ONLY.** M4.1–M4.8.1 MERGED. Bruno accepted Local RC (`76d44de8…`). M4.9 in flight (Issue #76). Not M4 COMPLETE. Do not open M5.
 - Do not chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA / Vercel / Railway / public URL.
 - Residuals F-08 / F-10 / RPO-RTO / PaaS remain OPEN; WIN-PS1 accepted residual.
