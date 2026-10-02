@@ -206,42 +206,40 @@ export function CalendarWorkspace({ calendarId }: { calendarId: string }) {
         </div>
       </div>
 
-      <div className="calendar-canvas" data-view={view}>
-        {view === "month" ? (
-          <CalendarMonthView
-            anchorDate={anchorDate}
-            timeZone={timeZone}
-            events={events}
-            onSelectDay={(isoDate) => {
-              setAnchorDate(isoDate);
-              replaceView("day");
-            }}
-            onOpenEvent={openEvent}
-          />
-        ) : null}
-        {view === "week" ? (
-          <CalendarWeekView
-            anchorDate={anchorDate}
-            timeZone={timeZone}
-            events={events}
-            onOpenEvent={openEvent}
-            onSelectSlot={openCreate}
-          />
-        ) : null}
-        {view === "day" ? (
-          <CalendarDayView
-            anchorDate={anchorDate}
-            timeZone={timeZone}
-            events={events}
-            onOpenEvent={openEvent}
-            onSelectSlot={openCreate}
-          />
-        ) : null}
-        {view === "agenda" ? <CalendarAgendaView events={events} timeZone={timeZone} onOpenEvent={openEvent} /> : null}
-        {events.length === 0 && view === "agenda" ? null : events.length === 0 && view !== "agenda" ? (
-          <p className="muted calendar-empty-hint">Nenhum evento autorizado neste período.</p>
-        ) : null}
-      </div>
+      {view === "month" ? (
+        <CalendarMonthView
+          anchorDate={anchorDate}
+          timeZone={timeZone}
+          events={events}
+          onSelectDay={(isoDate) => {
+            setAnchorDate(isoDate);
+            replaceView("day");
+          }}
+          onOpenEvent={openEvent}
+        />
+      ) : null}
+      {view === "week" ? (
+        <CalendarWeekView
+          anchorDate={anchorDate}
+          timeZone={timeZone}
+          events={events}
+          onOpenEvent={openEvent}
+          onSelectSlot={openCreate}
+        />
+      ) : null}
+      {view === "day" ? (
+        <CalendarDayView
+          anchorDate={anchorDate}
+          timeZone={timeZone}
+          events={events}
+          onOpenEvent={openEvent}
+          onSelectSlot={openCreate}
+        />
+      ) : null}
+      {view === "agenda" ? <CalendarAgendaView events={events} timeZone={timeZone} onOpenEvent={openEvent} /> : null}
+      {events.length === 0 && view !== "agenda" ? (
+        <p className="muted calendar-empty-hint">Nenhum evento autorizado neste período.</p>
+      ) : null}
 
       <CalendarEventEditor
         open={editorOpen}

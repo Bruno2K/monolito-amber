@@ -83,15 +83,26 @@
   font-weight: 600;
 }
 
-.calendar-canvas,
-.calendar-month,
-.calendar-week,
-.calendar-day,
-.calendar-agenda {
+.calendar-canvas {
   background: #fff;
   border: 1px solid var(--header-border);
   border-radius: 8px;
   overflow: auto;
+}
+
+.calendar-canvas:focus-visible,
+.calendar-week-scroll:focus-visible,
+.calendar-day-scroll:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.calendar-month,
+.calendar-week,
+.calendar-day,
+.calendar-agenda {
+  background: transparent;
+  border: 0;
 }
 
 .calendar-month {
@@ -136,7 +147,7 @@
   border-right: 1px solid var(--header-border);
   border-bottom: 1px solid var(--header-border);
   padding: 6px;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .calendar-day-cell.is-outside {

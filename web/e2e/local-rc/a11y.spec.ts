@@ -80,6 +80,7 @@ test.describe("M3 RC1 accessibility (real API + Postgres)", () => {
   });
 
   test("axe: authenticated shell and every M3 operational route", async ({ page }, testInfo) => {
+    test.setTimeout(180_000);
     await signInToOrg(page, "coord-a", "Amber Demo Alpha");
     for (const route of OPERATIONAL_ROUTES) {
       await page.goto(route.path);

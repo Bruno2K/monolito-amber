@@ -101,7 +101,7 @@ export function CalendarHub() {
         </Link>
       </header>
 
-      <form className="calendar-toolbar" role="search" onSubmit={(event) => event.preventDefault()}>
+      <form className="calendar-toolbar" role="search" aria-label="Filtrar calendários" onSubmit={(event) => event.preventDefault()}>
         <label className="sr-only" htmlFor="calendar-filter">
           Filtrar calendários autorizados
         </label>
@@ -123,7 +123,7 @@ export function CalendarHub() {
         <div className="calendar-create-grid">
           <label>
             Nome
-            <input value={name} onChange={(event) => setName(event.target.value)} required maxLength={120} />
+            <input id="calendar-create-name" value={name} onChange={(event) => setName(event.target.value)} required maxLength={120} />
           </label>
           <label>
             Fuso (IANA)

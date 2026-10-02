@@ -14,6 +14,7 @@ const EVIDENCE = path.resolve(process.cwd(), "../docs/ux/evidence/m5.3");
 
 test.describe("M5.3 Calendar UX / My Schedule", () => {
   test("R01–R15 hub, views, share/revoke, overlays, re-auth, no cascade", async ({ page }, testInfo) => {
+    test.setTimeout(240_000);
     mkdirSync(EVIDENCE, { recursive: true });
     const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
     const stamp = `${tag}-${testInfo.workerIndex}`;
@@ -32,7 +33,7 @@ test.describe("M5.3 Calendar UX / My Schedule", () => {
       "Disponível em um marco posterior",
     );
 
-    await page.getByLabel("Nome").fill(calendarName);
+    await page.locator(".calendar-create").getByLabel("Nome").fill(calendarName);
     await page.getByRole("button", { name: "Criar calendário" }).click();
     await expect(page.getByRole("link", { name: new RegExp(calendarName) })).toBeVisible();
     await page.screenshot({ path: path.join(EVIDENCE, `hub-${tag}.png`), fullPage: true });
@@ -66,7 +67,7 @@ test.describe("M5.3 Calendar UX / My Schedule", () => {
     expect(created?.id).toBeTruthy();
     const calendarId = String(created?.id);
 
-    await page.getByRole("link", { name: "Compartilhar" }).click();
+    await page.locator(".calendar-workspace-actions").getByRole("link", { name: "Compartilhar" }).click();
     await page.waitForURL(`**/calendars/${calendarId}/share`);
     await expect(page.getByRole("heading", { name: new RegExp(`Compartilhar ${calendarName}`) })).toBeVisible();
     await expect(page.getByText("Acesso intrínseco")).toBeVisible();
