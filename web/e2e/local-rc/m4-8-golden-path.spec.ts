@@ -35,6 +35,18 @@ test.describe("M4.8 Local RC golden path + cross-view consistency", () => {
     await page.getByLabel("Título").fill(title);
     await page.getByRole("button", { name: "Criar tarefa" }).click();
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
+    // Assign form mounts only when `row && !creating`. After create the List
+    // filter is still "Seed outline programme", so reopen unfiltered inspect.
+    const listed = await apiJson(
+      page,
+      "GET",
+      `/api/v1/projects/${IDS.projectA1}/planning?q=${encodeURIComponent(title)}`,
+    );
+    expect(listed.status).toBe(200);
+    const created = ((listed.body.tasks as Array<{ id: string; title: string }>) ?? []).find((row) => row.title === title);
+    expect(created?.id).toBeTruthy();
+    await page.goto(`/projects/${IDS.projectA1}/planner?inspect=${created!.id}`);
+    await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.locator("#task-assignee")).toContainText("Seed Contributor A");
     await page.locator("#task-assignee").selectOption({ label: /Seed Contributor A/ });
     await page.getByRole("button", { name: "Atribuir" }).click();

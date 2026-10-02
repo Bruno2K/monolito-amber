@@ -47,7 +47,8 @@ test.describe("M4.8 Local RC AuthZ adversarial", () => {
     await signInToOrg(page, "viewer-a", "Amber Demo Alpha");
     await page.goto(`/projects/${IDS.projectA1}/planner`);
     await expect(page.getByRole("heading", { name: "Planejamento" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Nova Tarefa" })).toHaveCount(0);
+    // Viewer chrome keeps Nova Tarefa in the DOM (disabled). AuthZ is the POST ≥400, not absence.
+    await expect(page.getByRole("button", { name: "Nova Tarefa" })).toBeDisabled();
     await expect(page.getByText("1 item oculto")).toHaveCount(0);
     const mutate = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
       headers: { "Idempotency-Key": `m48-viewer-${testInfo.project.name}` },
@@ -65,7 +66,9 @@ test.describe("M4.8 Local RC AuthZ adversarial", () => {
   test("M4.8-ADV revoked membership cannot open Planning deep links", async ({ page }, testInfo) => {
     await signIn(page, "suspended-a");
     await page.goto(`/projects/${IDS.projectA1}/planner?inspect=${IDS.taskTodo}`);
-    await expect(page.getByRole("heading", { name: /Organization necessária|Switch organization|Acesso negado/ })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /Organization necessária|Switch organization|Acesso negado/ }).first(),
+    ).toBeVisible();
     await expect(page.getByText("Seed outline programme")).toHaveCount(0);
     await capture(page, testInfo, "m48-authz-revoked");
   });
