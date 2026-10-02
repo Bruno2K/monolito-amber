@@ -207,9 +207,22 @@ export function apiFrom(page: Page): APIRequestContext {
   return page.request;
 }
 
+export function m5SeedUuid(key: string): string {
+  const digest = createHash("sha256").update(`amber.m5.seed.${key}`).digest("hex");
+  return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-8${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
+}
+
+export const CALENDAR_IDS = {
+  ownerPrivate: m5SeedUuid("cal:cal-owner-private"),
+  sharedEditor: m5SeedUuid("cal:cal-shared-editor"),
+  teamGrant: m5SeedUuid("cal:cal-team-grant"),
+  teamAStructure: seedUuid("team:team-a-structure"),
+  memContributorA: seedUuid("orgmem:org-a:contributor-a"),
+};
+
 export async function apiJson(
   page: Page,
-  method: "GET" | "POST" | "PATCH",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   apiPath: string,
   options?: { data?: unknown; headers?: Record<string, string> },
 ): Promise<{ status: number; body: Record<string, unknown> }> {

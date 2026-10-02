@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import "./gantt-m46.css";
+import "./calendar.css";
 
 const inter = Inter({
   subsets: ["latin"],

@@ -36,7 +36,8 @@ export const GLOBAL_NAV: readonly NavItemDef[] = [
     id: "calendars",
     label: "Meus Calendários",
     group: "global",
-    availability: "coming-later",
+    href: "/calendars",
+    availability: "available",
     icon: "calendar",
   },
   {
@@ -148,6 +149,9 @@ export function matchNavItem(pathname: string, projectId?: string | null): NavIt
   if (normalized === "/projects") {
     return GLOBAL_NAV[0] ?? null;
   }
+  if (normalized === "/calendars" || normalized.startsWith("/calendars/")) {
+    return GLOBAL_NAV.find((item) => item.id === "calendars") ?? null;
+  }
   for (const item of PROJECT_NAV) {
     const href = resolveNavHref(item, projectId);
     if (href && (normalized === href || normalized.startsWith(`${href}/`))) {
@@ -159,7 +163,12 @@ export function matchNavItem(pathname: string, projectId?: string | null): NavIt
 
 export function isGlobalPath(pathname: string): boolean {
   const normalized = pathname.replace(/\/+$/, "") || "/";
-  return normalized === "/projects" || normalized === "/org-switch";
+  return (
+    normalized === "/projects" ||
+    normalized === "/org-switch" ||
+    normalized === "/calendars" ||
+    normalized.startsWith("/calendars/")
+  );
 }
 
 export interface Breadcrumb {
@@ -174,6 +183,19 @@ export function breadcrumbsFor(input: {
   projectId?: string | null;
 }): Breadcrumb[] {
   const active = matchNavItem(input.pathname, input.projectId);
+  const normalized = input.pathname.replace(/\/+$/, "") || "/";
+  if (normalized === "/calendars" || normalized.startsWith("/calendars/")) {
+    const crumbs: Breadcrumb[] = [{ label: "Global" }, { label: "Meus Calendários", href: "/calendars", current: normalized === "/calendars" }];
+    if (normalized === "/calendars/schedule") {
+      crumbs.push({ label: "Minha Agenda", current: true });
+    } else if (normalized.endsWith("/share")) {
+      crumbs.push({ label: "Calendário", href: normalized.replace(/\/share$/, "") });
+      crumbs.push({ label: "Compartilhar", current: true });
+    } else if (normalized !== "/calendars") {
+      crumbs.push({ label: "Calendário", current: true });
+    }
+    return crumbs;
+  }
   if (isGlobalPath(input.pathname) || !input.projectId || !input.projectName) {
     return [
       { label: "Global" },

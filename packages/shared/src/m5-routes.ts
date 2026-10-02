@@ -1,6 +1,7 @@
 /**
- * M5 planned UI and API routes. None are implemented in M5.1.
- * Product IA is English. Portuguese Figma paths remain prototype-only.
+ * M5 UI and API routes. Calendar product pages ship in M5.3.
+ * Messaging UI stays planned until M5.5. Product IA is English.
+ * Portuguese Figma paths remain prototype-only.
  */
 
 export type M5RouteLifecycle = "planned" | "prototype-only";

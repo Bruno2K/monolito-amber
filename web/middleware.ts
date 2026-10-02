@@ -5,7 +5,7 @@ const COOKIE = process.env.SESSION_COOKIE_NAME ?? "amber_session";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (!pathname.startsWith("/projects")) {
+  if (!pathname.startsWith("/projects") && !pathname.startsWith("/calendars")) {
     return NextResponse.next();
   }
   if (!request.cookies.get(COOKIE)) {
@@ -18,5 +18,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/projects/:path*"],
+  matcher: ["/projects/:path*", "/calendars/:path*"],
 };
