@@ -22,6 +22,7 @@ export function buildOpenApiDocument(app: INestApplication) {
     .addTag("operations")
     .addTag("catalog")
     .addTag("files")
+    .addTag("messaging")
     .build();
   const document = SwaggerModule.createDocument(app, config);
   document.openapi = "3.1.0";

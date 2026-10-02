@@ -39,7 +39,7 @@ describe("M5.1-R15 scope fence", () => {
     expect(deploy).toMatch(/if:\s*false/);
     expect(M51_CLOUD_FENCE.deployWorkflowMustStayDisabled).toBe(true);
     expect(existsSync(join(ROOT, "api/src/calendar"))).toBe(true);
-    expect(existsSync(join(ROOT, "api/src/messaging"))).toBe(false);
+    expect(existsSync(join(ROOT, "api/src/messaging"))).toBe(true);
     expect(existsSync(join(ROOT, "web/app/calendars"))).toBe(false);
     expect(existsSync(join(ROOT, "web/app/messages"))).toBe(false);
   });

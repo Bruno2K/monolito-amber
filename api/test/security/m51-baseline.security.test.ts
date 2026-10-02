@@ -48,9 +48,9 @@ describe("M5.1 baseline security (fail closed)", () => {
     expect(inaccessibleConversationLeaksCount()).toBe(false);
   });
 
-  it("ships Calendar Nest/OpenAPI while Messaging and cloud stay closed", () => {
+  it("ships Calendar and Messaging Nest/OpenAPI while cloud stays closed", () => {
     expect(existsSync(join(ROOT, "api/src/calendar"))).toBe(true);
-    expect(existsSync(join(ROOT, "api/src/messaging"))).toBe(false);
+    expect(existsSync(join(ROOT, "api/src/messaging"))).toBe(true);
     const deploy = readFileSync(join(ROOT, ".github/workflows/deploy-cloud.yml"), "utf8");
     expect(deploy).toMatch(/if:\s*false/);
     const openapi = JSON.parse(readFileSync(join(ROOT, "api/openapi/openapi.json"), "utf8")) as {
@@ -58,7 +58,7 @@ describe("M5.1 baseline security (fail closed)", () => {
     };
     const paths = Object.keys(openapi.paths);
     for (const row of M5_PLANNED_API_ROUTES) {
-      if (row.implementedIn === "m5.2") {
+      if (row.implementedIn === "m5.2" || row.implementedIn === "m5.4") {
         expect(paths, row.path).toContain(row.path);
       } else {
         expect(paths, row.path).not.toContain(row.path);
