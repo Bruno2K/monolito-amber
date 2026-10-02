@@ -83,16 +83,16 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     });
     await page.getByRole("button", { name: "Enviar" }).click();
     await expect(page.locator(".messages-composer").locator("xpath=preceding-sibling::p[@role='alert'][1]")).toContainText("falha temporária");
-    await expect(page.getByText("Falha ao enviar")).toBeVisible();
-    await expect(page.getByText("Enviando")).toHaveCount(0);
+    await expect(page.getByText("Falha ao enviar", { exact: true })).toBeVisible();
+    await expect(page.getByText("Enviando", { exact: true })).toHaveCount(0);
     const rewritten = `${body} novo`;
     await composer.fill(rewritten);
-    await expect(page.getByText("Falha ao enviar")).toBeVisible();
+    await expect(page.getByText("Falha ao enviar", { exact: true })).toBeVisible();
     await page.unroute(`**/api/v1/conversations/${DIRECT_ID}/messages`);
     await page.getByRole("button", { name: "Enviar" }).click();
     await expect(transcript.getByText(rewritten, { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Descartar" }).click();
-    await expect(page.getByText("Falha ao enviar")).toHaveCount(0);
+    await expect(page.getByText("Falha ao enviar", { exact: true })).toHaveCount(0);
     await page.route(`**/api/v1/conversations/${DIRECT_ID}/messages`, async (route) => {
       if (route.request().method() === "POST") {
         await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ detail: "falha temporária" }) });
@@ -103,7 +103,7 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     const retryBody = `${body} retry`;
     await composer.fill(retryBody);
     await page.getByRole("button", { name: "Enviar" }).click();
-    await expect(page.getByText("Falha ao enviar")).toBeVisible();
+    await expect(page.getByText("Falha ao enviar", { exact: true })).toBeVisible();
     await page.unroute(`**/api/v1/conversations/${DIRECT_ID}/messages`);
     await page.getByRole("button", { name: "Tentar novamente" }).click();
     await expect(transcript.getByText(retryBody, { exact: true })).toBeVisible();
