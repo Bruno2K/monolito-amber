@@ -197,58 +197,62 @@ export function MilestoneBoard({
         </section>
       ) : null}
 
-      {visible.length === 0 ? (
+      {visible.length === 0 && !creating && !selected ? (
         <PlanningEmpty filtered={locallyFiltered} entity="marco" />
       ) : (
         <div className={`deliverables-layout${selected || creating ? " has-inspector" : ""}`}>
-          <div className="deliverables-table-wrap">
-            <table className="deliverables-table planner-table">
-              <caption className="sr-only">Lista de marcos do projeto</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Marco</th>
-                  <th scope="col">Data-alvo</th>
-                  <th scope="col">Armazenado</th>
-                  <th scope="col">Derivado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((row) => {
-                  const active = row.id === selectedId;
-                  return (
-                    <tr key={row.id} className={active ? "is-active" : undefined}>
-                      <td>
-                        <button
-                          type="button"
-                          className="deliverable-link"
-                          onClick={() => onSelect(row.id)}
-                          aria-expanded={active}
-                        >
-                          <strong>{row.title}</strong>
-                        </button>
-                      </td>
-                      <td>
-                        <time dateTime={row.targetDate ?? undefined}>{formatPlanningDate(row.targetDate)}</time>
-                      </td>
-                      <td>
-                        <span className={`status-pill status-${row.recordedStatus.toLowerCase()}`}>
-                          {milestoneStatusLabel(row.recordedStatus)}
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={`status-pill status-${row.status.toLowerCase()}`}
-                          title={milestoneRiskExplanation(row)}
-                        >
-                          {milestoneStatusLabel(row.status)}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          {visible.length === 0 ? (
+            <PlanningEmpty filtered={locallyFiltered} entity="marco" />
+          ) : (
+            <div className="deliverables-table-wrap">
+              <table className="deliverables-table planner-table">
+                <caption className="sr-only">Lista de marcos do projeto</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Marco</th>
+                    <th scope="col">Data-alvo</th>
+                    <th scope="col">Armazenado</th>
+                    <th scope="col">Derivado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((row) => {
+                    const active = row.id === selectedId;
+                    return (
+                      <tr key={row.id} className={active ? "is-active" : undefined}>
+                        <td>
+                          <button
+                            type="button"
+                            className="deliverable-link"
+                            onClick={() => onSelect(row.id)}
+                            aria-expanded={active}
+                          >
+                            <strong>{row.title}</strong>
+                          </button>
+                        </td>
+                        <td>
+                          <time dateTime={row.targetDate ?? undefined}>{formatPlanningDate(row.targetDate)}</time>
+                        </td>
+                        <td>
+                          <span className={`status-pill status-${row.recordedStatus.toLowerCase()}`}>
+                            {milestoneStatusLabel(row.recordedStatus)}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={`status-pill status-${row.status.toLowerCase()}`}
+                            title={milestoneRiskExplanation(row)}
+                          >
+                            {milestoneStatusLabel(row.status)}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {creating || selected ? (
             <div className="structure-overlay deliverables-inspector-shell" role="presentation">

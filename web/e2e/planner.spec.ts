@@ -178,6 +178,12 @@ test.describe("M4.2 Planning List", () => {
 
     await page.goto(`/projects/${PROJECT_A}/planner?view=gantt&q=${encodeURIComponent(title)}`);
     await expect(page.getByRole("region", { name: "Cronograma Gantt" })).toBeVisible();
+    await expect(page.getByLabel("Ordenar lista")).toHaveCount(0);
+    await expect(page.getByLabel("Direção da ordenação")).toHaveCount(0);
+    await expect(page.getByLabel("Buscar tarefas")).toBeVisible();
+    await expect(page.getByLabel("Filtrar por status armazenado")).toBeVisible();
+    await expect(page.getByLabel("Filtrar por atraso derivado")).toBeVisible();
+    await expect(page.getByLabel("Filtrar por fase")).toBeVisible();
     await expect(page.getByText("Hierarquia")).toBeVisible();
     await expect(page.locator('[data-lane-kind="TASK"][data-source-id="' + task.id + '"]').first()).toBeVisible();
     await expect(page.getByText("Tabela de datas do cronograma", { exact: false })).toBeVisible();
@@ -278,6 +284,31 @@ test.describe("M4.2 Planning List", () => {
 
     await page.getByLabel("Buscar marcos").fill("zzzz-no-match");
     await expect(page.getByRole("heading", { name: /Nenhum marco corresponde/i })).toBeVisible();
+  });
+
+  test("M4.8.1 board Novo Marco stays in create mode and submit adds a row", async ({ page }, testInfo) => {
+    await signIn(page);
+    await page.goto(`/projects/${PROJECT_A}/planner?view=milestones`);
+    const boardCreate = page.locator('[data-surface="milestones"]').getByRole("button", { name: "Novo Marco" });
+    await boardCreate.click();
+    const inspector = page.getByRole("dialog");
+    await expect(inspector.getByRole("heading", { name: "Novo marco" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("heading", { name: "Novo marco" })).toHaveCount(0);
+
+    await page.getByLabel("Buscar marcos").fill("zzzz-no-match-m481");
+    await expect(page.getByRole("heading", { name: /Nenhum marco corresponde/i })).toBeVisible();
+    await boardCreate.click();
+    await expect(inspector.getByRole("heading", { name: "Novo marco" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.getByLabel("Buscar marcos").fill("");
+
+    const title = `Mock marco ${testInfo.project.name} ${Date.now()}`;
+    await boardCreate.click();
+    await expect(inspector.getByRole("heading", { name: "Novo marco" })).toBeVisible();
+    await inspector.getByLabel("Título").fill(title);
+    await inspector.getByRole("button", { name: "Criar marco" }).click();
+    await expect(page.getByRole("button", { name: title, exact: true })).toBeVisible();
   });
 
   test("M4.2-ADV unauthorized project deep link does not leak the other tenant", async ({ page }) => {

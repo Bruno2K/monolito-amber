@@ -95,10 +95,14 @@ export function PlannerView({ projectId }: { projectId: string }) {
     [replaceParams],
   );
 
-  useInspectorEscape(Boolean(selectedId) || Boolean(selectedMilestoneId) || creating, () => {
-    openItem(null);
-    openMilestone(null);
-  });
+  useInspectorEscape(
+    Boolean(selectedId) || Boolean(selectedMilestoneId) || creating || creatingMilestone,
+    () => {
+      setCreatingMilestone(false);
+      openItem(null);
+      openMilestone(null);
+    },
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -319,7 +323,9 @@ export function PlannerView({ projectId }: { projectId: string }) {
             permissions={permissions}
             filtered={filtered}
             onSelect={(id) => {
-              setCreatingMilestone(false);
+              if (id) {
+                setCreatingMilestone(false);
+              }
               openMilestone(id);
             }}
             onCreatingChange={setCreatingMilestone}
@@ -400,28 +406,32 @@ export function PlannerView({ projectId }: { projectId: string }) {
                   ))}
                 </select>
               </label>
-              <label>
-                <span className="sr-only">Ordenar</span>
-                <select
-                  value={sort}
-                  onChange={(event) => setSort(event.target.value)}
-                  aria-label="Ordenar lista"
-                >
-                  <option value="createdAt">Criação</option>
-                  <option value="title">Título</option>
-                  <option value="dueDate">Prazo</option>
-                  <option value="plannedStartAt">Início planejado</option>
-                  <option value="status">Status</option>
-                  <option value="progressPercent">Progresso</option>
-                </select>
-              </label>
-              <label>
-                <span className="sr-only">Direção</span>
-                <select value={order} onChange={(event) => setOrder(event.target.value)} aria-label="Direção da ordenação">
-                  <option value="asc">Crescente</option>
-                  <option value="desc">Decrescente</option>
-                </select>
-              </label>
+              {view !== "gantt" ? (
+                <>
+                  <label>
+                    <span className="sr-only">Ordenar</span>
+                    <select
+                      value={sort}
+                      onChange={(event) => setSort(event.target.value)}
+                      aria-label="Ordenar lista"
+                    >
+                      <option value="createdAt">Criação</option>
+                      <option value="title">Título</option>
+                      <option value="dueDate">Prazo</option>
+                      <option value="plannedStartAt">Início planejado</option>
+                      <option value="status">Status</option>
+                      <option value="progressPercent">Progresso</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="sr-only">Direção</span>
+                    <select value={order} onChange={(event) => setOrder(event.target.value)} aria-label="Direção da ordenação">
+                      <option value="asc">Crescente</option>
+                      <option value="desc">Decrescente</option>
+                    </select>
+                  </label>
+                </>
+              ) : null}
             </div>
 
             {view === "list" ? (
