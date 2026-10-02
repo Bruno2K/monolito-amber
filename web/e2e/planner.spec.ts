@@ -66,8 +66,8 @@ test.describe("M4.2 Planning List", () => {
 
     await page.getByRole("button", { name: /Lançar fundações/ }).click();
     await expect(page.getByRole("heading", { name: "Dependências (término-início)" })).toBeVisible();
-    await expect(page.getByText("Aguardando predecessor")).toBeVisible();
-    await expect(page.getByText(/não é o estado Bloqueada/i)).toBeVisible();
+    await expect(page.locator(".planner-dep-block")).toBeVisible();
+    await expect(page.locator(".planner-dep-block")).toContainText(/não é o estado Bloqueada/i);
     await expect(page.getByRole("heading", { name: "Predecessores" })).toBeVisible();
     await expect(page.getByText("Levantamento topográfico")).toBeVisible();
     await expect(page.getByLabel("Adicionar predecessor")).toBeVisible();
