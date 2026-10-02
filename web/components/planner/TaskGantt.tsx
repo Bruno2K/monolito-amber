@@ -1,4 +1,4 @@
-"use client";
+use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api";
@@ -67,10 +67,16 @@ export function TaskGantt({
   const [shiftSuccessors, setShiftSuccessors] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
-  const liveRef = useRef<HTMLDivElement>(null);
+  const [editTaskId, setEditTaskId] = useState(selectedId ?? schedule.lanes.find((row) => row.kind === "TASK")?.id ?? "");
   const scrollRef = useRef<HTMLDivElement>(null);
   const reduceMotion =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  useEffect(() => {
+    if (selectedId && schedule.lanes.some((row) => row.kind === "TASK" && row.id === selectedId)) {
+      setEditTaskId(selectedId);
+    }
+  }, [selectedId, schedule.lanes]);
 
   useEffect(() => {
     if (!focusId) {
@@ -84,6 +90,7 @@ export function TaskGantt({
     () => weekLabels(schedule.dateRange.start, schedule.dateRange.end),
     [schedule.dateRange.end, schedule.dateRange.start],
   );
+  const timelineMinWidth = Math.max(720, weeks.length * 88);
   const taskById = useMemo(() => {
     const map = new Map<string, PlanningScheduleLane>();
     for (const lane of schedule.lanes) {
@@ -96,9 +103,6 @@ export function TaskGantt({
 
   function announce(message: string) {
     setAnnouncement(message);
-    if (liveRef.current) {
-      liveRef.current.textContent = message;
-    }
   }
 
   async function saveTaskDates(lane: PlanningScheduleLane, plannedStartAt: string, dueDate: string, propagate: boolean) {
@@ -168,11 +172,11 @@ export function TaskGantt({
         <p className="gantt-alert" role="alert">
           {error}
         </p>
-      ) : announcement ? (
-        <p className="gantt-status" role="status">
+      ) : (
+        <p className="gantt-status" role="status" aria-live="polite">
           {announcement}
         </p>
-      ) : null}
+      )}
       <div className="gantt-toolbar">
         <button type="button" className="btn secondary" onClick={scrollToToday}>
           Hoje
@@ -183,8 +187,90 @@ export function TaskGantt({
           {schedule.truncated ? ` · limitado a ${schedule.take} registros` : ""}
         </span>
       </div>
+      {canUpdate ? (
+        <form
+          className="gantt-edit-actions"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            const chosen = String(data.get("taskId") ?? editTaskId);
+            const chosenLane = schedule.lanes.find((row) => row.kind === "TASK" && row.id === chosen);
+            if (!chosenLane) {
+              setError("Selecione uma tarefa autorizada.");
+              return;
+            }
+            void saveTaskDates(
+              chosenLane,
+              String(data.get(`start-${chosen}`) ?? ""),
+              String(data.get(`due-${chosen}`) ?? ""),
+              shiftSuccessors,
+            );
+          }}
+        >
+          <label>
+            <span className="sr-only">Tarefa a editar</span>
+            <select
+              name="taskId"
+              aria-label="Tarefa cujas datas serão salvas"
+              value={editTaskId}
+              onChange={(event) => setEditTaskId(event.target.value)}
+            >
+              {schedule.lanes
+                .filter((row) => row.kind === "TASK")
+                .map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.title}
+                  </option>
+                ))}
+            </select>
+          </label>
+          {schedule.lanes
+            .filter((row) => row.kind === "TASK" && row.id === editTaskId)
+            .map((lane) => (
+              <span key={`${lane.id}-${lane.version ?? 0}-${lane.start ?? ""}-${lane.end ?? ""}`} className="gantt-date-fields">
+                <label>
+                  <span className="sr-only">Início planejado de {lane.title}</span>
+                  <input
+                    id={`gantt-dates-${lane.id}`}
+                    name={`start-${lane.id}`}
+                    type="date"
+                    defaultValue={isoDateInput(lane.start)}
+                    disabled={savingId === lane.id}
+                  />
+                </label>
+                <label>
+                  <span className="sr-only">Prazo de {lane.title}</span>
+                  <input
+                    name={`due-${lane.id}`}
+                    type="date"
+                    defaultValue={isoDateInput(lane.end)}
+                    disabled={savingId === lane.id}
+                  />
+                </label>
+              </span>
+            ))}
+          <label className="gantt-shift">
+            <input
+              type="checkbox"
+              checked={shiftSuccessors}
+              onChange={(event) => setShiftSuccessors(event.target.checked)}
+            />
+            Também deslocar sucessores
+          </label>
+          <button type="submit" className="btn" disabled={Boolean(savingId)}>
+            Salvar datas da tarefa
+          </button>
+        </form>
+      ) : (
+        <p className="muted">Edição de datas desabilitada — requer task.update e projeto ativo.</p>
+      )}
       <div className="gantt-board-scroll" ref={scrollRef}>
-        <div className="gantt-board" role="region" aria-label="Cronograma Gantt">
+        <div
+          className="gantt-board"
+          role="region"
+          aria-label="Cronograma Gantt"
+          style={{ minWidth: 280 + timelineMinWidth }}
+        >
           <div className="gantt-hierarchy">
             <div className="gantt-hierarchy-head">Hierarquia</div>
             {schedule.lanes.map((lane) => {
@@ -215,7 +301,7 @@ export function TaskGantt({
               );
             })}
           </div>
-          <div className="gantt-timeline">
+          <div className="gantt-timeline" style={{ minWidth: timelineMinWidth }}>
             <div className="gantt-scale" aria-hidden="true">
               {weeks.map((week) => (
                 <span key={week.key} className="gantt-scale-cell" style={{ left: `${week.left}%`, width: `${week.width}%` }}>
@@ -344,25 +430,7 @@ export function TaskGantt({
         <li>Em risco — atraso derivado ou predecessor incompleto (não é Bloqueada)</li>
         <li>Arrastar datas atualiza só a Tarefa de origem</li>
       </ul>
-      <form
-        className="gantt-table-wrap"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const data = new FormData(event.currentTarget);
-          const chosen = String(data.get("taskId") ?? "");
-          const chosenLane = schedule.lanes.find((row) => row.kind === "TASK" && row.id === chosen);
-          if (!chosenLane) {
-            setError("Selecione uma tarefa autorizada.");
-            return;
-          }
-          void saveTaskDates(
-            chosenLane,
-            String(data.get(`start-${chosen}`) ?? ""),
-            String(data.get(`due-${chosen}`) ?? ""),
-            shiftSuccessors,
-          );
-        }}
-      >
+      <div className="gantt-table-wrap">
         <table className="deliverables-table gantt-table">
           <caption>Tabela de datas do cronograma — alternativa ao arraste</caption>
           <thead>
@@ -383,73 +451,16 @@ export function TaskGantt({
                   <span className="gantt-domain">{lane.domain}</span>
                 </td>
                 <td>
-                  {lane.kind === "TASK" && canUpdate ? (
-                    <label>
-                      <span className="sr-only">Início planejado de {lane.title}</span>
-                      <input
-                        id={`gantt-dates-${lane.id}`}
-                        name={`start-${lane.id}`}
-                        type="date"
-                        defaultValue={isoDateInput(lane.start)}
-                        disabled={savingId === lane.id}
-                      />
-                    </label>
-                  ) : (
-                    formatPlanningDate(lane.start)
-                  )}
+                  <time dateTime={lane.start ?? undefined}>{formatPlanningDate(lane.start)}</time>
                 </td>
                 <td>
-                  {lane.kind === "TASK" && canUpdate ? (
-                    <label>
-                      <span className="sr-only">Prazo de {lane.title}</span>
-                      <input
-                        name={`due-${lane.id}`}
-                        type="date"
-                        defaultValue={isoDateInput(lane.end)}
-                        disabled={savingId === lane.id}
-                      />
-                    </label>
-                  ) : (
-                    formatPlanningDate(lane.end)
-                  )}
+                  <time dateTime={lane.end ?? undefined}>{formatPlanningDate(lane.end)}</time>
                 </td>
                 <td>{scheduleRiskLabel(lane) || "—"}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        {canUpdate ? (
-          <div className="gantt-edit-actions">
-            <label>
-              <span className="sr-only">Tarefa a editar</span>
-              <select name="taskId" aria-label="Tarefa cujas datas serão salvas" defaultValue={selectedId ?? schedule.lanes.find((row) => row.kind === "TASK")?.id ?? ""}>
-                {schedule.lanes
-                  .filter((row) => row.kind === "TASK")
-                  .map((row) => (
-                    <option key={row.id} value={row.id}>
-                      {row.title}
-                    </option>
-                  ))}
-              </select>
-            </label>
-            <label className="gantt-shift">
-              <input
-                type="checkbox"
-                checked={shiftSuccessors}
-                onChange={(event) => setShiftSuccessors(event.target.checked)}
-              />
-              Também deslocar sucessores
-            </label>
-            <button type="submit" className="btn" disabled={Boolean(savingId)}>
-              Salvar datas da tarefa
-            </button>
-          </div>
-        ) : (
-          <p className="muted">Edição de datas desabilitada — requer task.update e projeto ativo.</p>
-        )}
-      </form>
-      <div ref={liveRef} className="sr-only" aria-live="polite">
-        {announcement}
       </div>
     </div>
   );
