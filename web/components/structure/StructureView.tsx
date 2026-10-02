@@ -19,6 +19,7 @@ import {
 } from "../../lib/operations";
 import { useShell } from "../session/ShellProvider";
 import { useInspectorEscape } from "../../lib/use-inspector-escape";
+import { Drawer } from "../ui";
 
 function isoDateInput(value: string | null | undefined): string {
   if (!value) {
@@ -238,8 +239,7 @@ export function StructureView({ projectId }: { projectId: string }) {
       )}
 
       {inspectorOpen ? (
-        <div className="structure-overlay" role="presentation">
-          <button type="button" className="structure-backdrop" aria-label="Fechar inspetor" onClick={() => openPhase(null)} />
+        <Drawer open onClose={() => openPhase(null)}>
           <aside
             className="structure-inspector"
             role="dialog"
@@ -330,7 +330,7 @@ export function StructureView({ projectId }: { projectId: string }) {
               </div>
             </form>
           </aside>
-        </div>
+        </Drawer>
       ) : null}
     </section>
   );

@@ -1,4 +1,50 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from "react";
+"use client";
+
+import { useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+
+export function Drawer({
+  open,
+  onClose,
+  className,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  className?: string;
+  children: ReactNode;
+}) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open || !mounted) {
+      return;
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.dataset.drawerOpen = "true";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      delete document.body.dataset.drawerOpen;
+    };
+  }, [open, mounted]);
+
+  if (!open || !mounted) {
+    return null;
+  }
+
+  return createPortal(
+    <div className={className ? `structure-overlay ${className}` : "structure-overlay"} role="presentation">
+      <button type="button" className="structure-backdrop" aria-label="Fechar inspetor" onClick={onClose} />
+      {children}
+    </div>,
+    document.body,
+  );
+}
 
 export function Banner({ children }: { children: ReactNode }) {
   return <p className="shell-banner">{children}</p>;
