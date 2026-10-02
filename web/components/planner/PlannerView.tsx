@@ -8,6 +8,7 @@ import { classifyProblem } from "../../lib/errors";
 import { useInspectorEscape } from "../../lib/use-inspector-escape";
 import {
   canCreateTask,
+  canUpdateTask,
   contextLabel,
   countVisibleKanbanColumns,
   formatPlanningDate,
@@ -19,6 +20,7 @@ import {
 import { type PhaseListResponse, type PhaseRow } from "../../lib/operations";
 import { useShell } from "../session/ShellProvider";
 import { PlanningComingView, PlanningEmpty, PlanningError, PlanningSkeleton } from "./PlanningStates";
+import { TaskGantt } from "./TaskGantt";
 import { TaskKanban } from "./TaskKanban";
 import { TaskInspector } from "./TaskInspector";
 
@@ -189,11 +191,15 @@ export function PlannerView({ projectId }: { projectId: string }) {
   }
 
   return (
-    <section className={`planner-page${view === "kanban" ? " is-kanban" : ""}`} data-surface="planner" data-node-id={view === "kanban" ? "242:6635" : "242:6526"}>
+    <section
+      className={`planner-page${view === "kanban" ? " is-kanban" : ""}${view === "gantt" ? " is-gantt" : ""}`}
+      data-surface="planner"
+      data-node-id={view === "kanban" ? "242:6635" : view === "gantt" ? "242:6744" : "242:6526"}
+    >
       <header className="structure-header">
         <div>
           <h1>Planejamento</h1>
-          <p>Lista e Kanban projetam as mesmas tarefas. Status armazenado é explícito; atraso é derivado.</p>
+          <p>Lista, Kanban e Gantt projetam as mesmas tarefas. Status armazenado é explícito; atraso é derivado.</p>
         </div>
         <button
           type="button"
@@ -257,9 +263,9 @@ export function PlannerView({ projectId }: { projectId: string }) {
       </div>
 
       <div id={`${tabsId}-panel`} role="tabpanel" aria-labelledby={`${tabsId}-${view || "list"}`}>
-        {view === "gantt" || view === "milestones" ? <PlanningComingView view={view} /> : null}
+        {view === "milestones" ? <PlanningComingView view={view} /> : null}
 
-        {view === "list" || view === "kanban" ? (
+        {view === "list" || view === "kanban" || view === "gantt" ? (
           <>
             <div className="deliverables-toolbar" role="search">
               <label className="sr-only" htmlFor="planner-search">
@@ -372,6 +378,28 @@ export function PlannerView({ projectId }: { projectId: string }) {
                     await load();
                   }}
                 />
+              ) : view === "gantt" ? (
+                <TaskGantt
+                  projectId={projectId}
+                  schedule={
+                    model.schedule ?? {
+                      dateRange: { start: model.generatedAt, end: model.generatedAt },
+                      take: 500,
+                      truncated: false,
+                      canEditTaskDates: !archived && canUpdateTask(permissions),
+                      lanes: [],
+                      links: [],
+                    }
+                  }
+                  selectedId={selectedId}
+                  readOnly={archived}
+                  permissions={permissions}
+                  filtered={filtered}
+                  onOpen={openItem}
+                  onChanged={async () => {
+                    await load();
+                  }}
+                />
               ) : model.tasks.length === 0 ? (
                 <PlanningEmpty filtered={filtered} />
               ) : (
@@ -466,7 +494,7 @@ export function PlannerView({ projectId }: { projectId: string }) {
               ) : null}
             </div>
 
-            {model.page.total > model.page.pageSize ? (
+            {view !== "gantt" && model.page.total > model.page.pageSize ? (
               <nav className="planner-pager" aria-label="Paginação do planejamento">
                 <button
                   type="button"

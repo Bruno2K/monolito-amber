@@ -6,6 +6,7 @@ const EVIDENCE_M42 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.2");
 const EVIDENCE_M43 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.3");
 const EVIDENCE_M44 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.4");
 const EVIDENCE_M45 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.5");
+const EVIDENCE_M46 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.6");
 
 const PROJECT_A = "33333333-3333-4333-8333-333333333333";
 const PROJECT_B = "44444444-4444-4444-8444-444444444444";
@@ -39,6 +40,7 @@ test.describe("M4.2 Planning List", () => {
     mkdirSync(EVIDENCE_M43, { recursive: true });
     mkdirSync(EVIDENCE_M44, { recursive: true });
     mkdirSync(EVIDENCE_M45, { recursive: true });
+    mkdirSync(EVIDENCE_M46, { recursive: true });
     const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
     await page.screenshot({ path: path.join(EVIDENCE_M42, `planner-list-${tag}.png`), fullPage: true });
     await page.screenshot({ path: testInfo.outputPath(`planner-${testInfo.project.name}.png`), fullPage: true });
@@ -156,6 +158,84 @@ test.describe("M4.2 Planning List", () => {
     await page.getByLabel(`Mover ${title}`).selectOption("EM_ANDAMENTO");
     await expect(page.locator(".kanban-shell [role='alert']")).toContainText(/Optimistic lock|versão|conflito/i);
     await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${task.id}"]`)).toBeVisible();
+  });
+
+  test("M4.6-UI Gantt projection, table date edit, stale collision, dependency rejection", async ({ page }, testInfo) => {
+    await signIn(page);
+    mkdirSync(EVIDENCE_M46, { recursive: true });
+    const title = `Gantt edit ${testInfo.project.name} ${Date.now()}`;
+    const created = await page.request.post(`/api/v1/projects/${PROJECT_A}/tasks`, {
+      headers: { "Idempotency-Key": `m46-create-${testInfo.project.name}-${Date.now()}` },
+      data: {
+        title,
+        plannedStartAt: "2026-10-02T00:00:00.000Z",
+        dueDate: "2026-10-09T00:00:00.000Z",
+      },
+    });
+    expect(created.ok()).toBeTruthy();
+    const task = (await created.json()) as { id: string; version: number };
+
+    await page.goto(`/projects/${PROJECT_A}/planner?view=gantt&q=${encodeURIComponent(title)}`);
+    await expect(page.getByRole("region", { name: "Cronograma Gantt" })).toBeVisible();
+    await expect(page.getByText("Hierarquia")).toBeVisible();
+    await expect(page.locator('[data-lane-kind="TASK"][data-source-id="' + task.id + '"]').first()).toBeVisible();
+    await expect(page.getByText("Tabela de datas do cronograma", { exact: false })).toBeVisible();
+    const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
+    await page.screenshot({ path: path.join(EVIDENCE_M46, `gantt-${tag}.png`), fullPage: true });
+
+    await page.getByLabel("Tarefa cujas datas serão salvas").selectOption(task.id);
+    await page.locator(`#gantt-dates-${task.id}`).fill("2026-10-04");
+    await page.locator(`input[name="due-${task.id}"]`).fill("2026-10-12");
+    await page.getByRole("button", { name: "Salvar datas da tarefa" }).click();
+    await expect(page.getByText(/Sucessores e pais não foram deslocados/i)).toBeVisible();
+
+    await page.getByRole("tab", { name: "Lista" }).click();
+    await expect(page.getByRole("button", { name: new RegExp(title) })).toBeVisible();
+    await expect(page.getByText("2026-10-04 / 2026-10-12")).toBeVisible();
+
+    await page.getByRole("tab", { name: "Gantt" }).click();
+    await expect(page.locator(`#gantt-dates-${task.id}`)).toHaveValue("2026-10-04");
+
+    const stale = await page.request.patch(`/api/v1/projects/${PROJECT_A}/tasks/${task.id}`, {
+      headers: { "Idempotency-Key": `m46-stale-${testInfo.project.name}-${Date.now()}` },
+      data: {
+        dueDate: "2026-10-20T00:00:00.000Z",
+        expectedVersion: task.version,
+      },
+    });
+    expect(stale.ok()).toBeFalsy();
+
+    const current = await page.request.get(`/api/v1/projects/${PROJECT_A}/tasks/${task.id}`);
+    expect(current.ok()).toBeTruthy();
+    const currentTask = (await current.json()) as { version: number };
+    const propagate = await page.request.patch(`/api/v1/projects/${PROJECT_A}/tasks/${task.id}`, {
+      headers: { "Idempotency-Key": `m46-prop-${testInfo.project.name}-${Date.now()}` },
+      data: {
+        dueDate: "2026-10-22T00:00:00.000Z",
+        expectedVersion: currentTask.version,
+        propagateDates: true,
+      },
+    });
+    expect(propagate.ok()).toBeFalsy();
+    expect(JSON.stringify(await propagate.json())).toMatch(/DEPENDENCY_DATE_SHIFT_REJECTED|do not propagate/i);
+
+    await page.getByLabel("Também deslocar sucessores").check();
+    await page.getByRole("button", { name: "Salvar datas da tarefa" }).click();
+    await expect(page.locator(".gantt-alert")).toContainText(/não se propagam|sucessores/i);
+
+    await page.goto(`/projects/${PROJECT_A}/planner?view=gantt`);
+    await expect(page.locator('[data-lane-kind="PHASE"]').first()).toBeVisible();
+    await expect(page.locator('[data-lane-kind="DELIVERABLE"]').first()).toBeVisible();
+    await expect(page.locator('[data-lane-kind="WORK_PACKAGE"]').first()).toBeVisible();
+    await expect(page.locator('[data-lane-kind="MILESTONE"]').first()).toBeVisible();
+    await expect(page.locator(".gantt-diamond").first()).toBeVisible();
+
+    const startBlocked = await page.request.post(`/api/v1/projects/${PROJECT_A}/tasks/task-waiting/start`, {
+      headers: { "Idempotency-Key": `m46-start-${testInfo.project.name}-${Date.now()}` },
+      data: { expectedVersion: 1 },
+    });
+    expect(startBlocked.ok()).toBeFalsy();
+    expect(JSON.stringify(await startBlocked.json())).toMatch(/predecessor|DEPENDENCY|término-início|finish-to-start/i);
   });
 
   test("M4.2-ADV unauthorized project deep link does not leak the other tenant", async ({ page }) => {

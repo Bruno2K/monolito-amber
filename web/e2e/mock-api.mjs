@@ -545,6 +545,179 @@ function withGraph(task) {
   return { ...refreshDerived({ ...task }), ...graphForTask(task.id) };
 }
 
+function isoOrNull(value) {
+  if (!value) {
+    return null;
+  }
+  const ms = Date.parse(value);
+  return Number.isNaN(ms) ? null : new Date(ms).toISOString();
+}
+
+function buildMockSchedule(project, tasks) {
+  const projectPhases = (project.id === PROJECT_A ? phasesA : []).filter((row) => !row.archivedAt);
+  const projectDels = deliverables.filter((row) => row.projectId === project.id && !row.archivedAt);
+  const projectWps = workPackages.filter((row) => row.projectId === project.id && !row.archivedAt);
+  const milestones =
+    project.id === PROJECT_A
+      ? [
+          {
+            id: "ms-concept",
+            title: "Concept freeze",
+            recordedStatus: "PLANNED",
+            status: "PLANNED",
+            targetDate: "2026-06-01T00:00:00.000Z",
+            phaseId: "phase-concept",
+            deliverableId: "del-arch-001",
+          },
+        ]
+      : [];
+  const lanes = [];
+  const usedTasks = new Set();
+  const usedWps = new Set();
+  const usedDels = new Set();
+  const emitTask = (row, parent, depth) => {
+    if (usedTasks.has(row.id)) {
+      return;
+    }
+    usedTasks.add(row.id);
+    lanes.push({
+      kind: "TASK",
+      id: row.id,
+      domain: "planning.tasks",
+      sourceId: row.id,
+      title: row.title,
+      code: null,
+      parent,
+      depth,
+      start: isoOrNull(row.plannedStartAt),
+      end: isoOrNull(row.dueDate),
+      status: row.status,
+      recordedStatus: null,
+      late: Boolean(row.late),
+      risk: row.blockedReason
+        ? { code: "TASK_BLOCKED", text: `Stored BLOCKED: ${row.blockedReason}. This is not a dependency start gate.` }
+        : row.dependencyStartBlocked
+          ? { code: "DEPENDENCY_START", text: "Finish-to-start predecessor is not DONE. This is not Task BLOCKED." }
+          : row.late
+            ? { code: "LATE", text: "Due date is in the past. Lateness is derived and is not a stored status." }
+            : null,
+      version: row.version,
+    });
+  };
+  for (const phase of projectPhases) {
+    const phaseParent = { kind: "PHASE", id: phase.id };
+    lanes.push({
+      kind: "PHASE",
+      id: phase.id,
+      domain: "operations.phases",
+      sourceId: phase.id,
+      title: phase.name,
+      code: null,
+      parent: null,
+      depth: 0,
+      start: isoOrNull(phase.plannedStartAt),
+      end: isoOrNull(phase.plannedEndAt),
+      status: phase.status,
+      recordedStatus: null,
+      late: false,
+      risk: null,
+      version: phase.version,
+    });
+    for (const del of projectDels.filter((row) => row.phaseId === phase.id)) {
+      usedDels.add(del.id);
+      const delParent = { kind: "DELIVERABLE", id: del.id };
+      lanes.push({
+        kind: "DELIVERABLE",
+        id: del.id,
+        domain: "operations.deliverables",
+        sourceId: del.id,
+        title: del.title,
+        code: del.code,
+        parent: phaseParent,
+        depth: 1,
+        start: isoOrNull(del.plannedStartAt),
+        end: isoOrNull(del.dueAt),
+        status: del.status,
+        recordedStatus: null,
+        late: false,
+        risk: null,
+        version: del.version,
+      });
+      for (const wp of projectWps.filter((row) => row.deliverableId === del.id)) {
+        usedWps.add(wp.id);
+        const wpParent = { kind: "WORK_PACKAGE", id: wp.id };
+        lanes.push({
+          kind: "WORK_PACKAGE",
+          id: wp.id,
+          domain: "operations.work_packages",
+          sourceId: wp.id,
+          title: wp.title,
+          code: wp.code,
+          parent: delParent,
+          depth: 2,
+          start: isoOrNull(wp.plannedStartAt),
+          end: isoOrNull(wp.dueAt),
+          status: wp.status,
+          recordedStatus: null,
+          late: false,
+          risk: wp.blockedReason ? { code: "WORK_PACKAGE_BLOCKED", text: wp.blockedReason } : null,
+          version: wp.version,
+        });
+        for (const task of tasks.filter((row) => row.workPackageId === wp.id)) {
+          emitTask(withGraph(task), wpParent, 3);
+        }
+      }
+      for (const task of tasks.filter((row) => row.deliverableId === del.id && !row.workPackageId)) {
+        emitTask(withGraph(task), delParent, 2);
+      }
+      for (const ms of milestones.filter((row) => row.deliverableId === del.id)) {
+        lanes.push({
+          kind: "MILESTONE",
+          id: ms.id,
+          domain: "planning.milestones",
+          sourceId: ms.id,
+          title: ms.title,
+          code: null,
+          parent: delParent,
+          depth: 2,
+          start: isoOrNull(ms.targetDate),
+          end: isoOrNull(ms.targetDate),
+          status: ms.status,
+          recordedStatus: ms.recordedStatus,
+          late: false,
+          risk: null,
+          version: null,
+        });
+      }
+    }
+    for (const task of tasks.filter((row) => row.phaseId === phase.id && !row.deliverableId && !row.workPackageId)) {
+      emitTask(withGraph(task), phaseParent, 1);
+    }
+  }
+  for (const task of tasks) {
+    emitTask(withGraph(task), null, 0);
+  }
+  const dates = lanes.flatMap((lane) => [lane.start, lane.end]).filter(Boolean).map((value) => Date.parse(value));
+  const min = dates.length ? Math.min(...dates) : Date.now() - 7 * 86400000;
+  const max = dates.length ? Math.max(...dates) : Date.now() + 21 * 86400000;
+  const authorized = new Set(tasks.map((row) => row.id));
+  return {
+    dateRange: { start: new Date(min - 86400000).toISOString(), end: new Date(max + 86400000).toISOString() },
+    take: 500,
+    truncated: false,
+    canEditTaskDates: true,
+    lanes,
+    links: mockDependencies
+      .filter((edge) => edge.projectId === project.id && authorized.has(edge.predecessorTaskId) && authorized.has(edge.successorTaskId))
+      .map((edge) => ({
+        id: edge.id,
+        predecessorTaskId: edge.predecessorTaskId,
+        successorTaskId: edge.successorTaskId,
+        type: edge.type,
+      })),
+  };
+}
+
 function kanbanCounts(rows) {
   const counts = { PLANEJADAS: 0, EM_ANDAMENTO: 0, EM_RISCO: 0, BLOQUEADAS: 0 };
   for (const row of rows) {
@@ -1413,6 +1586,18 @@ const server = http.createServer(async (req, res) => {
         problem(res, 409, "PLANNING_STATE", "Status and assignee have dedicated endpoints and are not patchable");
         return;
       }
+      if (body.propagateDates || body.shiftSuccessors) {
+        json(res, 409, {
+          type: "https://amber.invalid/problems/planning_state",
+          title: "PLANNING_STATE",
+          status: 409,
+          detail: "Date edits do not propagate to predecessors, successors, or parents",
+          code: "PLANNING_STATE",
+          reason: "DEPENDENCY_DATE_SHIFT_REJECTED",
+          correlationId: "e2e",
+        });
+        return;
+      }
       Object.assign(task, {
         title: body.title?.trim() || task.title,
         description: body.description !== undefined ? body.description : task.description,
@@ -1553,8 +1738,9 @@ const server = http.createServer(async (req, res) => {
       tasks: rows.map(withGraph),
       dependencies: mockDependencies.filter((edge) => edge.projectId === project.id),
       milestones: project.id === PROJECT_A
-        ? [{ id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED", targetDate: null, phaseId: "phase-concept", deliverableId: null }]
+        ? [{ id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED", targetDate: "2026-06-01T00:00:00.000Z", phaseId: "phase-concept", deliverableId: "del-arch-001" }]
         : [],
+      schedule: buildMockSchedule(project, rows),
       page: { page: 1, pageSize: 20, total: rows.length, sort: "createdAt", order: "asc" },
       counts: {
         total: rows.length,

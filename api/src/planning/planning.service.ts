@@ -1,16 +1,22 @@
 import { Injectable } from "@nestjs/common";
 import {
+  PLANNING_SCHEDULE_TAKE,
+  authorizedScheduleLinks,
+  buildScheduleLanes,
   clampPlanningPageSize,
   countTasksByKanbanColumn,
   deriveKanbanColumn,
+  hasPermission,
   incompletePredecessorBlockers,
   isTaskLate,
   isPlanningListSort,
   isPlanningView,
   isTaskStatus,
+  planningScheduleDateRange,
   prerequisitesBlockStart,
   type PlanningListSort,
   type PlanningView,
+  type ScheduleSourceRow,
   type TaskStatus,
 } from "@amber/shared";
 import { Prisma } from "@prisma/client";
@@ -88,8 +94,20 @@ export class PlanningService {
           now,
         });
 
-    const [total, lateCount, statusGroups, rows, milestoneRows, linkedTaskSignals, dependencyRows, countSource] =
-      await Promise.all([
+    const [
+      total,
+      lateCount,
+      statusGroups,
+      rows,
+      milestoneRows,
+      linkedTaskSignals,
+      dependencyRows,
+      countSource,
+      phaseRows,
+      deliverableRows,
+      workPackageRows,
+      scheduleTaskRows,
+    ] = await Promise.all([
       this.prisma.task.count({ where }),
       this.prisma.task.count({
         where: {
@@ -128,6 +146,70 @@ export class PlanningService {
         where,
         select: { status: true, dueDate: true },
       }),
+      this.prisma.phase.findMany({
+        where: { organizationId: bound.organizationId, projectId: bound.project.id, archivedAt: null },
+        orderBy: [{ sequence: "asc" }, { name: "asc" }],
+        take: PLANNING_SCHEDULE_TAKE,
+        select: {
+          id: true,
+          name: true,
+          sequence: true,
+          plannedStartAt: true,
+          plannedEndAt: true,
+          status: true,
+          version: true,
+        },
+      }),
+      this.prisma.deliverable.findMany({
+        where: { organizationId: bound.organizationId, projectId: bound.project.id, archivedAt: null },
+        orderBy: { code: "asc" },
+        take: PLANNING_SCHEDULE_TAKE,
+        select: {
+          id: true,
+          code: true,
+          title: true,
+          phaseId: true,
+          plannedStartAt: true,
+          dueAt: true,
+          status: true,
+          version: true,
+        },
+      }),
+      this.prisma.workPackage.findMany({
+        where: { organizationId: bound.organizationId, projectId: bound.project.id, archivedAt: null },
+        orderBy: { title: "asc" },
+        take: PLANNING_SCHEDULE_TAKE,
+        select: {
+          id: true,
+          code: true,
+          title: true,
+          phaseId: true,
+          deliverableId: true,
+          plannedStartAt: true,
+          dueAt: true,
+          status: true,
+          version: true,
+          blockedReason: true,
+        },
+      }),
+      this.prisma.task.findMany({
+        where,
+        orderBy: { createdAt: "asc" },
+        take: PLANNING_SCHEDULE_TAKE,
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          dueDate: true,
+          plannedStartAt: true,
+          version: true,
+          phaseId: true,
+          deliverableId: true,
+          workPackageId: true,
+          milestoneId: true,
+          blockedReason: true,
+        },
+      }),
     ]);
 
     const inspectedRow = await this.loadInspected(
@@ -159,6 +241,35 @@ export class PlanningService {
         late: isTaskLate({ dueDate: row.dueDate, status: row.status as TaskStatus, now }),
       })),
     );
+    const scheduleGraph = await this.loadDependencyProjection(
+      bound.organizationId,
+      bound.project.id,
+      scheduleTaskRows.map((row) => row.id),
+      dependencyRows,
+    );
+    const filtered = Boolean(
+      q ||
+        statuses.length ||
+        query.late ||
+        query.phaseId ||
+        query.deliverableId ||
+        query.workPackageId ||
+        query.milestoneId ||
+        query.assigneeUserId,
+    );
+    const schedule = this.toSchedule({
+      now,
+      filtered,
+      archived: Boolean(bound.project.archivedAt),
+      canEditTaskDates: !bound.project.archivedAt && hasPermission(bound.context, "task.update"),
+      phases: phaseRows,
+      deliverables: deliverableRows,
+      workPackages: workPackageRows,
+      tasks: scheduleTaskRows,
+      milestones: milestoneDtos,
+      dependencies: dependencyRows,
+      graph: scheduleGraph,
+    });
 
     return {
       projectId: bound.project.id,
@@ -172,6 +283,7 @@ export class PlanningService {
       tasks: rows.map((row) => this.toPlanningTask(row, previews, graph)),
       milestones: milestoneDtos,
       dependencies: dependencyRows.map((row) => this.tasks.toDependencyDto(row)),
+      schedule,
       page: { page, pageSize, total, sort, order },
       counts: { total, late: lateCount, byStatus, byKanbanColumn },
       inspected: inspectedRow
@@ -496,6 +608,242 @@ export class PlanningService {
       },
     };
   }
+
+  private toSchedule(input: {
+    now: Date;
+    filtered: boolean;
+    archived: boolean;
+    canEditTaskDates: boolean;
+    phases: Array<{
+      id: string;
+      name: string;
+      sequence: number;
+      plannedStartAt: Date | null;
+      plannedEndAt: Date | null;
+      status: string;
+      version: number;
+    }>;
+    deliverables: Array<{
+      id: string;
+      code: string;
+      title: string;
+      phaseId: string;
+      plannedStartAt: Date | null;
+      dueAt: Date | null;
+      status: string;
+      version: number;
+    }>;
+    workPackages: Array<{
+      id: string;
+      code: string | null;
+      title: string;
+      phaseId: string;
+      deliverableId: string | null;
+      plannedStartAt: Date | null;
+      dueAt: Date | null;
+      status: string;
+      version: number;
+      blockedReason: string | null;
+    }>;
+    tasks: Array<{
+      id: string;
+      title: string;
+      status: string;
+      dueDate: Date | null;
+      plannedStartAt: Date | null;
+      version: number;
+      phaseId: string | null;
+      deliverableId: string | null;
+      workPackageId: string | null;
+      milestoneId: string | null;
+      blockedReason: string | null;
+    }>;
+    milestones: Array<{
+      id: string;
+      title: string;
+      recordedStatus: string;
+      status: string;
+      targetDate: Date | string | null;
+      phaseId: string | null;
+      deliverableId: string | null;
+    }>;
+    dependencies: Array<{ id: string; predecessorTaskId: string; successorTaskId: string; type?: string }>;
+    graph: Map<
+      string,
+      {
+        predecessors: Array<{ dependencyId: string; taskId: string; title?: string; status: string }>;
+        successors: Array<{ dependencyId: string; taskId: string; title?: string; status: string }>;
+      }
+    >;
+  }) {
+    const taskSources: ScheduleSourceRow[] = input.tasks.map((row) => {
+      const late = isTaskLate({ dueDate: row.dueDate, status: row.status as TaskStatus, now: input.now });
+      const predecessors = input.graph.get(row.id)?.predecessors ?? [];
+      return {
+        id: row.id,
+        title: row.title,
+        start: row.plannedStartAt,
+        end: row.dueDate,
+        status: row.status,
+        late,
+        version: row.version,
+        phaseId: row.phaseId,
+        deliverableId: row.deliverableId,
+        workPackageId: row.workPackageId,
+        risk: scheduleTaskRisk({
+          status: row.status,
+          late,
+          blockedReason: row.blockedReason,
+          predecessors,
+        }),
+      };
+    });
+    let phaseSources: ScheduleSourceRow[] = input.phases.map((row) => ({
+      id: row.id,
+      title: row.name,
+      start: row.plannedStartAt,
+      end: row.plannedEndAt,
+      status: row.status,
+      version: row.version,
+      sequence: row.sequence,
+    }));
+    let deliverableSources: ScheduleSourceRow[] = input.deliverables.map((row) => ({
+      id: row.id,
+      title: row.title,
+      code: row.code,
+      start: row.plannedStartAt,
+      end: row.dueAt,
+      status: row.status,
+      version: row.version,
+      phaseId: row.phaseId,
+    }));
+    let workPackageSources: ScheduleSourceRow[] = input.workPackages.map((row) => ({
+      id: row.id,
+      title: row.title,
+      code: row.code,
+      start: row.plannedStartAt,
+      end: row.dueAt,
+      status: row.status,
+      version: row.version,
+      phaseId: row.phaseId,
+      deliverableId: row.deliverableId,
+      risk: row.status === "BLOCKED" && row.blockedReason
+        ? { code: "WORK_PACKAGE_BLOCKED", text: row.blockedReason }
+        : null,
+    }));
+    let milestoneSources: ScheduleSourceRow[] = input.milestones.map((row) => ({
+      id: row.id,
+      title: row.title,
+      start: row.targetDate,
+      end: row.targetDate,
+      status: row.status,
+      recordedStatus: row.recordedStatus,
+      phaseId: row.phaseId,
+      deliverableId: row.deliverableId,
+      risk: milestoneScheduleRisk(row.status),
+    }));
+
+    if (input.filtered) {
+      if (taskSources.length === 0) {
+        phaseSources = [];
+        deliverableSources = [];
+        workPackageSources = [];
+        milestoneSources = [];
+      } else {
+        const neededWp = new Set(taskSources.map((row) => row.workPackageId).filter((id): id is string => Boolean(id)));
+        const neededDel = new Set(
+          [
+            ...taskSources.map((row) => row.deliverableId),
+            ...workPackageSources.filter((row) => neededWp.has(row.id)).map((row) => row.deliverableId),
+          ].filter((id): id is string => Boolean(id)),
+        );
+        const neededPhase = new Set(
+          [
+            ...taskSources.map((row) => row.phaseId),
+            ...deliverableSources.filter((row) => neededDel.has(row.id)).map((row) => row.phaseId),
+            ...workPackageSources.filter((row) => neededWp.has(row.id)).map((row) => row.phaseId),
+          ].filter((id): id is string => Boolean(id)),
+        );
+        const neededMs = new Set(input.tasks.map((row) => row.milestoneId).filter((id): id is string => Boolean(id)));
+        phaseSources = phaseSources.filter((row) => neededPhase.has(row.id));
+        deliverableSources = deliverableSources.filter((row) => neededDel.has(row.id));
+        workPackageSources = workPackageSources.filter((row) => neededWp.has(row.id));
+        milestoneSources = milestoneSources.filter(
+          (row) =>
+            neededMs.has(row.id) ||
+            (row.phaseId && neededPhase.has(row.phaseId)) ||
+            (row.deliverableId && neededDel.has(row.deliverableId)),
+        );
+      }
+    }
+
+    const lanes = buildScheduleLanes({
+      phases: phaseSources,
+      deliverables: deliverableSources,
+      workPackages: workPackageSources,
+      tasks: taskSources,
+      milestones: milestoneSources,
+    });
+    const range = planningScheduleDateRange(lanes, input.now);
+    const authorizedTaskIds = new Set(taskSources.map((row) => row.id));
+    return {
+      dateRange: { start: range.start.toISOString(), end: range.end.toISOString() },
+      take: PLANNING_SCHEDULE_TAKE,
+      truncated:
+        input.phases.length >= PLANNING_SCHEDULE_TAKE ||
+        input.deliverables.length >= PLANNING_SCHEDULE_TAKE ||
+        input.workPackages.length >= PLANNING_SCHEDULE_TAKE ||
+        input.tasks.length >= PLANNING_SCHEDULE_TAKE,
+      canEditTaskDates: input.canEditTaskDates && !input.archived,
+      lanes,
+      links: authorizedScheduleLinks(input.dependencies, authorizedTaskIds),
+    };
+  }
+}
+
+function scheduleTaskRisk(input: {
+  status: string;
+  late: boolean;
+  blockedReason: string | null;
+  predecessors: Array<{ status: string }>;
+}): { code: string; text: string } | null {
+  if (input.status === "BLOCKED") {
+    return {
+      code: "TASK_BLOCKED",
+      text: input.blockedReason
+        ? `Stored BLOCKED: ${input.blockedReason}. This is not a dependency start gate.`
+        : "Stored BLOCKED. This is not a dependency start gate.",
+    };
+  }
+  if (prerequisitesBlockStart(input.predecessors)) {
+    return {
+      code: "DEPENDENCY_START",
+      text: "Finish-to-start predecessor is not DONE. This is not Task BLOCKED.",
+    };
+  }
+  if (input.late) {
+    return {
+      code: "LATE",
+      text: "Due date is in the past. Lateness is derived and is not a stored status.",
+    };
+  }
+  return null;
+}
+
+function milestoneScheduleRisk(status: string): { code: string; text: string } | null {
+  if (status === "AT_RISK") {
+    return {
+      code: "AT_RISK",
+      text: "At least one linked Task is late. Stored milestone status remains PLANNED.",
+    };
+  }
+  if (status === "MISSED") {
+    return {
+      code: "MISSED",
+      text: "Target date is in the past. Stored milestone status remains PLANNED.",
+    };
+  }
+  return null;
 }
 
 function uniqueIds(values: Array<string | null | undefined>): string[] {

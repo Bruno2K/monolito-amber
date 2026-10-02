@@ -2,17 +2,25 @@ import { describe, expect, it } from "vitest";
 import { PlanningStateError } from "./errors.js";
 import {
   TASK_PRIORITIES,
+  PLANNING_SCHEDULE_TAKE,
   assertAcyclicDependency,
+  assertNoScheduleDatePropagation,
   assertTaskTransition,
+  authorizedScheduleLinks,
+  buildScheduleLanes,
   countTasksByKanbanColumn,
   deriveKanbanColumn,
   deriveMilestoneStatus,
+  ganttBarRange,
+  planningScheduleDateRange,
+  resolveGanttDateEdit,
   resolveKanbanColumnMove,
   incompletePredecessorBlockers,
   isTaskLate,
   isTaskPriority,
   planningListSortCompare,
   prerequisitesBlockStart,
+  scheduleDomainFor,
   successorRejectsUnfinishedPredecessor,
   taskStatusRequiresBlockedReason,
   taskStatusRequiresCompletePermission,
@@ -246,5 +254,102 @@ describe("Finish-to-start dependencies", () => {
     expect(blockers[1]?.title).toBeUndefined();
     expect(successorRejectsUnfinishedPredecessor("DONE")).toBe(true);
     expect(successorRejectsUnfinishedPredecessor("TODO")).toBe(false);
+  });
+});
+
+describe("M4.6 schedule projection", () => {
+  it("M4.6-UNIT-01 derives bar geometry from plannedStartAt / dueDate only", () => {
+    const both = ganttBarRange({ start: "2026-10-01T00:00:00.000Z", end: "2026-10-08T00:00:00.000Z" });
+    expect(both?.start.toISOString()).toBe("2026-10-01T00:00:00.000Z");
+    expect(both?.end.toISOString()).toBe("2026-10-08T00:00:00.000Z");
+    expect(ganttBarRange({ start: null, end: null })).toBeNull();
+    const point = ganttBarRange({ start: null, end: "2026-10-10T00:00:00.000Z" });
+    expect(point?.start.toISOString()).toBe(point?.end.toISOString());
+    const open = ganttBarRange({ start: "2026-10-01T00:00:00.000Z", end: null });
+    expect(open?.end.getTime()).toBe(open!.start.getTime() + 86_400_000);
+    const range = planningScheduleDateRange([
+      { start: "2026-10-01T00:00:00.000Z", end: "2026-10-08T00:00:00.000Z" },
+    ]);
+    expect(range.start.getTime()).toBeLessThan(Date.parse("2026-10-01T00:00:00.000Z"));
+    expect(range.end.getTime()).toBeGreaterThan(Date.parse("2026-10-08T00:00:00.000Z"));
+  });
+
+  it("keeps Phase / Deliverable / WorkPackage / Task / Milestone as distinct lanes", () => {
+    const lanes = buildScheduleLanes({
+      phases: [{ id: "ph", title: "Concept", start: "2026-01-01T00:00:00.000Z", end: "2026-06-01T00:00:00.000Z", sequence: 1 }],
+      deliverables: [
+        { id: "d1", title: "Pack", code: "D-01", start: "2026-02-01T00:00:00.000Z", end: "2026-05-01T00:00:00.000Z", phaseId: "ph" },
+      ],
+      workPackages: [
+        { id: "wp", title: "Outline", code: "WP-01", start: null, end: null, phaseId: "ph", deliverableId: "d1" },
+      ],
+      tasks: [
+        {
+          id: "t1",
+          title: "Grid",
+          start: "2026-03-01T00:00:00.000Z",
+          end: "2026-03-10T00:00:00.000Z",
+          phaseId: "ph",
+          deliverableId: "d1",
+          workPackageId: "wp",
+        },
+      ],
+      milestones: [
+        { id: "ms", title: "Freeze", start: "2026-04-01T00:00:00.000Z", end: "2026-04-01T00:00:00.000Z", phaseId: "ph", deliverableId: "d1" },
+      ],
+    });
+    expect(lanes.map((row) => row.kind)).toEqual(["PHASE", "DELIVERABLE", "WORK_PACKAGE", "TASK", "MILESTONE"]);
+    expect(lanes[0]?.domain).toBe("operations.phases");
+    expect(lanes[3]?.domain).toBe("planning.tasks");
+    expect(lanes[3]?.sourceId).toBe("t1");
+    expect(lanes[4]?.domain).toBe("planning.milestones");
+    expect(scheduleDomainFor("WORK_PACKAGE")).toBe("operations.work_packages");
+    expect(new Set(lanes.map((row) => row.kind)).size).toBe(5);
+  });
+
+  it("omits dependency links unless both endpoints are authorized", () => {
+    const links = authorizedScheduleLinks(
+      [
+        { id: "ok", predecessorTaskId: "a", successorTaskId: "b" },
+        { id: "hidden", predecessorTaskId: "a", successorTaskId: "secret" },
+      ],
+      new Set(["a", "b"]),
+    );
+    expect(links).toEqual([{ id: "ok", predecessorTaskId: "a", successorTaskId: "b", type: "FINISH_TO_START" }]);
+    expect(JSON.stringify(links)).not.toContain("secret");
+  });
+
+  it("M4.6-ADV-01 rejects date edits that would shift successors automatically", () => {
+    expect(resolveGanttDateEdit({ kind: "TASK" }).kind).toBe("apply");
+    expect(resolveGanttDateEdit({ kind: "TASK", shiftSuccessors: true })).toMatchObject({
+      kind: "reject",
+      reason: "DEPENDENCY_DATE_SHIFT_REJECTED",
+    });
+    expect(resolveGanttDateEdit({ kind: "PHASE" }).kind).toBe("reject");
+    expect(() => assertNoScheduleDatePropagation({ propagateDates: true })).toThrow(PlanningStateError);
+    expect(() => assertNoScheduleDatePropagation({})).not.toThrow();
+  });
+
+  it("M4.6-PERF-01 keeps a bounded take and builds a representative volume without collapsing kinds", () => {
+    expect(PLANNING_SCHEDULE_TAKE).toBe(500);
+    const tasks = Array.from({ length: 80 }, (_, index) => ({
+      id: `t${index}`,
+      title: `Task ${index}`,
+      start: `2026-03-${String((index % 28) + 1).padStart(2, "0")}T00:00:00.000Z`,
+      end: `2026-03-${String((index % 28) + 1).padStart(2, "0")}T00:00:00.000Z`,
+      phaseId: "ph",
+    }));
+    const started = Date.now();
+    const lanes = buildScheduleLanes({
+      phases: [{ id: "ph", title: "Volume", start: "2026-01-01T00:00:00.000Z", end: "2026-12-01T00:00:00.000Z" }],
+      deliverables: [],
+      workPackages: [],
+      tasks,
+      milestones: [],
+    });
+    expect(Date.now() - started).toBeLessThan(100);
+    expect(lanes.filter((row) => row.kind === "TASK")).toHaveLength(80);
+    expect(lanes.some((row) => row.kind === "PHASE")).toBe(true);
+    expect(lanes.filter((row) => row.kind === "TASK").every((row) => row.domain === "planning.tasks")).toBe(true);
   });
 });

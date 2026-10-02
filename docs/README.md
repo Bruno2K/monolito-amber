@@ -66,7 +66,10 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [M4.2 matrix](./domain/m4.2-requirements-traceability.md) · [Figma trace](./domain/m4.2-figma-trace.md) · [UI evidence](./ux/evidence/m4.2/)
 - [M4.3 requirement-to-change plan](./domain/m4.3-requirement-to-change-plan.md) — Issue [#58](https://github.com/Bruno2K/monolito-amber/issues/58); published first
 - [M4.3 matrix](./domain/m4.3-requirements-traceability.md) · [Figma trace](./domain/m4.3-figma-trace.md) · [UI evidence](./ux/evidence/m4.3/)
-- M3 Exit Gate **FAIL — ACCEPTED** remains accepted debt. **Not M3 COMPLETE.** M4.4–M4.9 remain later WIs.
+- [M4.5 matrix](./domain/m4.5-requirements-traceability.md) · [Figma trace](./domain/m4.5-figma-trace.md) · [UI evidence](./ux/evidence/m4.5/)
+- [M4.6 requirement-to-change plan](./domain/m4.6-requirement-to-change-plan.md) — Issue [#64](https://github.com/Bruno2K/monolito-amber/issues/64); published first
+- [M4.6 matrix](./domain/m4.6-requirements-traceability.md) · [Figma trace](./domain/m4.6-figma-trace.md) · [UI evidence](./ux/evidence/m4.6/)
+- M3 Exit Gate **FAIL — ACCEPTED** remains accepted debt. **Not M3 COMPLETE.** M4.7–M4.9 remain later WIs.
 
 ## M3 — Project Operations (Exit Gate FAIL — ACCEPTED / LOCAL ONLY)
 

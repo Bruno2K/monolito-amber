@@ -5,6 +5,7 @@ import {
   assertTaskTransition,
   deriveKanbanColumn,
   resolveKanbanColumnMove,
+  resolveGanttDateEdit,
   deriveMilestoneStatus,
   isTaskLate,
   prerequisitesBlockStart,
@@ -56,5 +57,10 @@ describe("PF-1.5 Planning security floors (fail closed)", () => {
         now,
       }),
     ).toBe("ACHIEVED");
+  });
+
+  it("rejects Gantt date propagation without inventing a second schedule store", () => {
+    expect(resolveGanttDateEdit({ kind: "TASK", shiftSuccessors: true }).kind).toBe("reject");
+    expect(resolveGanttDateEdit({ kind: "MILESTONE" }).kind).toBe("reject");
   });
 });

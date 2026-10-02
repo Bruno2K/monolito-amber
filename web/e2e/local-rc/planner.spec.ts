@@ -7,6 +7,7 @@ const EVIDENCE_M42 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.2");
 const EVIDENCE_M43 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.3");
 const EVIDENCE_M44 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.4");
 const EVIDENCE_M45 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.5");
+const EVIDENCE_M46 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.6");
 
 test.describe("M4.2 Local RC Planning List", () => {
   test("M4.2-UI-01/NARROW-01 Planejamento is reachable and List matches the query", async ({ page }, testInfo) => {
@@ -181,5 +182,77 @@ test.describe("M4.2 Local RC Planning List", () => {
     await page.goto(`/projects/${IDS.projectA1}/planner?view=kanban&q=${encodeURIComponent(title)}`);
     await expect(page.getByRole("region", { name: "Quadro Kanban" })).toBeVisible();
     await expect(page.getByLabel(`Mover ${title}`)).toBeDisabled();
+  });
+
+  test("M4.6-UI Gantt date edit, List consistency, stale collision, viewer cannot mutate", async ({ page }, testInfo) => {
+    mkdirSync(EVIDENCE_M46, { recursive: true });
+    await signInToOrg(page, "coord-a", "Amber Demo Alpha");
+    const title = `RC Gantt ${testInfo.project.name} ${Date.now()}`;
+    const predTitle = `RC Gantt pred ${testInfo.project.name}`;
+    const succTitle = `RC Gantt succ ${testInfo.project.name}`;
+    const pred = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
+      headers: { "Idempotency-Key": `m46-pred-${testInfo.project.name}-${Date.now()}` },
+      data: { title: predTitle, plannedStartAt: "2026-09-01T00:00:00.000Z", dueDate: "2026-09-08T00:00:00.000Z" },
+    });
+    const created = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
+      headers: { "Idempotency-Key": `m46-${testInfo.project.name}-${Date.now()}` },
+      data: { title, plannedStartAt: "2026-10-02T00:00:00.000Z", dueDate: "2026-10-09T00:00:00.000Z" },
+    });
+    expect(created.status).toBeLessThan(400);
+    const taskId = String(created.body.id);
+    const version = Number(created.body.version);
+    const linked = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks/${taskId}/dependencies`, {
+      headers: { "Idempotency-Key": `m46-dep-${testInfo.project.name}-${Date.now()}` },
+      data: { predecessorTaskId: pred.body.id, type: "FINISH_TO_START" },
+    });
+    expect(linked.status).toBeLessThan(400);
+    expect(predTitle).toBeTruthy();
+    expect(succTitle).toBeTruthy();
+
+    await page.goto(`/projects/${IDS.projectA1}/planner?view=gantt&q=${encodeURIComponent(title)}`);
+    await expect(page.getByRole("region", { name: "Cronograma Gantt" })).toBeVisible();
+    await expect(page.locator(`[data-lane-kind="TASK"][data-source-id="${taskId}"]`).first()).toBeVisible();
+    const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
+    await page.screenshot({ path: path.join(EVIDENCE_M46, `gantt-${tag}.png`), fullPage: true });
+    await capture(page, testInfo, "planner-gantt");
+
+    await page.getByLabel("Tarefa cujas datas serão salvas").selectOption(taskId);
+    await page.locator(`#gantt-dates-${taskId}`).fill("2026-10-05");
+    await page.locator(`input[name="due-${taskId}"]`).fill("2026-10-15");
+    await page.getByRole("button", { name: "Salvar datas da tarefa" }).click();
+    await expect(page.getByText(/Sucessores e pais não foram deslocados|Datas de/i)).toBeVisible();
+
+    const listed = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/planning?view=list&q=${encodeURIComponent(title)}`);
+    expect(listed.status).toBe(200);
+    const listedTasks = (listed.body.tasks as Array<{ id: string; plannedStartAt: string | null; dueDate: string | null; version: number }>) ?? [];
+    const row = listedTasks.find((item) => item.id === taskId);
+    expect(row?.plannedStartAt?.slice(0, 10)).toBe("2026-10-05");
+    expect(row?.dueDate?.slice(0, 10)).toBe("2026-10-15");
+    const predAfter = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/tasks/${pred.body.id}`);
+    expect(String(predAfter.body.dueDate).slice(0, 10)).toBe("2026-09-08");
+
+    const stale = await apiJson(page, "PATCH", `/api/v1/projects/${IDS.projectA1}/tasks/${taskId}`, {
+      headers: { "Idempotency-Key": `m46-stale-${testInfo.project.name}-${Date.now()}` },
+      data: { dueDate: "2026-10-20T00:00:00.000Z", expectedVersion: version },
+    });
+    expect(stale.status).toBeGreaterThanOrEqual(400);
+
+    const startBlocked = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks/${taskId}/start`, {
+      headers: { "Idempotency-Key": `m46-start-${testInfo.project.name}-${Date.now()}` },
+      data: { expectedVersion: row?.version ?? 99 },
+    });
+    expect(startBlocked.status).toBeGreaterThanOrEqual(400);
+    expect(JSON.stringify(startBlocked.body)).toMatch(/predecessor|DEPENDENCY|término-início|finish-to-start/i);
+
+    await logoutToSignIn(page);
+    await signInToOrg(page, "viewer-a", "Amber Demo Alpha");
+    await page.goto(`/projects/${IDS.projectA1}/planner?view=gantt&q=${encodeURIComponent(title)}`);
+    await expect(page.getByRole("region", { name: "Cronograma Gantt" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Salvar datas da tarefa" })).toHaveCount(0);
+    const forbidden = await apiJson(page, "PATCH", `/api/v1/projects/${IDS.projectA1}/tasks/${taskId}`, {
+      headers: { "Idempotency-Key": `m46-viewer-${testInfo.project.name}-${Date.now()}` },
+      data: { dueDate: "2026-11-01T00:00:00.000Z", expectedVersion: 1 },
+    });
+    expect(forbidden.status).toBeGreaterThanOrEqual(400);
   });
 });
