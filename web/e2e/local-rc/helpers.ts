@@ -38,6 +38,14 @@ export const IDS = {
   phaseConcept: seedUuid("phase:phase-a1-planned"),
   delArch001: seedUuid("del:del-a1-planned-user"),
   wpOutline: seedUuid("wp:wp-planned"),
+  issueGrid: seedUuid("issue:iss-a1-grid"),
+  msPlanned: seedUuid("ms:ms-a1-planned"),
+  msRisk: seedUuid("ms:ms-a1-risk"),
+  taskTodo: seedUuid("task:task-a1-todo"),
+  taskLate: seedUuid("task:task-a1-late"),
+  taskPredOpen: seedUuid("task:task-a1-pred-open"),
+  taskSuccBlocked: seedUuid("task:task-a1-succ-blocked"),
+  taskB1: seedUuid("task:task-b1-todo"),
 };
 
 export function emailFor(key: string): string {

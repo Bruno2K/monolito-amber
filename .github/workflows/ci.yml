@@ -115,7 +115,7 @@ jobs:
         run: |
           pnpm prisma:migrate
           AMBER_SEED_M3=1 pnpm prisma:seed
-      - name: Reset rehearsal (drop → migrate → seed, assert deterministic IDs)
+      - name: Reset rehearsal (drop → migrate → seed + pre-M4 upgrade, assert deterministic IDs)
         run: bash scripts/local-rc/rehearse-reset.sh
       - name: Build API
         run: pnpm --filter @amber/shared build && pnpm --filter @amber/api build
@@ -135,5 +135,9 @@ jobs:
             docs/ux/evidence/m4.3
             docs/ux/evidence/m4.4
             docs/ux/evidence/m4.5
+            docs/ux/evidence/m4.6
+            docs/ux/evidence/m4.7
+            docs/ux/evidence/m4.8
+            docs/development/m4.8-evidence
           if-no-files-found: warn
 

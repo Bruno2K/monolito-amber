@@ -13,6 +13,9 @@ const OPERATIONAL_ROUTES = [
   { name: "deliverables", path: `/projects/${IDS.projectA1}/deliverables` },
   { name: "work-packages", path: `/projects/${IDS.projectA1}/work-packages` },
   { name: "planner", path: `/projects/${IDS.projectA1}/planner` },
+  { name: "planner-kanban", path: `/projects/${IDS.projectA1}/planner?view=kanban` },
+  { name: "planner-gantt", path: `/projects/${IDS.projectA1}/planner?view=gantt` },
+  { name: "planner-marcos", path: `/projects/${IDS.projectA1}/planner?view=milestones` },
 ] as const;
 
 async function analyzeAxe(page: Page, label: string, projectName: string) {
