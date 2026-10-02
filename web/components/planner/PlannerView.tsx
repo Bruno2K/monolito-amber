@@ -7,6 +7,7 @@ import { api } from "../../lib/api";
 import { classifyProblem } from "../../lib/errors";
 import { useInspectorEscape } from "../../lib/use-inspector-escape";
 import {
+  canCreateMilestone,
   canCreateTask,
   canUpdateTask,
   contextLabel,
@@ -19,7 +20,8 @@ import {
 } from "../../lib/planning";
 import { type PhaseListResponse, type PhaseRow } from "../../lib/operations";
 import { useShell } from "../session/ShellProvider";
-import { PlanningComingView, PlanningEmpty, PlanningError, PlanningSkeleton } from "./PlanningStates";
+import { PlanningEmpty, PlanningError, PlanningSkeleton } from "./PlanningStates";
+import { MilestoneBoard } from "./MilestoneBoard";
 import { TaskGantt } from "./TaskGantt";
 import { TaskKanban } from "./TaskKanban";
 import { TaskInspector } from "./TaskInspector";
@@ -41,6 +43,7 @@ export function PlannerView({ projectId }: { projectId: string }) {
 
   const view = searchParams.get("view") || "list";
   const selectedId = searchParams.get("inspect");
+  const selectedMilestoneId = searchParams.get("milestone");
   const [query, setQuery] = useState(searchParams.get("q") ?? "");
   const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "");
   const [lateFilter, setLateFilter] = useState(searchParams.get("late") ?? "");
@@ -55,6 +58,7 @@ export function PlannerView({ projectId }: { projectId: string }) {
   const [model, setModel] = useState<PlanningReadModel | null>(null);
   const [phases, setPhases] = useState<PhaseRow[]>([]);
   const [creating, setCreating] = useState(false);
+  const [creatingMilestone, setCreatingMilestone] = useState(false);
 
   const replaceParams = useCallback(
     (patch: Record<string, string | null>) => {
@@ -78,12 +82,23 @@ export function PlannerView({ projectId }: { projectId: string }) {
   const openItem = useCallback(
     (taskId: string | null) => {
       setCreating(false);
-      replaceParams({ inspect: taskId });
+      replaceParams({ inspect: taskId, milestone: null });
     },
     [replaceParams],
   );
 
-  useInspectorEscape(Boolean(selectedId) || creating, openItem);
+  const openMilestone = useCallback(
+    (milestoneId: string | null) => {
+      setCreating(false);
+      replaceParams({ milestone: milestoneId, inspect: null });
+    },
+    [replaceParams],
+  );
+
+  useInspectorEscape(Boolean(selectedId) || Boolean(selectedMilestoneId) || creating, () => {
+    openItem(null);
+    openMilestone(null);
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -192,37 +207,67 @@ export function PlannerView({ projectId }: { projectId: string }) {
 
   return (
     <section
-      className={`planner-page${view === "kanban" ? " is-kanban" : ""}${view === "gantt" ? " is-gantt" : ""}`}
+      className={`planner-page${view === "kanban" ? " is-kanban" : ""}${view === "gantt" ? " is-gantt" : ""}${view === "milestones" ? " is-milestones" : ""}`}
       data-surface="planner"
-      data-node-id={view === "kanban" ? "242:6635" : view === "gantt" ? "242:6744" : "242:6526"}
+      data-node-id={
+        view === "kanban" ? "242:6635" : view === "gantt" ? "242:6744" : view === "milestones" ? "242:6853" : "242:6526"
+      }
     >
       <header className="structure-header">
         <div>
           <h1>Planejamento</h1>
-          <p>Lista, Kanban e Gantt projetam as mesmas tarefas. Status armazenado é explícito; atraso é derivado.</p>
+          <p>
+            Lista, Kanban, Gantt e Marcos projetam o mesmo conjunto autorizado. Status armazenado é explícito; risco
+            de marco é derivado.
+          </p>
         </div>
-        <button
-          type="button"
-          className="btn"
-          disabled={archived || !canCreateTask(permissions)}
-          aria-disabled={archived || !canCreateTask(permissions) ? "true" : undefined}
-          title={
-            archived
-              ? "Projeto arquivado — mutações recusadas"
-              : canCreateTask(permissions)
-                ? "Criar tarefa"
-                : "Criar tarefa requer task.create"
-          }
-          onClick={() => {
-            if (archived || !canCreateTask(permissions)) {
-              return;
+        {view === "milestones" ? (
+          <button
+            type="button"
+            className="btn"
+            disabled={archived || !canCreateMilestone(permissions)}
+            aria-disabled={archived || !canCreateMilestone(permissions) ? "true" : undefined}
+            title={
+              archived
+                ? "Projeto arquivado — mutações recusadas"
+                : canCreateMilestone(permissions)
+                  ? "Criar marco"
+                  : "Criar marco requer milestone.create"
             }
-            setCreating(true);
-            replaceParams({ inspect: null });
-          }}
-        >
-          Nova Tarefa
-        </button>
+            onClick={() => {
+              if (archived || !canCreateMilestone(permissions)) {
+                return;
+              }
+              setCreatingMilestone(true);
+              replaceParams({ view: "milestones", milestone: null, inspect: null });
+            }}
+          >
+            Novo Marco
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn"
+            disabled={archived || !canCreateTask(permissions)}
+            aria-disabled={archived || !canCreateTask(permissions) ? "true" : undefined}
+            title={
+              archived
+                ? "Projeto arquivado — mutações recusadas"
+                : canCreateTask(permissions)
+                  ? "Criar tarefa"
+                  : "Criar tarefa requer task.create"
+            }
+            onClick={() => {
+              if (archived || !canCreateTask(permissions)) {
+                return;
+              }
+              setCreating(true);
+              replaceParams({ inspect: null, milestone: null });
+            }}
+          >
+            Nova Tarefa
+          </button>
+        )}
       </header>
 
       {archived ? (
@@ -263,7 +308,30 @@ export function PlannerView({ projectId }: { projectId: string }) {
       </div>
 
       <div id={`${tabsId}-panel`} role="tabpanel" aria-labelledby={`${tabsId}-${view || "list"}`}>
-        {view === "milestones" ? <PlanningComingView view={view} /> : null}
+        {view === "milestones" ? (
+          <MilestoneBoard
+            projectId={projectId}
+            model={model}
+            phases={phases}
+            selectedId={selectedMilestoneId}
+            creating={creatingMilestone}
+            readOnly={archived}
+            permissions={permissions}
+            filtered={filtered}
+            onSelect={(id) => {
+              setCreatingMilestone(false);
+              openMilestone(id);
+            }}
+            onCreatingChange={setCreatingMilestone}
+            onChanged={async (milestoneId) => {
+              setCreatingMilestone(false);
+              if (milestoneId) {
+                replaceParams({ view: "milestones", milestone: milestoneId, inspect: null });
+              }
+              await load();
+            }}
+          />
+        ) : null}
 
         {view === "list" || view === "kanban" || view === "gantt" ? (
           <>

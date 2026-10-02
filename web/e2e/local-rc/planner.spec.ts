@@ -1,13 +1,14 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { apiJson, capture, IDS, logoutToSignIn, signInToOrg } from "./helpers";
+import { apiJson, capture, clearBrowserToSignIn, IDS, signInToOrg } from "./helpers";
 
 const EVIDENCE_M42 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.2");
 const EVIDENCE_M43 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.3");
 const EVIDENCE_M44 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.4");
 const EVIDENCE_M45 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.5");
 const EVIDENCE_M46 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.6");
+const EVIDENCE_M47 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.7");
 
 test.describe("M4.2 Local RC Planning List", () => {
   test("M4.2-UI-01/NARROW-01 Planejamento is reachable and List matches the query", async ({ page }, testInfo) => {
@@ -177,7 +178,7 @@ test.describe("M4.2 Local RC Planning List", () => {
     );
     await expect(page.locator(`[data-kanban-column="PLANEJADAS"] [data-task-id="${succ.body.id}"]`)).toBeVisible();
 
-    await logoutToSignIn(page);
+    await clearBrowserToSignIn(page);
     await signInToOrg(page, "viewer-a", "Amber Demo Alpha");
     await page.goto(`/projects/${IDS.projectA1}/planner?view=kanban&q=${encodeURIComponent(title)}`);
     await expect(page.getByRole("region", { name: "Quadro Kanban" })).toBeVisible();
@@ -246,7 +247,7 @@ test.describe("M4.2 Local RC Planning List", () => {
     expect(startBlocked.status).toBeGreaterThanOrEqual(400);
     expect(JSON.stringify(startBlocked.body)).toMatch(/predecessor|DEPENDENCY|término-início|finish-to-start/i);
 
-    await logoutToSignIn(page);
+    await clearBrowserToSignIn(page);
     await signInToOrg(page, "viewer-a", "Amber Demo Alpha");
     await page.goto(`/projects/${IDS.projectA1}/planner?view=gantt&q=${encodeURIComponent(title)}`);
     await expect(page.getByRole("region", { name: "Cronograma Gantt" })).toBeVisible();
@@ -256,5 +257,55 @@ test.describe("M4.2 Local RC Planning List", () => {
       data: { dueDate: "2026-11-01T00:00:00.000Z", expectedVersion: 1 },
     });
     expect(forbidden.status).toBeGreaterThanOrEqual(400);
+  });
+
+  test("M4.7-UI Marcos explanation changes with facts and stays consistent", async ({ page }, testInfo) => {
+    mkdirSync(EVIDENCE_M47, { recursive: true });
+    await signInToOrg(page, "coord-a", "Amber Demo Alpha");
+    const title = `RC Marco ${testInfo.project.name} ${Date.now()}`;
+    const created = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/milestones`, {
+      headers: { "Idempotency-Key": `m47-${testInfo.project.name}-${Date.now()}` },
+      data: { title, targetDate: "2099-01-01T00:00:00.000Z" },
+    });
+    expect(created.status).toBeLessThan(400);
+    expect(created.body.status).toBe("PLANNED");
+    const late = await apiJson(page, "POST", `/api/v1/projects/${IDS.projectA1}/tasks`, {
+      headers: { "Idempotency-Key": `m47-late-${testInfo.project.name}-${Date.now()}` },
+      data: { title: `${title} late`, milestoneId: created.body.id, dueDate: "2000-01-01T00:00:00.000Z" },
+    });
+    expect(late.status).toBeLessThan(400);
+
+    await page.goto(`/projects/${IDS.projectA1}/planner?view=milestones`);
+    await expect(page.getByRole("tab", { name: "Marcos" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("button", { name: title, exact: true })).toBeVisible();
+    await expect(page.getByText(/não são controles de status/i)).toBeVisible();
+    const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
+    await page.screenshot({ path: path.join(EVIDENCE_M47, `marcos-${tag}.png`), fullPage: true });
+    await capture(page, testInfo, "planner-marcos");
+
+    await page.getByRole("button", { name: title, exact: true }).click();
+    const inspector = page.getByRole("dialog");
+    await expect(inspector).toBeVisible();
+    await expect(inspector.getByText("LINKED_TASK_LATE")).toBeVisible();
+
+    const entity = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/milestones/${created.body.id}`);
+    const list = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/planning?view=list`);
+    const gantt = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/planning?view=gantt`);
+    const marcos = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/planning?view=milestones`);
+    const listed = (list.body.milestones as Array<{ id: string; status: string; risk?: { explanation: string } }>).find((row) => row.id === created.body.id);
+    const projected = (marcos.body.milestones as Array<{ id: string; status: string; risk?: { explanation: string } }>).find((row) => row.id === created.body.id);
+    const lane = (gantt.body.schedule.lanes as Array<{ id: string; kind: string; status: string | null; risk?: { text: string } }>).find((row) => row.kind === "MILESTONE" && row.id === created.body.id);
+    expect(entity.body.status).toBe("AT_RISK");
+    expect(listed?.status).toBe("AT_RISK");
+    expect(projected?.status).toBe("AT_RISK");
+    expect(listed?.risk?.explanation).toBe(entity.body.risk.explanation);
+    expect(lane?.risk?.text).toContain("late");
+
+    await inspector.getByRole("button", { name: "Alcançar" }).click();
+    await inspector.getByRole("button", { name: "Confirmar alcance" }).click();
+    await expect(inspector.getByText(/Armazenado Concluído/i)).toBeVisible();
+    const after = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/milestones/${created.body.id}`);
+    expect(after.body.recordedStatus).toBe("ACHIEVED");
+    expect(after.body.status).toBe("ACHIEVED");
   });
 });

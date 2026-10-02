@@ -73,30 +73,27 @@ class UpdateMilestoneDto {
   @IsString()
   deliverableId?: string | null;
 
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({ description: "Required CAS token. Milestone writes fail closed without it." })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  expectedVersion?: number;
+  expectedVersion!: number;
 }
 
 class AchieveMilestoneDto {
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({ description: "Required CAS token." })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  expectedVersion?: number;
+  expectedVersion!: number;
 }
 
 class CancelMilestoneDto {
-  @ApiPropertyOptional()
-  @IsOptional()
+  @ApiProperty({ description: "Required CAS token." })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  expectedVersion?: number;
+  expectedVersion!: number;
 }
 
 @ApiTags("planning")
@@ -112,7 +109,10 @@ export class MilestonesController {
   @RequirePermission("project.read")
   @ApiCookieAuth()
   @ApiParam({ name: "projectId", format: "uuid" })
-  @ApiOperation({ summary: "List Milestones. status is derived; recordedStatus is the stored explicit state." })
+  @ApiOperation({
+    summary:
+      "List Milestones. status is derived; recordedStatus is stored PLANNED|ACHIEVED|CANCELLED. Additive risk.reasons/explanation/sources use authorized visible contributors only.",
+  })
   list(@CurrentSession() session: RequestSession, @Param("projectId") projectId: string) {
     return this.milestones.list(this.auth.requireSession(session), projectId);
   }
@@ -153,7 +153,10 @@ export class MilestonesController {
   @ApiCookieAuth()
   @ApiParam({ name: "projectId", format: "uuid" })
   @ApiParam({ name: "milestoneId", format: "uuid" })
-  @ApiOperation({ summary: "Update Milestone fields. Status is not patchable." })
+  @ApiOperation({
+    summary:
+      "Update Milestone title, target date, or Phase/Deliverable. Status is not patchable. expectedVersion is required.",
+  })
   update(
     @CurrentSession() session: RequestSession,
     @Param("projectId") projectId: string,
@@ -170,7 +173,10 @@ export class MilestonesController {
   @ApiHeader({ name: "Idempotency-Key", required: true })
   @ApiParam({ name: "projectId", format: "uuid" })
   @ApiParam({ name: "milestoneId", format: "uuid" })
-  @ApiOperation({ summary: "Explicitly achieve a Milestone. Completing linked Tasks does not achieve it." })
+  @ApiOperation({
+    summary:
+      "Explicitly achieve a Milestone. Completing linked Tasks, progress, or date edits never achieve it. expectedVersion required.",
+  })
   achieve(
     @CurrentSession() session: RequestSession,
     @Param("projectId") projectId: string,
@@ -185,15 +191,19 @@ export class MilestonesController {
   @UseGuards(SessionGuard, PermissionGuard)
   @RequirePermission("milestone.update")
   @ApiCookieAuth()
+  @ApiHeader({ name: "Idempotency-Key", required: true })
   @ApiParam({ name: "projectId", format: "uuid" })
   @ApiParam({ name: "milestoneId", format: "uuid" })
-  @ApiOperation({ summary: "Cancel a planned Milestone" })
+  @ApiOperation({
+    summary: "Cancel a planned Milestone. Idempotency-Key and expectedVersion are required. Immutable audit.",
+  })
   cancel(
     @CurrentSession() session: RequestSession,
     @Param("projectId") projectId: string,
     @Param("milestoneId") milestoneId: string,
+    @Headers("idempotency-key") idempotencyKey: string | undefined,
     @Body() body: CancelMilestoneDto,
   ) {
-    return this.milestones.cancel(this.auth.requireSession(session), projectId, milestoneId, body);
+    return this.milestones.cancel(this.auth.requireSession(session), projectId, milestoneId, idempotencyKey, body);
   }
 }

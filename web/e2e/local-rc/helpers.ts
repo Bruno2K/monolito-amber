@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { expect, type APIRequestContext, type Cookie, type Page, type TestInfo } from "@playwright/test";
 
@@ -83,34 +84,65 @@ export async function closeInspectorIfOpen(page: Page): Promise<void> {
 /**
  * Login POSTs share one in-memory IP bucket (20 / 15 min). Local RC runs two
  * viewports serially, so reuse the session cookie after the first UI login.
+ * Persist to disk so a worker restart between projects does not burn a new POST.
  */
-const loginCookieCache = new Map<string, Cookie[]>();
+const COOKIE_CACHE_FILE = path.resolve(process.cwd(), "../test-results/local-rc-login-cookies.json");
+const loginCookieCache = loadCookieCache();
+
+function loadCookieCache(): Map<string, Cookie[]> {
+  try {
+    const raw = JSON.parse(readFileSync(COOKIE_CACHE_FILE, "utf8")) as Record<string, Cookie[]>;
+    return new Map(Object.entries(raw));
+  } catch {
+    return new Map();
+  }
+}
+
+function persistCookieCache(): void {
+  mkdirSync(path.dirname(COOKIE_CACHE_FILE), { recursive: true });
+  writeFileSync(COOKIE_CACHE_FILE, JSON.stringify(Object.fromEntries(loginCookieCache)));
+}
+
+function cookiesForRestore(cookies: Cookie[]): Cookie[] {
+  return cookies.map((cookie) => ({
+    ...cookie,
+    url: cookie.domain ? undefined : WEB,
+  }));
+}
 
 export async function signIn(page: Page, userKey: string): Promise<void> {
   const cached = loginCookieCache.get(userKey);
   if (cached && cached.length > 0) {
-    await page.context().addCookies(cached);
+    await page.context().addCookies(cookiesForRestore(cached));
     await page.goto("/");
-    const path = new URL(page.url()).pathname;
-    if (!path.includes("/sign-in")) {
+    const pathName = new URL(page.url()).pathname;
+    if (!pathName.includes("/sign-in")) {
       await expectPostAuthLanded(page);
       return;
     }
     loginCookieCache.delete(userKey);
+    persistCookieCache();
   }
 
-  await page.goto("/sign-in");
-  await expectSignIn(page);
-  await page.getByLabel("Email").fill(emailFor(userKey));
-  await page.getByLabel("Password").fill(SEED_PASSWORD);
-  const loginPost = page.waitForResponse(
-    (res) => res.url().includes("/api/v1/auth/login") && res.request().method() === "POST",
-    { timeout: 20_000 },
-  );
-  await page.getByRole("button", { name: "Sign in" }).click();
-  const loginResponse = await loginPost;
-  if (loginResponse.status() >= 400) {
-    throw new Error(`login POST ${loginResponse.status()} for ${userKey}`);
+  let status = 0;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    await page.goto("/sign-in");
+    await expectSignIn(page);
+    await page.getByLabel("Email").fill(emailFor(userKey));
+    await page.getByLabel("Password").fill(SEED_PASSWORD);
+    const loginPost = page.waitForResponse(
+      (res) => res.url().includes("/api/v1/auth/login") && res.request().method() === "POST",
+      { timeout: 20_000 },
+    );
+    await page.getByRole("button", { name: "Sign in" }).click();
+    status = (await loginPost).status();
+    if (status < 400) {
+      break;
+    }
+    if (status !== 429 || attempt === 3) {
+      throw new Error(`login POST ${status} for ${userKey}`);
+    }
+    await page.waitForTimeout(2_000 * 2 ** attempt);
   }
   await page.waitForURL((url) => {
     const path = url.pathname;
@@ -118,6 +150,7 @@ export async function signIn(page: Page, userKey: string): Promise<void> {
   }, { timeout: 20_000 });
   await expectPostAuthLanded(page);
   loginCookieCache.set(userKey, await page.context().cookies());
+  persistCookieCache();
 }
 
 export async function selectOrg(page: Page, orgName: string): Promise<void> {
@@ -144,6 +177,14 @@ export async function signInToOrg(page: Page, userKey: string, orgName: string):
 export async function logoutToSignIn(page: Page): Promise<void> {
   await closeInspectorIfOpen(page);
   await page.getByRole("button", { name: "Sair" }).click({ force: true });
+  await expectSignIn(page);
+}
+
+/** Drop the browser session only. Does not revoke the cached server session (avoids a login 429). */
+export async function clearBrowserToSignIn(page: Page): Promise<void> {
+  await closeInspectorIfOpen(page);
+  await page.context().clearCookies();
+  await page.goto("/sign-in");
   await expectSignIn(page);
 }
 

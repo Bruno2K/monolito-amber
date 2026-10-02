@@ -70,14 +70,35 @@ export interface PlanningHistoryEvent {
   payload: Record<string, unknown> | unknown;
 }
 
+export interface MilestoneRiskReason {
+  code: string;
+  text: string;
+}
+
+export interface MilestoneRiskSource {
+  kind: "TASK";
+  id: string;
+}
+
+export interface MilestoneRisk {
+  recordedStatus?: string;
+  status?: string;
+  reasons: MilestoneRiskReason[];
+  explanation: string;
+  sources: MilestoneRiskSource[];
+}
+
 export interface PlanningMilestoneRow {
   id: string;
   title: string;
+  description?: string;
   recordedStatus: string;
   status: string;
   targetDate: string | null;
   phaseId: string | null;
   deliverableId: string | null;
+  version?: number;
+  risk?: MilestoneRisk;
 }
 
 export interface PlanningDependencyRow {
@@ -176,6 +197,7 @@ export function plannerPath(
     sort?: string | null;
     order?: string | null;
     inspect?: string | null;
+    milestone?: string | null;
   } = {},
 ): string {
   const search = new URLSearchParams();
@@ -206,6 +228,9 @@ export function plannerPath(
   }
   if (params.inspect) {
     search.set("inspect", String(params.inspect));
+  }
+  if (params.milestone) {
+    search.set("milestone", String(params.milestone));
   }
   const qs = search.toString();
   return qs ? `/projects/${projectId}/planner?${qs}` : `/projects/${projectId}/planner`;
@@ -257,6 +282,74 @@ export function canAssignTask(permissions: string[] | undefined): boolean {
 
 export function canCompleteTask(permissions: string[] | undefined): boolean {
   return Boolean(permissions?.includes("task.complete"));
+}
+
+export function canCreateMilestone(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("milestone.create"));
+}
+
+export function canUpdateMilestone(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("milestone.update"));
+}
+
+export function canAchieveMilestone(permissions: string[] | undefined): boolean {
+  return Boolean(permissions?.includes("milestone.achieve"));
+}
+
+export function milestoneStatusLabel(status: string): string {
+  switch (status) {
+    case "PLANNED":
+      return "Planejado";
+    case "AT_RISK":
+      return "Em risco";
+    case "MISSED":
+      return "Perdido";
+    case "ACHIEVED":
+      return "Concluído";
+    case "CANCELLED":
+      return "Cancelado";
+    default:
+      return status;
+  }
+}
+
+export function milestoneRiskExplanation(row: PlanningMilestoneRow): string {
+  if (row.risk?.explanation) {
+    return row.risk.explanation;
+  }
+  if (row.status === "AT_RISK") {
+    return "Pelo menos uma tarefa autorizada vinculada está atrasada, bloqueada ou aguardando predecessor. O status armazenado permanece Planejado.";
+  }
+  if (row.status === "MISSED") {
+    return "A data-alvo já passou. O status armazenado permanece Planejado — Perdido não é persistido.";
+  }
+  if (row.status === "ACHIEVED") {
+    return "Marco alcançado por comando explícito. Risco derivado não substitui ACHIEVED.";
+  }
+  if (row.status === "CANCELLED") {
+    return "Marco cancelado por comando explícito. Risco derivado não substitui CANCELLED.";
+  }
+  return "Marco permanece planejado. Nenhum contribuinte autorizado atrasado, bloqueado ou com predecessor incompleto.";
+}
+
+export function nextMilestone(rows: readonly PlanningMilestoneRow[], now = new Date()): PlanningMilestoneRow | null {
+  const upcoming = rows
+    .filter((row) => row.recordedStatus === "PLANNED" && row.targetDate && Date.parse(row.targetDate) >= now.getTime())
+    .sort((left, right) => Date.parse(left.targetDate!) - Date.parse(right.targetDate!));
+  return upcoming[0] ?? rows.find((row) => row.recordedStatus === "PLANNED") ?? null;
+}
+
+export function milestoneKpis(rows: readonly PlanningMilestoneRow[]) {
+  const counted = rows.filter((row) => row.recordedStatus !== "CANCELLED");
+  const achieved = counted.filter((row) => row.recordedStatus === "ACHIEVED").length;
+  return {
+    next: nextMilestone(rows),
+    achieved,
+    total: counted.length,
+    ratio: counted.length === 0 ? 0 : achieved / counted.length,
+    atRisk: rows.filter((row) => row.status === "AT_RISK").length,
+    missed: rows.filter((row) => row.status === "MISSED").length,
+  };
 }
 
 export function isoDateInput(value: string | null | undefined): string {

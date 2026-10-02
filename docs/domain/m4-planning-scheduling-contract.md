@@ -82,7 +82,7 @@ Derived on every authorized read (`deriveMilestoneStatus`, ADR-016) — **no inv
 | ACHIEVED | stored ACHIEVED (always wins) |
 | CANCELLED | stored CANCELLED (always wins) |
 | MISSED | still PLANNED and `targetDate` is in the past |
-| AT_RISK | still PLANNED and at least one linked Task is `late` |
+| AT_RISK | still PLANNED and at least one **authorized visible** linked Task is `late`, stored `BLOCKED`, or FS dependency-start-blocked (M4.7). Incomplete-only on-time Tasks do not flip AT_RISK. |
 | PLANNED | otherwise |
 
 API DTO already returns `recordedStatus` (stored) and `status` (derived). Clients **cannot** PATCH AT_RISK or MISSED. ACHIEVE is `POST …/achieve` (`milestone.achieve`). CANCEL is `POST …/cancel` (`milestone.update`). Terminal stored states cannot be field-updated.
@@ -224,16 +224,16 @@ Append-only `audit.audit_events` (ADR-008). Actor, org, project, resource, corre
 - Dependency create
 - Milestone create, achieve
 - **M4.3+:** Task assign
-- **M4.7+:** Milestone cancel
+- **M4.7:** Milestone cancel
 
 Replay returns the stored response and must not duplicate rows or extra audit/outbox for the same key+hash. PATCH field updates are CAS-protected; if an Idempotency-Key is sent it must replay, not double-apply.
 
-**Baseline gap (truthful, not silently patched):** `POST …/milestones/:id/cancel` still does not require Idempotency-Key on this tip (M4.7). **M4.3 closed** the Task assign gap: `POST …/tasks/:id/assign` requires `Idempotency-Key`.
+**M4.7 closed** the Milestone cancel gap: `POST …/milestones/:id/cancel` requires `Idempotency-Key`. **M4.3 closed** the Task assign gap: `POST …/tasks/:id/assign` requires `Idempotency-Key`.
 
 ### Optimistic concurrency (CAS)
 
 Task and Milestone carry integer `version`. M4 mutations that update those rows **must** accept `expectedVersion` and fail closed on mismatch (Foundation `cas` helper — typically 409). Lost-update is not last-write-wins.
 
-**Baseline gap:** Milestone writes may still treat `expectedVersion` as optional until M4.7. **M4.3 closed** the Task write gap: create is new-row (no CAS); every Task field PATCH / assign / status / start / block / unblock / complete / cancel requires `expectedVersion`. Dependency edges have no `version`; create uniqueness + idempotency is the concurrency control.
+**M4.7 closed** the Milestone write gap: create is new-row (no CAS); every Milestone field PATCH / achieve / cancel requires `expectedVersion`. **M4.3 closed** the Task write gap: create is new-row (no CAS); every Task field PATCH / assign / status / start / block / unblock / complete / cancel requires `expectedVersion`. Dependency edges have no `version`; create uniqueness + idempotency is the concurrency control.
 
 Outbox events stay optional companions (ADR-016). No Redis/BullMQ Planning worker.

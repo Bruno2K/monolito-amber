@@ -90,7 +90,7 @@ Identity & Organizations routes:
 | GET / POST | `/api/v1/projects/:projectId/milestones` | List / create Milestone |
 | GET / PATCH | `/api/v1/projects/:projectId/milestones/:milestoneId` | Read / update fields (`status` derived; `recordedStatus` stored) |
 | POST | `/api/v1/projects/:projectId/milestones/:milestoneId/achieve` | Explicit achieve |
-| POST | `/api/v1/projects/:projectId/milestones/:milestoneId/cancel` | Cancel a planned Milestone |
+| POST | `/api/v1/projects/:projectId/milestones/:milestoneId/cancel` | Cancel a planned Milestone (`Idempotency-Key` + `expectedVersion`) |
 | GET / POST | `/api/v1/projects/:projectId/gates` | List / create Gate (`NOT_READY`; create uses `gate.evaluate`) |
 | GET | `/api/v1/projects/:projectId/gates/:gateId` | Read Gate (satisfaction ≠ exception coverage) |
 | POST | `/api/v1/projects/:projectId/gates/:gateId/requirements` | Configure a typed requirement |

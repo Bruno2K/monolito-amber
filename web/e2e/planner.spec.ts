@@ -7,6 +7,7 @@ const EVIDENCE_M43 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.3");
 const EVIDENCE_M44 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.4");
 const EVIDENCE_M45 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.5");
 const EVIDENCE_M46 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.6");
+const EVIDENCE_M47 = path.resolve(process.cwd(), "../docs/ux/evidence/m4.7");
 
 const PROJECT_A = "33333333-3333-4333-8333-333333333333";
 const PROJECT_B = "44444444-4444-4444-8444-444444444444";
@@ -238,6 +239,45 @@ test.describe("M4.2 Planning List", () => {
     });
     expect(startBlocked.ok()).toBeFalsy();
     expect(JSON.stringify(await startBlocked.json())).toMatch(/predecessor|DEPENDENCY|término-início|finish-to-start/i);
+  });
+
+  test("M4.7-UI Marcos KPIs, derived chips, explicit achieve, and evidence", async ({ page }, testInfo) => {
+    await signIn(page);
+    await page.request.post("/api/v1/e2e/reset-milestones");
+    mkdirSync(EVIDENCE_M47, { recursive: true });
+    await page.goto(`/projects/${PROJECT_A}/planner?view=milestones`);
+    await expect(page.getByRole("tab", { name: "Marcos" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator('[data-node-id="242:6853"]')).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Próximo marco" })).toBeVisible();
+    await expect(page.getByText(/não são controles de status/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Concept freeze", exact: true })).toBeVisible();
+    await expect(page.getByText("Em risco").first()).toBeVisible();
+    const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
+    await page.screenshot({ path: path.join(EVIDENCE_M47, `marcos-${tag}.png`), fullPage: true });
+
+    await page.getByRole("button", { name: "Concept freeze", exact: true }).click();
+    const inspector = page.getByRole("dialog");
+    await expect(inspector).toBeVisible();
+    await expect(inspector.getByText("LINKED_TASK_LATE")).toBeVisible();
+    await expect(inspector.getByText(/Issue permanece fora da posse/i)).toBeVisible();
+    await expect(inspector.locator('select[name="status"]')).toHaveCount(0);
+    await inspector.getByRole("button", { name: "Alcançar" }).click();
+    await inspector.getByRole("button", { name: "Confirmar alcance" }).click();
+    await expect(inspector.getByText(/Armazenado Concluído/i)).toBeVisible();
+
+    const list = await page.request.get(`/api/v1/projects/${PROJECT_A}/planning?view=list`);
+    const gantt = await page.request.get(`/api/v1/projects/${PROJECT_A}/planning?view=gantt`);
+    const marcos = await page.request.get(`/api/v1/projects/${PROJECT_A}/planning?view=milestones`);
+    const listed = ((await list.json()) as { milestones: Array<{ id: string; status: string; risk?: { explanation: string } }> }).milestones.find((row) => row.id === "ms-concept");
+    const projected = ((await marcos.json()) as { milestones: Array<{ id: string; status: string; risk?: { explanation: string } }> }).milestones.find((row) => row.id === "ms-concept");
+    const lane = ((await gantt.json()) as { schedule: { lanes: Array<{ id: string; kind: string; status: string | null }> } }).schedule.lanes.find((row) => row.kind === "MILESTONE" && row.id === "ms-concept");
+    expect(listed?.status).toBe("ACHIEVED");
+    expect(projected?.status).toBe("ACHIEVED");
+    expect(lane?.status).toBe("ACHIEVED");
+    expect(listed?.risk?.explanation).toBe(projected?.risk?.explanation);
+
+    await page.getByLabel("Buscar marcos").fill("zzzz-no-match");
+    await expect(page.getByRole("heading", { name: /Nenhum marco corresponde/i })).toBeVisible();
   });
 
   test("M4.2-ADV unauthorized project deep link does not leak the other tenant", async ({ page }) => {

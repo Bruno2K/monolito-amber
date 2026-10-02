@@ -41,15 +41,25 @@ export function PlanningSkeleton() {
   );
 }
 
-export function PlanningEmpty({ filtered }: { filtered: boolean }) {
+export function PlanningEmpty({
+  filtered,
+  entity = "tarefa",
+}: {
+  filtered: boolean;
+  entity?: "tarefa" | "marco";
+}) {
+  const plural = entity === "marco" ? "marcos" : "tarefas";
   return (
     <section className="state-screen" data-state={filtered ? "filtered-empty" : "empty"} aria-live="polite">
-      <h2>{filtered ? "Nenhuma tarefa corresponde aos filtros" : "Nenhuma tarefa neste projeto"}</h2>
+      <h2>{filtered ? `Nenhum${entity === "marco" ? "" : "a"} ${entity} corresponde aos filtros` : `Nenhum${entity === "marco" ? "" : "a"} ${entity} neste projeto`}</h2>
       <p>
         {filtered
           ? "Ajuste ou limpe os filtros. A lista só mostra registros autorizados."
-          : "Ainda não há Tasks neste projeto. Use Nova Tarefa para criar a primeira."}
+          : entity === "marco"
+            ? "Ainda não há Marcos neste projeto. Use Novo Marco para criar o primeiro."
+            : "Ainda não há Tasks neste projeto. Use Nova Tarefa para criar a primeira."}
       </p>
+      <span className="sr-only">{plural}</span>
     </section>
   );
 }

@@ -422,7 +422,7 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
     const achieved = await coordinator
       .post(`/api/v1/projects/${projectA}/milestones/${milestoneId}/achieve`)
       .set("Idempotency-Key", `ms-ach-${suffix}`)
-      .send({});
+      .send({ expectedVersion: stillPlanned.body.version });
     expect(achieved.status).toBeLessThan(400);
     expect(achieved.body.status).toBe("ACHIEVED");
     expect(achieved.body.recordedStatus).toBe("ACHIEVED");
@@ -431,7 +431,7 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
     const replay = await coordinator
       .post(`/api/v1/projects/${projectA}/milestones/${milestoneId}/achieve`)
       .set("Idempotency-Key", `ms-ach-${suffix}`)
-      .send({});
+      .send({ expectedVersion: stillPlanned.body.version });
     expect(replay.status).toBeLessThan(400);
     expect(replay.body.id).toBe(milestoneId);
 
@@ -459,7 +459,8 @@ describe("PF-1.5 Planning / Tasks / Milestones", () => {
 
     const cancelled = await coordinator
       .post(`/api/v1/projects/${projectA}/milestones/${missedMilestoneId}/cancel`)
-      .send({});
+      .set("Idempotency-Key", `ms-cancel-${suffix}`)
+      .send({ expectedVersion: 1 });
     expect(cancelled.status).toBeLessThan(400);
     expect(cancelled.body.status).toBe("CANCELLED");
     expect(cancelled.body.recordedStatus).toBe("CANCELLED");

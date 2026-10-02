@@ -8,6 +8,7 @@ import {
   TASK_STATUSES,
   deriveKanbanColumn,
   resolveKanbanColumnMove,
+  deriveMilestoneRisk,
   deriveMilestoneStatus,
   isTaskLate,
   taskStatusRequiresBlockedReason,
@@ -77,5 +78,16 @@ describe("Planning security floors (fail closed)", () => {
         now,
       }),
     ).toBe("ACHIEVED");
+    const hidden = deriveMilestoneRisk({
+      recordedStatus: "PLANNED",
+      targetDate: new Date("2026-10-01T00:00:00.000Z"),
+      now,
+      contributing: [
+        { id: "other-tenant-task", status: "TODO", dueDate: new Date("2026-01-01T00:00:00.000Z"), visible: false },
+      ],
+    });
+    expect(hidden.status).toBe("PLANNED");
+    expect(hidden.explanation).not.toContain("other-tenant-task");
+    expect(hidden.sources).toEqual([]);
   });
 });

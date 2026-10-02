@@ -80,18 +80,57 @@ export function isTaskLate(input: { dueDate: Date | null; status: TaskStatus; no
 }
 
 /**
- * Documented AT_RISK / MISSED baseline (ADR-016).
+ * Documented AT_RISK / MISSED baseline (ADR-016 + M4.7).
  * Does not invent day-windows, % complete, or "critical" thresholds.
  *
  * - Explicit ACHIEVED / CANCELLED always win.
  * - MISSED = still PLANNED and targetDate is in the past.
- * - AT_RISK = still PLANNED and at least one linked Task is late (0.5: overdue Tasks endanger a future Milestone).
+ * - AT_RISK = still PLANNED and at least one authorized visible linked Task is
+ *   late, stored BLOCKED, or finish-to-start dependency-start-blocked.
+ * - Incomplete-only on-time Tasks do not flip AT_RISK.
  * - Otherwise PLANNED.
  */
+export const MILESTONE_RISK_REASON_CODES = [
+  "TARGET_DATE_PASSED",
+  "LINKED_TASK_LATE",
+  "LINKED_TASK_BLOCKED",
+  "LINKED_TASK_DEPENDENCY_BLOCKED",
+] as const;
+export type MilestoneRiskReasonCode = (typeof MILESTONE_RISK_REASON_CODES)[number];
+
+export interface MilestoneContributingTask {
+  id: string;
+  status: TaskStatus;
+  dueDate: Date | null;
+  dependencyStartBlocked?: boolean;
+  /** false = omit-not-leak: excluded from reasons, counts, and source ids. */
+  visible?: boolean;
+}
+
+export interface MilestoneRiskReason {
+  code: MilestoneRiskReasonCode;
+  text: string;
+}
+
+export interface MilestoneRiskSource {
+  kind: "TASK";
+  id: string;
+}
+
+export interface MilestoneRiskProjection {
+  recordedStatus: MilestoneRecordedStatus;
+  status: MilestoneStatus;
+  reasons: MilestoneRiskReason[];
+  explanation: string;
+  sources: MilestoneRiskSource[];
+}
+
 export function deriveMilestoneStatus(input: {
   recordedStatus: MilestoneRecordedStatus;
   targetDate: Date | null;
   linkedTasksLate: boolean;
+  linkedTasksBlocked?: boolean;
+  linkedTasksDependencyBlocked?: boolean;
   now?: Date;
 }): MilestoneStatus {
   if (input.recordedStatus === "ACHIEVED") {
@@ -104,10 +143,102 @@ export function deriveMilestoneStatus(input: {
   if (input.targetDate && input.targetDate.getTime() < now.getTime()) {
     return "MISSED";
   }
-  if (input.linkedTasksLate) {
+  if (input.linkedTasksLate || input.linkedTasksBlocked || input.linkedTasksDependencyBlocked) {
     return "AT_RISK";
   }
   return "PLANNED";
+}
+
+function countPhrase(count: number, singular: string, plural: string): string {
+  return `${count} authorized linked Task${count === 1 ? ` ${singular}` : `s ${plural}`}`;
+}
+
+export function deriveMilestoneRisk(input: {
+  recordedStatus: MilestoneRecordedStatus;
+  targetDate: Date | null;
+  now?: Date;
+  contributing?: readonly MilestoneContributingTask[];
+}): MilestoneRiskProjection {
+  const now = input.now ?? new Date();
+  const visible = (input.contributing ?? []).filter((row) => row.visible !== false);
+  const incomplete = visible.filter((row) => row.status !== "DONE" && row.status !== "CANCELLED");
+  const late = incomplete.filter((row) => isTaskLate({ dueDate: row.dueDate, status: row.status, now }));
+  const blocked = incomplete.filter((row) => row.status === "BLOCKED");
+  const depBlocked = incomplete.filter((row) => Boolean(row.dependencyStartBlocked));
+
+  if (input.recordedStatus === "ACHIEVED") {
+    return {
+      recordedStatus: "ACHIEVED",
+      status: "ACHIEVED",
+      reasons: [],
+      explanation: "Milestone was explicitly achieved. Derived risk does not override ACHIEVED.",
+      sources: [],
+    };
+  }
+  if (input.recordedStatus === "CANCELLED") {
+    return {
+      recordedStatus: "CANCELLED",
+      status: "CANCELLED",
+      reasons: [],
+      explanation: "Milestone was explicitly cancelled. Derived risk does not override CANCELLED.",
+      sources: [],
+    };
+  }
+
+  const reasons: MilestoneRiskReason[] = [];
+  const sourceIds = new Set<string>();
+  const missed = Boolean(input.targetDate && input.targetDate.getTime() < now.getTime());
+  if (missed) {
+    reasons.push({
+      code: "TARGET_DATE_PASSED",
+      text: "Target date is in the past. Stored milestone status remains PLANNED.",
+    });
+  }
+  if (late.length > 0) {
+    reasons.push({
+      code: "LINKED_TASK_LATE",
+      text: `${countPhrase(late.length, "is", "are")} late. Lateness is derived and is not a stored status.`,
+    });
+    for (const row of late) {
+      sourceIds.add(row.id);
+    }
+  }
+  if (blocked.length > 0) {
+    reasons.push({
+      code: "LINKED_TASK_BLOCKED",
+      text: `${countPhrase(blocked.length, "is", "are")} stored BLOCKED.`,
+    });
+    for (const row of blocked) {
+      sourceIds.add(row.id);
+    }
+  }
+  if (depBlocked.length > 0) {
+    reasons.push({
+      code: "LINKED_TASK_DEPENDENCY_BLOCKED",
+      text: `${countPhrase(depBlocked.length, "is", "are")} waiting on an unfinished finish-to-start predecessor. This is not stored BLOCKED.`,
+    });
+    for (const row of depBlocked) {
+      sourceIds.add(row.id);
+    }
+  }
+
+  let status: MilestoneStatus = "PLANNED";
+  if (missed) {
+    status = "MISSED";
+  } else if (late.length > 0 || blocked.length > 0 || depBlocked.length > 0) {
+    status = "AT_RISK";
+  }
+
+  return {
+    recordedStatus: input.recordedStatus,
+    status,
+    reasons,
+    explanation:
+      reasons.length > 0
+        ? reasons.map((reason) => reason.text).join(" ")
+        : "Milestone remains PLANNED. No authorized late, blocked, or dependency-blocked contributing Tasks.",
+    sources: [...sourceIds].sort().map((id) => ({ kind: "TASK", id })),
+  };
 }
 
 export interface TaskDependencyEdge {

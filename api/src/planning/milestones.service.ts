@@ -3,11 +3,12 @@ import {
   DenyByDefaultError,
   OUTBOX_EVENT_TYPES,
   PlanningStateError,
-  deriveMilestoneStatus,
-  isTaskLate,
+  deriveMilestoneRisk,
   linkAuditPayload,
+  prerequisitesBlockStart,
   redactSecrets,
   resolveMilestoneDeliveryRefs,
+  type MilestoneContributingTask,
   type MilestoneRecordedStatus,
   type PermissionCode,
   type TaskStatus,
@@ -37,24 +38,14 @@ export class MilestonesService {
         where: { projectId: bound.project.id, organizationId: bound.organizationId },
         orderBy: { createdAt: "asc" },
       }),
-      this.prisma.task.findMany({
-        where: { projectId: bound.project.id, organizationId: bound.organizationId, milestoneId: { not: null } },
-        select: { milestoneId: true, dueDate: true, status: true },
-      }),
+      this.loadContributingTasks(bound.organizationId, bound.project.id),
     ]);
     return rows.map((row) => this.toDto(row, tasks));
   }
 
   async get(session: RequestSession, projectId: string, milestoneId: string) {
     const bound = await this.requireMilestone(session, "project.read", projectId, milestoneId);
-    const tasks = await this.prisma.task.findMany({
-      where: {
-        milestoneId: bound.milestone.id,
-        projectId: bound.project.id,
-        organizationId: bound.organizationId,
-      },
-      select: { milestoneId: true, dueDate: true, status: true },
-    });
+    const tasks = await this.loadContributingTasks(bound.organizationId, bound.project.id, bound.milestone.id);
     return this.toDto(bound.milestone, tasks);
   }
 
@@ -157,9 +148,7 @@ export class MilestonesService {
     if (bound.milestone.status === "ACHIEVED" || bound.milestone.status === "CANCELLED") {
       throw new PlanningStateError(`Milestone cannot be updated from ${bound.milestone.status}`);
     }
-    if (input.expectedVersion != null) {
-      this.foundation.cas({ version: bound.milestone.version }, input.expectedVersion);
-    }
+    this.requireExpectedVersion(bound.milestone.version, input.expectedVersion);
     const refs = await this.resolveDeliveryRefs(bound.organizationId, bound.project.id, {
       phaseId: input.phaseId !== undefined ? input.phaseId : bound.milestone.phaseId,
       deliverableId: input.deliverableId !== undefined ? input.deliverableId : bound.milestone.deliverableId,
@@ -217,10 +206,7 @@ export class MilestonesService {
       }
       return updated;
     });
-    const tasks = await this.prisma.task.findMany({
-      where: { milestoneId: next.id, organizationId: next.organizationId, projectId: next.projectId },
-      select: { milestoneId: true, dueDate: true, status: true },
-    });
+    const tasks = await this.loadContributingTasks(next.organizationId, next.projectId, next.id);
     return this.toDto(next, tasks);
   }
 
@@ -245,9 +231,7 @@ export class MilestonesService {
     if (bound.milestone.status === "ACHIEVED") {
       throw new PlanningStateError("Milestone is already achieved");
     }
-    if (input.expectedVersion != null) {
-      this.foundation.cas({ version: bound.milestone.version }, input.expectedVersion);
-    }
+    this.requireExpectedVersion(bound.milestone.version, input.expectedVersion);
     const body = await this.prisma.$transaction(async (tx) => {
       const now = new Date();
       const updated = await tx.milestone.update({
@@ -293,19 +277,25 @@ export class MilestonesService {
     session: RequestSession,
     projectId: string,
     milestoneId: string,
+    idempotencyKey: string | undefined,
     input: { expectedVersion?: number } = {},
   ) {
     const bound = await this.requireMilestone(session, "milestone.update", projectId, milestoneId);
+    const started = await this.idempotency.begin(bound.organizationId, idempotencyKey, {
+      milestoneId,
+      action: "CANCEL",
+    });
+    if (started.replay) {
+      return started.replay.responseBody;
+    }
     if (bound.milestone.status === "ACHIEVED") {
       throw new PlanningStateError("An achieved Milestone cannot be cancelled");
     }
     if (bound.milestone.status === "CANCELLED") {
       throw new PlanningStateError("Milestone is already cancelled");
     }
-    if (input.expectedVersion != null) {
-      this.foundation.cas({ version: bound.milestone.version }, input.expectedVersion);
-    }
-    const next = await this.prisma.$transaction(async (tx) => {
+    this.requireExpectedVersion(bound.milestone.version, input.expectedVersion);
+    const body = await this.prisma.$transaction(async (tx) => {
       const now = new Date();
       const updated = await tx.milestone.update({
         where: { id: bound.milestone.id },
@@ -325,13 +315,15 @@ export class MilestonesService {
           resourceType: "milestone",
           resourceId: updated.id,
           correlationId: currentCorrelationId(),
-          payload: redactSecrets({ recordedStatus: "CANCELLED" }),
+          payload: redactSecrets({ recordedStatus: "CANCELLED", explicit: true }),
         },
         tx,
       );
-      return updated;
+      const dto = this.toDto(updated, []);
+      await this.idempotency.commit(bound.organizationId, started.key, started.hash, 200, dto, tx);
+      return dto;
     });
-    return this.toDto(next, []);
+    return body;
   }
 
   private async requireMilestone(
@@ -389,6 +381,57 @@ export class MilestonesService {
     );
   }
 
+  private requireExpectedVersion(current: number, expected: number | undefined) {
+    if (expected == null) {
+      throw new PlanningStateError("expectedVersion is required");
+    }
+    this.foundation.cas({ version: current }, expected);
+  }
+
+  async loadContributingTasks(organizationId: string, projectId: string, milestoneId?: string) {
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        organizationId,
+        projectId,
+        milestoneId: milestoneId ? milestoneId : { not: null },
+      },
+      select: { id: true, milestoneId: true, dueDate: true, status: true },
+    });
+    if (tasks.length === 0) {
+      return [];
+    }
+    const taskIds = tasks.map((row) => row.id);
+    const edges = await this.prisma.taskDependency.findMany({
+      where: { organizationId, projectId, successorTaskId: { in: taskIds } },
+      select: { successorTaskId: true, predecessorTaskId: true },
+    });
+    const predecessorIds = [...new Set(edges.map((edge) => edge.predecessorTaskId))];
+    const predecessors = predecessorIds.length
+      ? await this.prisma.task.findMany({
+          where: { id: { in: predecessorIds }, organizationId, projectId },
+          select: { id: true, status: true },
+        })
+      : [];
+    const predecessorMap = new Map(predecessors.map((row) => [row.id, row]));
+    const blockersBySuccessor = new Map<string, Array<{ status: string }>>();
+    for (const edge of edges) {
+      const pred = predecessorMap.get(edge.predecessorTaskId);
+      if (!pred) {
+        continue;
+      }
+      const list = blockersBySuccessor.get(edge.successorTaskId) ?? [];
+      list.push({ status: pred.status });
+      blockersBySuccessor.set(edge.successorTaskId, list);
+    }
+    return tasks.map((row) => ({
+      id: row.id,
+      milestoneId: row.milestoneId,
+      dueDate: row.dueDate,
+      status: row.status,
+      dependencyStartBlocked: prerequisitesBlockStart(blockersBySuccessor.get(row.id) ?? []),
+    }));
+  }
+
   private parseDate(value: string | null | undefined): Date | null {
     if (value == null || value === "") {
       return null;
@@ -419,13 +462,29 @@ export class MilestonesService {
       createdAt: Date;
       updatedAt: Date;
     },
-    tasks: readonly { milestoneId: string | null; dueDate: Date | null; status: string }[],
+    tasks: readonly {
+      id?: string;
+      milestoneId: string | null;
+      dueDate: Date | null;
+      status: string;
+      dependencyStartBlocked?: boolean;
+      visible?: boolean;
+    }[],
   ) {
     const linked = tasks.filter((task) => task.milestoneId === row.id);
-    const linkedTasksLate = linked.some((task) =>
-      isTaskLate({ dueDate: task.dueDate, status: task.status as TaskStatus }),
-    );
     const recordedStatus = row.status as MilestoneRecordedStatus;
+    const contributing: MilestoneContributingTask[] = linked.map((task, index) => ({
+      id: task.id ?? `linked-${index}`,
+      status: task.status as TaskStatus,
+      dueDate: task.dueDate,
+      dependencyStartBlocked: task.dependencyStartBlocked,
+      visible: task.visible !== false,
+    }));
+    const risk = deriveMilestoneRisk({
+      recordedStatus,
+      targetDate: row.targetDate,
+      contributing,
+    });
     return {
       id: row.id,
       organizationId: row.organizationId,
@@ -435,11 +494,8 @@ export class MilestonesService {
       phaseId: row.phaseId,
       deliverableId: row.deliverableId,
       recordedStatus,
-      status: deriveMilestoneStatus({
-        recordedStatus,
-        targetDate: row.targetDate,
-        linkedTasksLate,
-      }),
+      status: risk.status,
+      risk,
       targetDate: row.targetDate,
       achievedByUserId: row.achievedByUserId,
       achievedAt: row.achievedAt,

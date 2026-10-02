@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   auditEventLabel,
+  canAchieveMilestone,
   canAssignTask,
   canCompleteTask,
+  canCreateMilestone,
   canCreateTask,
+  canUpdateMilestone,
   canUpdateTask,
+  milestoneKpis,
+  milestoneStatusLabel,
   contextLabel,
   dependencyStartExplanation,
   lateExplanation,
@@ -137,5 +142,27 @@ describe("planner URL + labels", () => {
       reason: "DEPENDENCY_DATE_SHIFT_REJECTED",
     });
     expect(resolveGanttDateEdit({ kind: "PHASE" }).kind).toBe("reject");
+  });
+
+  it("M4.7 KPI helpers stay on derived milestone rows and closed milestone.* codes", () => {
+    expect(canCreateMilestone(["milestone.create"])).toBe(true);
+    expect(canUpdateMilestone(["milestone.update"])).toBe(true);
+    expect(canAchieveMilestone(["milestone.achieve"])).toBe(true);
+    expect(canCreateMilestone(["task.create"])).toBe(false);
+    expect(milestoneStatusLabel("AT_RISK")).toBe("Em risco");
+    expect(milestoneStatusLabel("MISSED")).toBe("Perdido");
+    const kpis = milestoneKpis([
+      { id: "a", title: "Next", recordedStatus: "PLANNED", status: "AT_RISK", targetDate: "2099-01-01T00:00:00.000Z", phaseId: null, deliverableId: null },
+      { id: "b", title: "Done", recordedStatus: "ACHIEVED", status: "ACHIEVED", targetDate: "2020-01-01T00:00:00.000Z", phaseId: null, deliverableId: null },
+      { id: "c", title: "Late", recordedStatus: "PLANNED", status: "MISSED", targetDate: "2020-01-01T00:00:00.000Z", phaseId: null, deliverableId: null },
+    ]);
+    expect(kpis.next?.id).toBe("a");
+    expect(kpis.achieved).toBe(1);
+    expect(kpis.total).toBe(3);
+    expect(kpis.atRisk).toBe(1);
+    expect(kpis.missed).toBe(1);
+    expect(plannerPath("abc", { view: "milestones", milestone: "ms-1" })).toBe(
+      "/projects/abc/planner?view=milestones&milestone=ms-1",
+    );
   });
 });
