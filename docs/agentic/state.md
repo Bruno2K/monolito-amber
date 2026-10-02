@@ -4,19 +4,19 @@ Operational snapshot — update when the Work Item, branch, milestone, or exit-g
 
 | Field | Value |
 | --- | --- |
-| Milestone | **M4 — Planning & Scheduling** (M3 remains Exit Gate **FAIL — ACCEPTED**, not COMPLETE) |
-| Status | **M4 ACTIVE / LOCAL ONLY** — M4.1–M4.8.1 MERGED. M4.9 in flight (Final Audit). Not M4 COMPLETE |
+| Milestone | **M5 — Calendars & Collaboration** (M3 remains Exit Gate **FAIL — ACCEPTED**, not COMPLETE) |
+| Status | **M5 ACTIVE / LOCAL ONLY** — M5.1 in flight. M5.2–M5.9 LOCKED. Not M5 COMPLETE |
 | Default branch | `main` |
-| Main integration tip | `accce915f25d73d4da13f7505ac47d1abaa05590` (Polish A; parent = Local RC) |
+| Main integration tip | `9159889de55b73bbe7cb4eb1e7700f7c4a57fcef` (Polish C; parent M4.9 `fc0aee18975ba85753f251fb2fb8b0b0f2dee8d8`) |
 | Homologated Local RC tip | `76d44de81857db5a25cd6bf285a3eda19c8aded1` (M4.8.1; Bruno accepted 2026-10-02) |
-| Active Work Item | **M4.9 — Final Product, Security & UX Audit / Exit Gate** |
-| Active branch | `m4-9-final-audit-exit-gate` |
-| Active Issue | [#76](https://github.com/Bruno2K/monolito-amber/issues/76) |
-| Canonical Notion | [M4.9](https://app.notion.com/p/3ec678e54c8d81c98327d5bec34db1c9) · [Pack](https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7) |
-| Authorization | Altair UNLOCK M4.9 after Bruno Local RC accept · **LOCAL ONLY**. Feature freeze (corrections only). Do not chase Vercel / Railway / public URL / M5. |
+| Active Work Item | **M5.1 — Contract, Schema & Authorization Baseline** |
+| Active branch | `m5-1-contract-schema-authz` |
+| Active Issue | [#82](https://github.com/Bruno2K/monolito-amber/issues/82) |
+| Canonical Notion | [M5.1](https://app.notion.com/p/3ed678e54c8d81dfaf88e9b4e55fe2f4) · [Pack](https://app.notion.com/p/3ed678e54c8d819c870ff466a2738b4c) |
+| Authorization | GPT Preflight PASS · **LOCAL ONLY**. M5.1 READY/ACTIVE only. Do not chase Vercel / Railway / public URL. Do not start M5.2–M5.9. |
 | Residuals (OPEN) | F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (supported path = Docker Desktop + WSL2 + bash) |
-| Forbidden claims | Exit Gate PASS; M3 COMPLETE; M4 COMPLETE; inventing cloud secrets or a public URL; opening M5 |
+| Forbidden claims | Exit Gate PASS; M3 COMPLETE; M5 COMPLETE; unlocking M5.2/M5.4; inventing cloud secrets or a public URL |
 
 ## Current boundary
 
-**M4.1–M4.8.1 are MERGED.** Bruno accepted Local RC. **M4.9** independently audits every M4.1–M4.8.1 requirement and publishes a truthful PASS/FAIL recommendation. Engineer does not self-PASS Exit Gate or mark M4 COMPLETE. UI Polish B/D/C remain parallel. Do not open M5.
+**M4 is COMPLETE / locally approved** (Pack 2026-10-02; M4.9 merged `fc0aee1…`). **M5.1** freezes Calendar + Messaging contracts, additive schema, reserved AuthZ, and fixtures. Engineer does not self-PASS Exit Gate or unlock Calendar/Messaging lanes. Cloud remains disabled (`deploy-cloud.yml` `if: false`).

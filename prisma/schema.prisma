@@ -1,6 +1,7 @@
 // Amber Modular Monolith — schema-per-module (0.6).
 // PF-1.6: Governance owns Gate / GateRequirement / FormalException / release evidence.
-// Seed permissions from the closed catalog (0.2A + authorized M3.1 Operations codes).
+// M5.1: Calendar + Messaging schemas (additive). No ResourceAllocation/TimeEntry.
+// Seed permissions from the closed catalog (0.2A + M3.1 Operations + M5.1 reserved codes).
 // There is no gate.override.
 
 generator client {
@@ -11,7 +12,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["identity", "org", "project", "document", "coordination", "planning", "governance", "operations", "audit", "jobs"]
+  schemas  = ["identity", "org", "project", "document", "coordination", "planning", "governance", "operations", "calendar", "messaging", "audit", "jobs"]
 }
 
 // ---------------------------------------------------------------------------
@@ -206,12 +207,14 @@ model Organization {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships OrganizationMembership[]
-  roles       RoleDefinition[]
-  projects    Project[]
-  invitations Invitation[]
-  disciplines Discipline[]
-  teams       Team[]
+  memberships   OrganizationMembership[]
+  roles         RoleDefinition[]
+  projects      Project[]
+  invitations   Invitation[]
+  disciplines   Discipline[]
+  teams         Team[]
+  calendars     Calendar[]
+  conversations Conversation[]
 
   @@map("organizations")
   @@schema("org")
@@ -228,11 +231,19 @@ model OrganizationMembership {
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deactivatedAt  DateTime? @map("deactivated_at")
 
-  organization       Organization         @relation(fields: [organizationId], references: [id])
-  user               User                 @relation(fields: [userId], references: [id])
-  roleBindings       RoleBinding[]
-  projectMemberships ProjectMembership[]
-  teamMemberships    TeamMembership[]
+  organization            Organization           @relation(fields: [organizationId], references: [id])
+  user                    User                   @relation(fields: [userId], references: [id])
+  roleBindings            RoleBinding[]
+  projectMemberships      ProjectMembership[]
+  teamMemberships         TeamMembership[]
+  ownedCalendars          Calendar[]
+  calendarGrantSubjects   CalendarAccessGrant[]  @relation("CalendarGrantSubject")
+  calendarGrantsCreated   CalendarAccessGrant[]  @relation("CalendarGrantCreator")
+  calendarEventsCreated   CalendarEvent[]
+  directConversationsLow  Conversation[]         @relation("DirectParticipantLow")
+  directConversationsHigh Conversation[]         @relation("DirectParticipantHigh")
+  messagesAuthored        Message[]
+  messageReadStates       MessageReadState[]
 
   @@unique([organizationId, userId])
   @@map("organization_memberships")
@@ -335,10 +346,12 @@ model Team {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  organization Organization     @relation(fields: [organizationId], references: [id])
-  memberships  TeamMembership[]
-  deliverables Deliverable[]
-  workPackages WorkPackage[]
+  organization     Organization          @relation(fields: [organizationId], references: [id])
+  memberships      TeamMembership[]
+  deliverables     Deliverable[]
+  workPackages     WorkPackage[]
+  calendarGrants   CalendarAccessGrant[]
+  teamConversation Conversation?
 
   @@index([organizationId])
   @@map("teams")
@@ -1065,6 +1078,172 @@ model GateReleaseUsedException {
   @@index([formalExceptionId])
   @@map("gate_release_used_exceptions")
   @@schema("governance")
+}
+
+// ---------------------------------------------------------------------------
+// calendar — user-owned private calendars, explicit grants, events (M5.1)
+// Calendar access never grants Project access. Referenced sources stay owned
+// by Planning / Operations / Governance. Archive never cascade-deletes sources.
+// ---------------------------------------------------------------------------
+
+/// Organization-bound, exactly one owner, private by default, unlimited per user.
+model Calendar {
+  id                           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId               String    @map("organization_id") @db.Uuid
+  ownerOrganizationMembershipId String   @map("owner_organization_membership_id") @db.Uuid
+  name                         String
+  description                  String    @default("")
+  timeZone                     String    @map("time_zone")
+  /// ACTIVE | ARCHIVED
+  status                       String    @default("ACTIVE")
+  archivedAt                   DateTime? @map("archived_at")
+  version                      Int       @default(1)
+  createdAt                    DateTime  @default(now()) @map("created_at")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+
+  organization Organization           @relation(fields: [organizationId], references: [id])
+  owner        OrganizationMembership @relation(fields: [ownerOrganizationMembershipId], references: [id])
+  grants       CalendarAccessGrant[]
+  events       CalendarEvent[]
+
+  @@unique([id, organizationId])
+  @@index([organizationId, ownerOrganizationMembershipId])
+  @@map("calendars")
+  @@schema("calendar")
+}
+
+/// Explicit USER or TEAM grant. Owner is not a grant row. Revoke one path ≠ revoke all.
+model CalendarAccessGrant {
+  id                                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId                    String    @map("organization_id") @db.Uuid
+  calendarId                        String    @map("calendar_id") @db.Uuid
+  /// USER | TEAM
+  principalKind                     String    @map("principal_kind")
+  organizationMembershipId          String?   @map("organization_membership_id") @db.Uuid
+  teamId                            String?   @map("team_id") @db.Uuid
+  /// VIEWER | EDITOR
+  role                              String
+  revokedAt                         DateTime? @map("revoked_at")
+  createdByOrganizationMembershipId String    @map("created_by_organization_membership_id") @db.Uuid
+  createdAt                         DateTime  @default(now()) @map("created_at")
+  updatedAt                         DateTime  @updatedAt @map("updated_at")
+
+  calendar    Calendar               @relation(fields: [calendarId], references: [id])
+  subjectUser OrganizationMembership? @relation("CalendarGrantSubject", fields: [organizationMembershipId], references: [id])
+  subjectTeam Team?                  @relation(fields: [teamId], references: [id])
+  createdBy   OrganizationMembership @relation("CalendarGrantCreator", fields: [createdByOrganizationMembershipId], references: [id])
+
+  @@index([calendarId])
+  @@index([organizationMembershipId])
+  @@index([teamId])
+  @@map("calendar_access_grants")
+  @@schema("calendar")
+}
+
+/// MANUAL or REFERENCED. Referenced title/date/status are not source of truth.
+model CalendarEvent {
+  id                                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId                    String    @map("organization_id") @db.Uuid
+  calendarId                        String    @map("calendar_id") @db.Uuid
+  /// MANUAL | REFERENCED
+  kind                              String
+  title                             String
+  description                       String    @default("")
+  allDay                            Boolean   @default(false) @map("all_day")
+  startsAt                          DateTime? @map("starts_at")
+  endsAt                            DateTime? @map("ends_at")
+  timeZone                          String?   @map("time_zone")
+  allDayStartDate                   DateTime? @map("all_day_start_date") @db.Date
+  allDayEndDate                     DateTime? @map("all_day_end_date") @db.Date
+  linkedProjectId                   String?   @map("linked_project_id") @db.Uuid
+  /// TASK | MILESTONE | DELIVERABLE | GATE
+  referenceType                     String?   @map("reference_type")
+  referenceId                       String?   @map("reference_id") @db.Uuid
+  createdByOrganizationMembershipId String    @map("created_by_organization_membership_id") @db.Uuid
+  version                           Int       @default(1)
+  archivedAt                        DateTime? @map("archived_at")
+  createdAt                         DateTime  @default(now()) @map("created_at")
+  updatedAt                         DateTime  @updatedAt @map("updated_at")
+
+  calendar  Calendar               @relation(fields: [calendarId], references: [id])
+  createdBy OrganizationMembership @relation(fields: [createdByOrganizationMembershipId], references: [id])
+
+  @@index([calendarId, startsAt])
+  @@index([calendarId, allDayStartDate])
+  @@index([organizationId, referenceType, referenceId])
+  @@map("calendar_events")
+  @@schema("calendar")
+}
+
+// ---------------------------------------------------------------------------
+// messaging — DIRECT / TEAM conversations, messages, per-user read-state (M5.1)
+// Chat is collaboration, not system of record. Participation ≠ Project access.
+// ---------------------------------------------------------------------------
+
+/// Organization-scoped DIRECT (unordered membership pair) or TEAM (one per Team).
+model Conversation {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId   String   @map("organization_id") @db.Uuid
+  /// DIRECT | TEAM
+  kind             String
+  teamId           String?  @unique @map("team_id") @db.Uuid
+  participantLowId String?  @map("participant_low_id") @db.Uuid
+  participantHighId String? @map("participant_high_id") @db.Uuid
+  version          Int      @default(1)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  organization    Organization            @relation(fields: [organizationId], references: [id])
+  team            Team?                   @relation(fields: [teamId], references: [id])
+  participantLow  OrganizationMembership? @relation("DirectParticipantLow", fields: [participantLowId], references: [id])
+  participantHigh OrganizationMembership? @relation("DirectParticipantHigh", fields: [participantHighId], references: [id])
+  messages        Message[]
+  readStates      MessageReadState[]
+
+  @@unique([id, organizationId])
+  @@index([organizationId, kind])
+  @@map("conversations")
+  @@schema("messaging")
+}
+
+/// Append-forward message. Edit sets editedAt. Delete is a tombstone (deletedAt).
+model Message {
+  id                             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organizationId                 String    @map("organization_id") @db.Uuid
+  conversationId                 String    @map("conversation_id") @db.Uuid
+  authorOrganizationMembershipId String    @map("author_organization_membership_id") @db.Uuid
+  body                           String
+  editedAt                       DateTime? @map("edited_at")
+  deletedAt                      DateTime? @map("deleted_at")
+  version                        Int       @default(1)
+  createdAt                      DateTime  @default(now()) @map("created_at")
+
+  conversation Conversation           @relation(fields: [conversationId], references: [id])
+  author       OrganizationMembership @relation(fields: [authorOrganizationMembershipId], references: [id])
+  readStates   MessageReadState[]
+
+  @@index([conversationId, createdAt, id])
+  @@index([organizationId])
+  @@map("messages")
+  @@schema("messaging")
+}
+
+/// Per-user watermark. Unread = others' messages after (lastReadCreatedAt, lastReadMessageId).
+model MessageReadState {
+  conversationId           String    @map("conversation_id") @db.Uuid
+  organizationMembershipId String    @map("organization_membership_id") @db.Uuid
+  lastReadMessageId        String?   @map("last_read_message_id") @db.Uuid
+  lastReadCreatedAt        DateTime? @map("last_read_created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  conversation Conversation           @relation(fields: [conversationId], references: [id])
+  membership   OrganizationMembership @relation(fields: [organizationMembershipId], references: [id])
+  lastRead     Message?               @relation(fields: [lastReadMessageId], references: [id])
+
+  @@id([conversationId, organizationMembershipId])
+  @@index([organizationMembershipId])
+  @@map("message_read_states")
+  @@schema("messaging")
 }
 
 // ---------------------------------------------------------------------------

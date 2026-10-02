@@ -12,6 +12,8 @@ M3.1 contracts additional Operations aggregates: **Phase**, **Discipline** (org 
 
 M4.1 freezes the executable Planning contract against this tip (docs only): [m4-planning-scheduling-contract.md](./m4-planning-scheduling-contract.md). It does not apply schema or UI.
 
+M5.1 freezes Calendar + Messaging against activation `9159889…`: [m5-calendars-collaboration-contract.md](./m5-calendars-collaboration-contract.md). Additive `calendar` / `messaging` schemas land in M5.1; Nest/Next feature surfaces are M5.2–M5.5.
+
 PF-1.6 persists Document, Revision, Impact Analysis, Issue, Task, TaskDependency, Milestone, Gate, GateRequirement, FormalException, and GateReleaseDecision. Document is the stable logical artifact (Project + Organization). Revision is one version of that Document. Impact Analysis is the at-most-one case created by a current-base change. Issue is the coordination problem / pendência. Task is executable Planning work (Task ≠ Issue). Milestone is an explicit project checkpoint. Gate is the governance checkpoint over typed requirements. Formal Exception is the sole requirement-specific bypass.
 
 ## Invariants already enforced in code

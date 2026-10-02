@@ -34,3 +34,8 @@ export * from "./m3-requirements.js";
 export * from "./m39-adversarial.js";
 export * from "./m4-seed-design.js";
 export * from "./m49-audit.js";
+export * from "./calendar.js";
+export * from "./messaging.js";
+export * from "./m5-routes.js";
+export * from "./m5-seed-design.js";
+export * from "./m51-scope.js";

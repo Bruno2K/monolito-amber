@@ -2,9 +2,12 @@ import { ForbiddenPermissionError } from "./errors.js";
 
 /**
  * Closed permission catalog — APPROVED 0.2A §1, additively extended by M3.1
- * (ADR-018) with authorized Operations codes. Organizations compose roles from
- * these permissions; they cannot invent semantics.
+ * (ADR-018) with authorized Operations codes and by M5.1 (R-1.5) with reserved
+ * Calendar/Messaging codes that are never assigned to role templates.
+ * Organizations compose roles from these permissions; they cannot invent semantics.
  * Intentionally absent: gate.override (Formal Exception is the sole Gate bypass).
+ * Intentionally absent from M5: resource_allocation.*, time_entry.*, team.*
+ * (Team chat/Calendar Team grants evaluate TeamMembership, not team.* roles).
  */
 export const PERMISSION_MODULES = [
   "organization",
@@ -14,6 +17,8 @@ export const PERMISSION_MODULES = [
   "planning",
   "governance",
   "operations",
+  "calendar",
+  "messaging",
 ] as const;
 
 export type PermissionModule = (typeof PERMISSION_MODULES)[number];
@@ -73,6 +78,8 @@ export const PERMISSIONS = [
   "work_package.create",
   "work_package.update",
   "work_package.complete",
+  "calendar.admin",
+  "message.moderate",
 ] as const;
 
 export type PermissionCode = (typeof PERMISSIONS)[number];
@@ -90,6 +97,18 @@ export const OPERATIONS_PERMISSIONS = [
   "work_package.create",
   "work_package.update",
   "work_package.complete",
+] as const satisfies readonly PermissionCode[];
+
+/**
+ * Reserved R-1.5 collaboration codes. Seeded in the closed catalog so they
+ * cannot be invented later, but **not** assigned to any Amber Role Template
+ * and **not** org/project scoped. Fail-closed until an explicit audited policy
+ * grants them. `calendar.admin` does not imply private Calendar content.
+ * `message.moderate` is future moderation only (not M5 MVP).
+ */
+export const RESERVED_COLLABORATION_PERMISSIONS = [
+  "calendar.admin",
+  "message.moderate",
 ] as const satisfies readonly PermissionCode[];
 
 /** Strings that must never appear in seed, OpenAPI, routes, or AuthZ. */
@@ -157,6 +176,16 @@ export const PERMISSION_DESCRIPTIONS: Record<PermissionCode, { module: Permissio
   "work_package.create": { module: "operations", description: "Create a WorkPackage in an authorized Project" },
   "work_package.update": { module: "operations", description: "Update WorkPackage fields, activate, block, or cancel (not complete)" },
   "work_package.complete": { module: "operations", description: "Mark a WorkPackage DONE (incidental Task links do not block in M3)" },
+  "calendar.admin": {
+    module: "calendar",
+    description:
+      "Reserved organization-level Calendar intervention. Not assigned in M5. Does not grant routine private Calendar content access.",
+  },
+  "message.moderate": {
+    module: "messaging",
+    description:
+      "Reserved future message moderation. Not assigned in M5. Does not grant Direct/Team content access by role.",
+  },
 };
 
 export function isPermissionCode(value: string): value is PermissionCode {
@@ -197,8 +226,14 @@ export function isOrgScopedPermission(code: PermissionCode): boolean {
   return (ORG_SCOPED_PERMISSIONS as readonly string[]).includes(code);
 }
 
+export function isReservedCollaborationPermission(code: PermissionCode): boolean {
+  return (RESERVED_COLLABORATION_PERMISSIONS as readonly string[]).includes(code);
+}
+
 export function isProjectScopedPermission(code: PermissionCode): boolean {
-  return isPermissionCode(code) && !isOrgScopedPermission(code);
+  return (
+    isPermissionCode(code) && !isOrgScopedPermission(code) && !isReservedCollaborationPermission(code)
+  );
 }
 
 export const CLOSED_CATALOG_SOURCE =

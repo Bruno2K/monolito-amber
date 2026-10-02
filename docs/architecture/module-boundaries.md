@@ -12,9 +12,11 @@ Exact module names from APPROVED 0.1, plus Operations (M3.1 / ADR-018). Feature 
 | Planning | Task, TaskDependency, Milestone | PF-1.5: lifecycle + FS deps + derived AT_RISK/MISSED. No UI |
 | Operations | Phase, Deliverable, WorkPackage | M3.1 contract (ADR-018). M3.3: Phase schema/API/UI. Discipline/Team live in `org`. Reads via `project.read`. No `gate.override` |
 | Governance | Gate, requirement, Formal Exception, release evidence | PF-1.6: evaluate + explicit release + Exception lifecycle. Reads upstream via adapters. No `gate.override` |
+| Calendar | Calendar, CalendarAccessGrant, CalendarEvent | M5.1 schema freeze (ADR-019). Private by default; explicit USER/TEAM grants. Does not own Task/Milestone/Deliverable/Gate |
+| Messaging | Conversation, Message, MessageReadState | M5.1 schema freeze. DIRECT pair / TEAM membership. Chat ≠ SoT |
 | Audit | Append-only audit events | Insert-only app role |
 | Notifications | Notification delivery | Worker later |
 
 Dependency direction: Governance **reads** Planning/Coordination; it does not mutate upstream. Coordination never mutates the Revision lifecycle.
 
-Project = empreendimento. Issue is the only coordination problem entity (*pendência* is a synonym). Task ≠ Issue. Phase ≠ Deliverable ≠ WorkPackage. Deliverable ≠ Document. WorkPackage ≠ Task.
+Project = empreendimento. Issue is the only coordination problem entity (*pendência* is a synonym). Task ≠ Issue. Phase ≠ Deliverable ≠ WorkPackage. Deliverable ≠ Document. WorkPackage ≠ Task. Team membership ≠ Project access. Calendar access ≠ Project access. Chat is collaboration, not governance SoT.
