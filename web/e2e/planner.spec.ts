@@ -1,4 +1,8 @@
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 import { expect, test } from "@playwright/test";
+
+const EVIDENCE = path.resolve(process.cwd(), "../docs/ux/evidence/m4.2");
 
 const PROJECT_A = "33333333-3333-4333-8333-333333333333";
 const PROJECT_B = "44444444-4444-4444-8444-444444444444";
@@ -25,8 +29,13 @@ test.describe("M4.2 Planning List", () => {
     await expect(page.getByText("Atualizar malha estrutural")).toBeVisible();
     await expect(page.getByText("Issue relacionada: Choque de malha")).toBeVisible();
     await expect(page.getByText("Emitir planta atrasada")).toBeVisible();
-    await expect(page.getByText("Atrasada").first()).toBeVisible();
+    await expect(page.locator(".planner-late").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Nova Tarefa" })).toBeDisabled();
+
+    mkdirSync(EVIDENCE, { recursive: true });
+    const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
+    await page.screenshot({ path: path.join(EVIDENCE, `planner-list-${tag}.png`), fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath(`planner-${testInfo.project.name}.png`), fullPage: true });
 
     await page.getByRole("button", { name: /Atualizar malha estrutural/ }).click();
     await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT_A}/planner\\?inspect=task-grid`));
@@ -34,6 +43,7 @@ test.describe("M4.2 Planning List", () => {
     await expect(page.getByRole("heading", { name: "Atualizar malha estrutural" })).toBeVisible();
     await expect(page.getByText("A Issue não é esta Tarefa")).toBeVisible();
     await page.getByRole("button", { name: "Fechar", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
 
     await page.getByLabel("Buscar tarefas").fill("zzzz-no-match");
     await expect(page.getByRole("heading", { name: "Nenhuma tarefa corresponde aos filtros" })).toBeVisible();
@@ -41,8 +51,6 @@ test.describe("M4.2 Planning List", () => {
     await page.getByRole("tab", { name: "Kanban" }).click();
     await expect(page).toHaveURL(new RegExp(`view=kanban`));
     await expect(page.getByRole("heading", { name: /Kanban em um marco posterior/ })).toBeVisible();
-
-    await page.screenshot({ path: testInfo.outputPath(`planner-${testInfo.project.name}.png`), fullPage: true });
   });
 
   test("M4.2-ADV unauthorized project deep link does not leak the other tenant", async ({ page }) => {

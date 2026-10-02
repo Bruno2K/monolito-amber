@@ -24,9 +24,6 @@ test.describe("M4.2 Local RC Planning List", () => {
         title: `RC Planner ${testInfo.project.name}`,
         dueDate: "2020-01-02T00:00:00.000Z",
         progressPercent: 15,
-        phaseId: IDS.phaseConcept,
-        deliverableId: IDS.delArch001,
-        workPackageId: IDS.wpOutline,
       },
     });
     expect(created.status).toBeLessThan(400);
@@ -34,7 +31,7 @@ test.describe("M4.2 Local RC Planning List", () => {
 
     await page.reload();
     await expect(page.getByText(`RC Planner ${testInfo.project.name}`)).toBeVisible();
-    await expect(page.getByText("Atrasada").first()).toBeVisible();
+    await expect(page.locator(".planner-late").first()).toBeVisible();
 
     const listed = await apiJson(page, "GET", `/api/v1/projects/${IDS.projectA1}/planning?view=list`);
     expect(listed.status).toBe(200);
@@ -43,15 +40,17 @@ test.describe("M4.2 Local RC Planning List", () => {
     expect(tasks.find((row) => row.id === taskId)?.late).toBe(true);
     expect(tasks.find((row) => row.id === taskId)?.status).toBe("TODO");
 
+    const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
+    await page.screenshot({ path: path.join(EVIDENCE, `planner-list-${tag}.png`), fullPage: true });
+    await capture(page, testInfo, `planner-list`);
+
     await page.getByRole("button", { name: new RegExp(`RC Planner ${testInfo.project.name}`) }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByText(/status armazenado permanece/i)).toBeVisible();
     await expect(page.getByRole("button", { name: "Iniciar" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Concluir" })).toHaveCount(0);
-
-    const tag = testInfo.project.name.includes("1180") ? "1180x820" : "1440x900";
-    await page.screenshot({ path: path.join(EVIDENCE, `planner-list-${tag}.png`), fullPage: true });
-    await capture(page, testInfo, `planner-list`);
+    await page.getByRole("button", { name: "Fechar", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
   });
 
   test("M4.2-UI-02 filtered empty and M4.2-ADV-01 unauthorized inspect", async ({ page }, testInfo) => {

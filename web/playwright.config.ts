@@ -5,6 +5,7 @@ const API = "http://127.0.0.1:3001";
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: ["local-rc/**"],
   timeout: 90_000,
   expect: { timeout: 10_000 },
   fullyParallel: false,
