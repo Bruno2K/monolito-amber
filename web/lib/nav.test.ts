@@ -23,7 +23,11 @@ describe("shell navigation", () => {
     expect(planning?.availability).toBe("available");
     expect(resolveNavHref(calendars!, null)).toBe("/calendars");
     expect(calendars?.availability).toBe("available");
-    expect(resolveNavHref(messages!, null)).toBeNull();
+    expect(resolveNavHref(messages!, null)).toBe("/messages");
+    expect(messages?.availability).toBe("available");
+    expect(matchNavItem("/messages")?.id).toBe("messages");
+    expect(matchNavItem("/messages/abc")?.id).toBe("messages");
+    expect(isGlobalPath("/messages")).toBe(true);
     expect(matchNavItem("/calendars")?.id).toBe("calendars");
     expect(matchNavItem("/calendars/schedule")?.id).toBe("calendars");
     expect(matchNavItem("/projects/abc/planner", "abc")?.id).toBe("planning");
@@ -64,5 +68,9 @@ describe("shell navigation", () => {
     expect(calendars.some((crumb) => crumb.current && crumb.label === "Meus Calendários")).toBe(true);
     const schedule = breadcrumbsFor({ pathname: "/calendars/schedule" });
     expect(schedule.map((crumb) => crumb.label)).toContain("Minha Agenda");
+    const messages = breadcrumbsFor({ pathname: "/messages" });
+    expect(messages.some((crumb) => crumb.current && crumb.label === "Mensagens")).toBe(true);
+    const thread = breadcrumbsFor({ pathname: "/messages/abc" });
+    expect(thread.map((crumb) => crumb.label)).toContain("Conversa");
   });
 });

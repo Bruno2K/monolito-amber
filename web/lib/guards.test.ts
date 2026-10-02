@@ -30,7 +30,8 @@ describe("usability route guards", () => {
     expect(safeNextPath("/sign-in")).toBeNull();
     expect(safeNextPath("/projects/abc/overview")).toBe("/projects/abc/overview");
     expect(safeNextPath("/calendars/schedule")).toBe("/calendars/schedule");
-    expect(safeNextPath("/messages")).toBeNull();
+    expect(safeNextPath("/messages")).toBe("/messages");
+    expect(safeNextPath("/messages/abc")).toBe("/messages/abc");
     expect(
       authoritativeOrganizationId({ sessionOrgId: "org-a", clientOrgId: "org-spoofed" }),
     ).toBe("org-a");

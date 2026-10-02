@@ -44,7 +44,8 @@ export const GLOBAL_NAV: readonly NavItemDef[] = [
     id: "messages",
     label: "Mensagens",
     group: "global",
-    availability: "coming-later",
+    href: "/messages",
+    availability: "available",
     icon: "clock",
   },
 ];
@@ -152,6 +153,9 @@ export function matchNavItem(pathname: string, projectId?: string | null): NavIt
   if (normalized === "/calendars" || normalized.startsWith("/calendars/")) {
     return GLOBAL_NAV.find((item) => item.id === "calendars") ?? null;
   }
+  if (normalized === "/messages" || normalized.startsWith("/messages/")) {
+    return GLOBAL_NAV.find((item) => item.id === "messages") ?? null;
+  }
   for (const item of PROJECT_NAV) {
     const href = resolveNavHref(item, projectId);
     if (href && (normalized === href || normalized.startsWith(`${href}/`))) {
@@ -167,7 +171,9 @@ export function isGlobalPath(pathname: string): boolean {
     normalized === "/projects" ||
     normalized === "/org-switch" ||
     normalized === "/calendars" ||
-    normalized.startsWith("/calendars/")
+    normalized.startsWith("/calendars/") ||
+    normalized === "/messages" ||
+    normalized.startsWith("/messages/")
   );
 }
 
@@ -193,6 +199,16 @@ export function breadcrumbsFor(input: {
       crumbs.push({ label: "Compartilhar", current: true });
     } else if (normalized !== "/calendars") {
       crumbs.push({ label: "Calendário", current: true });
+    }
+    return crumbs;
+  }
+  if (normalized === "/messages" || normalized.startsWith("/messages/")) {
+    const crumbs: Breadcrumb[] = [
+      { label: "Global" },
+      { label: "Mensagens", href: "/messages", current: normalized === "/messages" },
+    ];
+    if (normalized !== "/messages") {
+      crumbs.push({ label: "Conversa", current: true });
     }
     return crumbs;
   }

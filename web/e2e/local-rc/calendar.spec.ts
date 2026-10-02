@@ -28,10 +28,7 @@ test.describe("M5.3 Calendar UX / My Schedule", () => {
     await expect(page.getByRole("heading", { name: "Meus Calendários" })).toBeVisible();
     await expect(page.getByText("Coordinator private")).toBeVisible();
     await expect(page.getByText("Proprietário").first()).toBeVisible();
-    await expect(page.locator(".nav-item.is-disabled").filter({ hasText: "Mensagens" })).toHaveAttribute(
-      "title",
-      "Disponível em um marco posterior",
-    );
+    await expect(page.getByRole("link", { name: "Mensagens" })).toHaveAttribute("href", "/messages");
 
     await page.locator(".calendar-create").getByLabel("Nome").fill(calendarName);
     await page.getByRole("button", { name: "Criar calendário" }).click();

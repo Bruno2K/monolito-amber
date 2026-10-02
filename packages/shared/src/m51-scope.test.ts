@@ -41,7 +41,7 @@ describe("M5.1-R15 scope fence", () => {
     expect(existsSync(join(ROOT, "api/src/calendar"))).toBe(true);
     expect(existsSync(join(ROOT, "api/src/messaging"))).toBe(true);
     expect(existsSync(join(ROOT, "web/app/calendars/page.tsx"))).toBe(true);
-    expect(existsSync(join(ROOT, "web/app/messages"))).toBe(false);
+    expect(existsSync(join(ROOT, "web/app/messages/page.tsx"))).toBe(true);
   });
 
   it("does not treat reserved collaboration codes as M6 smuggling", () => {
