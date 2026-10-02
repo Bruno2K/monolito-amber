@@ -202,6 +202,14 @@ export class MessagesService {
     input: { expectedVersion: number },
   ) {
     const bound = await this.access.requireConversation(session, conversationId);
+    const started = await this.idempotency.begin(bound.actor.organizationId, idempotencyKey, {
+      conversationId: bound.conversation.id,
+      messageId,
+      expectedVersion: input.expectedVersion,
+    });
+    if (started.replay) {
+      return started.replay.responseBody;
+    }
     const message = await this.requireMessage(bound.conversation.id, bound.actor.organizationId, messageId);
     assertAuthorMayMutateOwnMessage({
       actorMembershipId: bound.actor.membershipId,
@@ -209,20 +217,12 @@ export class MessagesService {
       conversationAccess: bound.access,
       action: "tombstone",
     });
-    this.requireExpectedVersion(message.version, input.expectedVersion);
-    const started = await this.idempotency.begin(bound.actor.organizationId, idempotencyKey, {
-      conversationId: bound.conversation.id,
-      messageId: message.id,
-      expectedVersion: input.expectedVersion,
-    });
-    if (started.replay) {
-      return started.replay.responseBody;
-    }
     if (message.deletedAt) {
       const body = await this.toDto(session, message);
       await this.idempotency.commit(bound.actor.organizationId, started.key, started.hash, 200, body);
       return body;
     }
+    this.requireExpectedVersion(message.version, input.expectedVersion);
     const next = this.foundation.cas(message, input.expectedVersion);
     const updated = await this.prisma.$transaction(async (tx) => {
       const row = await tx.message.update({
