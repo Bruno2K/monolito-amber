@@ -1,0 +1,33 @@
+/* M4.6 overlays — loaded after globals.css so 1180 keeps editors + week scale. */
+.gantt-status:empty {
+  display: none;
+}
+
+.gantt-board-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: min(52vh, 420px);
+}
+
+.gantt-scale-cell {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+.gantt-table-wrap {
+  overflow-x: auto;
+}
+
+.gantt-edit-actions {
+  margin: 0 0 12px;
+}
+
+.gantt-date-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
