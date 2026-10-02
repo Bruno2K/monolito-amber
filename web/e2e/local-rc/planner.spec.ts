@@ -99,9 +99,9 @@ test.describe("M4.2 Local RC Planning List", () => {
 
     await page.getByRole("button", { name: "Nova Tarefa" }).click();
     await expect(page.getByRole("heading", { name: "Nova tarefa" })).toBeVisible();
-    await page.getByLabel("Título").fill(`UI create ${testInfo.project.name}`);
-    await page.getByRole("button", { name: "Criar tarefa" }).click();
-    await expect(page.getByRole("heading", { name: `UI create ${testInfo.project.name}` })).toBeVisible();
+    await page.getByRole("dialog").getByLabel("Título").fill(`UI create ${testInfo.project.name}`);
+    await page.getByRole("dialog").getByRole("button", { name: "Criar tarefa" }).click();
+    await expect(page.getByRole("dialog").getByRole("heading", { name: `UI create ${testInfo.project.name}` })).toBeVisible();
     await page.screenshot({ path: path.join(EVIDENCE_M43, `create-${tag}.png`), fullPage: true });
   });
 

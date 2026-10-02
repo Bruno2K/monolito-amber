@@ -190,7 +190,7 @@ test.describe("M5.3 Calendar UX / My Schedule", () => {
     await expect(page.getByLabel("Datas de projeto autorizadas")).toBeChecked();
 
     await page.goto(`/calendars/${CALENDAR_IDS.sharedEditor}`);
-    await expect(page.getByText("Seed outline programme")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Seed outline programme/ }).first()).toBeVisible();
     await expect(page.getByText("must-not-be-source-of-truth")).toHaveCount(0);
     await page.getByRole("button", { name: /Seed outline programme/ }).first().click();
     await expect(page.getByRole("dialog")).toBeVisible();
@@ -228,7 +228,7 @@ test.describe("M5.3 Calendar UX / My Schedule", () => {
     expect(afterTask.body.title).toBe(beforeTask.body.title);
 
     await page.goto(`/calendars/${calendarId}?view=agenda`);
-    await expect(page.getByText(eventTitle)).toBeVisible();
+    await expect(page.getByText(eventTitle).first()).toBeVisible();
     await capture(page, testInfo, "m53-final");
   });
 });
