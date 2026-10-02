@@ -436,6 +436,38 @@ function seedMockTasks() {
       updatedAt: "2026-01-04T00:00:00.000Z",
       previews: { phase: { id: "phase-concept", name: "Concept" } },
     },
+    {
+      id: "task-blocked",
+      organizationId: ORG_A,
+      projectId: PROJECT_A,
+      issueId: null,
+      milestoneId: null,
+      phaseId: "phase-concept",
+      deliverableId: null,
+      workPackageId: null,
+      title: "Validar furações estruturais",
+      description: "",
+      status: "BLOCKED",
+      late: false,
+      kanbanColumn: "BLOQUEADAS",
+      priority: "HIGH",
+      responsibleDisciplineId: "disc-str",
+      assigneeUserId: USER,
+      dueDate: new Date(now + 172800000).toISOString(),
+      plannedStartAt: new Date(now - 86400000).toISOString(),
+      estimatedMinutes: 60,
+      progressPercent: 10,
+      startedAt: new Date(now - 7200000).toISOString(),
+      completedAt: null,
+      blockedReason: "Aguardando decisão estrutural",
+      version: 1,
+      createdAt: "2026-01-05T00:00:00.000Z",
+      updatedAt: "2026-01-05T00:00:00.000Z",
+      previews: {
+        phase: { id: "phase-concept", name: "Concept" },
+        assignee: { userId: USER, displayName: "M. Santos" },
+      },
+    },
   );
   mockDependencies.push({
     id: "dep-survey-waiting",
@@ -488,8 +520,40 @@ function graphForTask(taskId) {
   };
 }
 
+function refreshDerived(task) {
+  const terminal = task.status === "DONE" || task.status === "CANCELLED";
+  task.late = Boolean(
+    !terminal && task.dueDate && new Date(task.dueDate).getTime() < Date.now(),
+  );
+  if (task.status === "DONE" || task.status === "CANCELLED") {
+    task.kanbanColumn = null;
+  } else if (task.status === "BLOCKED") {
+    task.kanbanColumn = "BLOQUEADAS";
+  } else if (task.late) {
+    task.kanbanColumn = "EM_RISCO";
+  } else if (task.status === "TODO") {
+    task.kanbanColumn = "PLANEJADAS";
+  } else if (task.status === "IN_PROGRESS") {
+    task.kanbanColumn = "EM_ANDAMENTO";
+  } else {
+    task.kanbanColumn = null;
+  }
+  return task;
+}
+
 function withGraph(task) {
-  return { ...task, ...graphForTask(task.id) };
+  return { ...refreshDerived({ ...task }), ...graphForTask(task.id) };
+}
+
+function kanbanCounts(rows) {
+  const counts = { PLANEJADAS: 0, EM_ANDAMENTO: 0, EM_RISCO: 0, BLOQUEADAS: 0 };
+  for (const row of rows) {
+    refreshDerived(row);
+    if (row.kanbanColumn) {
+      counts[row.kanbanColumn] += 1;
+    }
+  }
+  return counts;
 }
 
 function appendHistory(taskId, eventType) {
@@ -1193,6 +1257,7 @@ const server = http.createServer(async (req, res) => {
         updatedAt: new Date().toISOString(),
         previews: {},
       };
+      refreshDerived(created);
       mockTasks.push(created);
       appendHistory(created.id, "TASK_CREATED");
       json(res, 201, created);
@@ -1359,9 +1424,7 @@ const server = http.createServer(async (req, res) => {
         version: task.version + 1,
         updatedAt: new Date().toISOString(),
       });
-      if (task.dueDate && new Date(task.dueDate).getTime() < Date.now() && task.status !== "DONE" && task.status !== "CANCELLED") {
-        task.late = true;
-      }
+      refreshDerived(task);
       appendHistory(task.id, "TASK_UPDATED");
       json(res, 200, task);
       return;
@@ -1393,6 +1456,7 @@ const server = http.createServer(async (req, res) => {
         task.startedAt = task.startedAt ?? new Date().toISOString();
         task.blockedReason = null;
         task.version += 1;
+        refreshDerived(task);
         appendHistory(task.id, action === "unblock" ? "TASK_UNBLOCKED" : "TASK_STATUS_CHANGED");
         json(res, 200, task);
         return;
@@ -1412,6 +1476,7 @@ const server = http.createServer(async (req, res) => {
       task.status = "BLOCKED";
       task.blockedReason = String(body.blockedReason).trim();
       task.version += 1;
+      refreshDerived(task);
       appendHistory(task.id, "TASK_BLOCKED");
       json(res, 200, task);
       return;
@@ -1425,6 +1490,7 @@ const server = http.createServer(async (req, res) => {
       task.completedAt = new Date().toISOString();
       task.late = false;
       task.version += 1;
+      refreshDerived(task);
       appendHistory(task.id, "TASK_COMPLETED");
       json(res, 200, task);
       return;
@@ -1437,6 +1503,7 @@ const server = http.createServer(async (req, res) => {
       task.status = "CANCELLED";
       task.late = false;
       task.version += 1;
+      refreshDerived(task);
       appendHistory(task.id, "TASK_CANCELLED");
       json(res, 200, task);
       return;
@@ -1489,7 +1556,12 @@ const server = http.createServer(async (req, res) => {
         ? [{ id: "ms-concept", title: "Concept freeze", recordedStatus: "PLANNED", status: "PLANNED", targetDate: null, phaseId: "phase-concept", deliverableId: null }]
         : [],
       page: { page: 1, pageSize: 20, total: rows.length, sort: "createdAt", order: "asc" },
-      counts: { total: rows.length, late: rows.filter((row) => row.late).length, byStatus: Object.fromEntries(rows.map((row) => [row.status, 1])) },
+      counts: {
+        total: rows.length,
+        late: rows.filter((row) => row.late).length,
+        byStatus: Object.fromEntries(rows.map((row) => [row.status, 1])),
+        byKanbanColumn: kanbanCounts(rows),
+      },
       inspected,
     });
     return;

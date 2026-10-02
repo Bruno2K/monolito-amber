@@ -4,8 +4,10 @@ import {
   TASK_PRIORITIES,
   assertAcyclicDependency,
   assertTaskTransition,
+  countTasksByKanbanColumn,
   deriveKanbanColumn,
   deriveMilestoneStatus,
+  resolveKanbanColumnMove,
   incompletePredecessorBlockers,
   isTaskLate,
   isTaskPriority,
@@ -130,6 +132,48 @@ describe("M4.2-UNIT-01 Kanban column + List sort helpers", () => {
     expect(deriveKanbanColumn({ status: "BLOCKED", late: true })).toBe("BLOQUEADAS");
     expect(deriveKanbanColumn({ status: "DONE", late: false })).toBeNull();
     expect(deriveKanbanColumn({ status: "CANCELLED", late: false })).toBeNull();
+  });
+
+  it("M4.5-UNIT-01 maps column moves to existing commands and never writes EM_RISCO", () => {
+    expect(resolveKanbanColumnMove({ status: "TODO", late: false, to: "EM_ANDAMENTO" })).toEqual({
+      kind: "command",
+      command: "start",
+    });
+    expect(resolveKanbanColumnMove({ status: "IN_PROGRESS", late: false, to: "BLOQUEADAS" })).toEqual({
+      kind: "command",
+      command: "block",
+    });
+    expect(resolveKanbanColumnMove({ status: "BLOCKED", late: false, to: "EM_ANDAMENTO" })).toEqual({
+      kind: "command",
+      command: "unblock",
+    });
+    expect(resolveKanbanColumnMove({ status: "TODO", late: true, to: "EM_ANDAMENTO" }).kind).toBe("command");
+    expect(resolveKanbanColumnMove({ status: "TODO", late: false, to: "BLOQUEADAS" })).toMatchObject({
+      kind: "reject",
+      reason: "KANBAN_INVALID_TRANSITION",
+    });
+    expect(resolveKanbanColumnMove({ status: "IN_PROGRESS", late: false, to: "PLANEJADAS" })).toMatchObject({
+      kind: "reject",
+      reason: "KANBAN_INVALID_TRANSITION",
+    });
+    expect(resolveKanbanColumnMove({ status: "TODO", late: false, to: "EM_RISCO" })).toMatchObject({
+      kind: "reject",
+      reason: "KANBAN_DERIVED_COLUMN",
+    });
+    expect(resolveKanbanColumnMove({ status: "TODO", late: true, to: "PLANEJADAS" })).toMatchObject({
+      kind: "reject",
+      reason: "KANBAN_DATE_SHIFT_REQUIRED",
+    });
+    expect(resolveKanbanColumnMove({ status: "TODO", late: false, to: "PLANEJADAS" }).kind).toBe("noop");
+    const counts = countTasksByKanbanColumn([
+      { status: "TODO", late: false },
+      { status: "TODO", late: true },
+      { status: "IN_PROGRESS", late: false },
+      { status: "BLOCKED", late: true },
+      { status: "DONE", late: false },
+    ]);
+    expect(counts).toEqual({ PLANEJADAS: 1, EM_ANDAMENTO: 1, EM_RISCO: 1, BLOQUEADAS: 1 });
+    expect(counts.PLANEJADAS + counts.EM_ANDAMENTO + counts.EM_RISCO + counts.BLOQUEADAS).toBe(4);
   });
 
   it("sorts List rows by stored fields (late is not a stored column)", () => {

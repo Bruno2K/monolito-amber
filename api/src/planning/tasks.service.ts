@@ -483,8 +483,10 @@ export class TasksService {
     if (started.replay) {
       return started.replay.responseBody;
     }
-    assertTaskTransition(bound.task.status as TaskStatus, input.status);
+    // CAS before transition: a stale UI version is OPTIMISTIC_LOCK even when
+    // the stored status would also reject the same command (e.g. concurrent start).
     this.requireExpectedVersion(bound.task.version, input.expectedVersion);
+    assertTaskTransition(bound.task.status as TaskStatus, input.status);
     if (taskStatusRequiresBlockedReason(input.status)) {
       const reason = input.blockedReason?.trim() ?? "";
       if (!reason) {

@@ -95,9 +95,9 @@ export class PlanningController {
   @ApiCookieAuth()
   @ApiParam({ name: "projectId", format: "uuid" })
   @ApiOperation({
-    summary: "Authorized unified Planning read-model (List / later Kanban / Gantt / Marcos)",
+    summary: "Authorized unified Planning read-model (List / Kanban / later Gantt / Marcos)",
     description:
-      "GET-only. Reuses Task and Milestone DTOs plus derived late and kanbanColumn. view= is a projection hint — the payload always contains the same record sets. Unauthorized projects are denied without an existence leak. Linked Issue / Deliverable / WorkPackage / Phase / Milestone previews are re-authorized individually and omitted without a placeholder title. Does not mutate Planning rows.",
+      "GET-only. Reuses Task and Milestone DTOs plus derived late and kanbanColumn. view= is a projection hint — the payload always contains the same record sets. counts.byKanbanColumn is derived from the authorized filtered set (EM RISCO is late TODO/IN_PROGRESS, never a stored status). Unauthorized projects are denied without an existence leak. Linked Issue / Deliverable / WorkPackage / Phase / Milestone previews are re-authorized individually and omitted without a placeholder title. Does not mutate Planning rows.",
   })
   get(
     @CurrentSession() session: RequestSession,

@@ -36,6 +36,20 @@ describe("M4.2 planning system states", () => {
     expect(src).toMatch(/TaskInspector/);
   });
 
+  it("M4.5 Kanban is a projection over the same planner, not a coming-later placeholder", () => {
+    const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "PlannerView.tsx"), "utf8");
+    expect(src).toMatch(/TaskKanban/);
+    expect(src).toMatch(/view === "kanban"/);
+    expect(src).not.toMatch(/Kanban em um marco posterior/);
+    const kanban = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "TaskKanban.tsx"), "utf8");
+    expect(kanban).toMatch(/resolveKanbanColumnMove/);
+    expect(kanban).toMatch(/Mover \$\{row\.title\}/);
+    expect(kanban).toMatch(/EM RISCO é atraso derivado/);
+    expect(kanban).toMatch(/\/start|kanban-\$\{command\}/);
+    expect(kanban).not.toMatch(/dueDate\.getTime|new Date\(row\.dueDate\)/);
+    expect(kanban).not.toMatch(/OVERDUE|EM_RISCO as status/);
+  });
+
   it("M4.4 inspector distinguishes dependency blockage from stored BLOCKED", () => {
     const inspector = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "TaskInspector.tsx"), "utf8");
     expect(inspector).toMatch(/Dependências \(término-início\)/);

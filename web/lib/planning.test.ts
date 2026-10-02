@@ -9,6 +9,7 @@ import {
   dependencyStartExplanation,
   lateExplanation,
   plannerPath,
+  resolveKanbanColumnMove,
   taskStatusLabel,
   type PlanningTaskRow,
 } from "./planning";
@@ -96,6 +97,23 @@ describe("planner URL + labels", () => {
         }),
       ),
     ).toBe("Concept · DEL-1");
+  });
+
+  it("M4.5 maps Kanban columns to existing commands without inventing EM_RISCO status", () => {
+    expect(resolveKanbanColumnMove({ status: "TODO", late: false, kanbanColumn: "PLANEJADAS", to: "EM_ANDAMENTO" })).toEqual({
+      kind: "command",
+      command: "start",
+    });
+    expect(resolveKanbanColumnMove({ status: "TODO", late: false, kanbanColumn: "PLANEJADAS", to: "EM_RISCO" })).toMatchObject({
+      kind: "reject",
+      reason: "KANBAN_DERIVED_COLUMN",
+    });
+    expect(resolveKanbanColumnMove({ status: "TODO", late: false, kanbanColumn: "PLANEJADAS", to: "BLOQUEADAS" }).kind).toBe(
+      "reject",
+    );
+    expect(resolveKanbanColumnMove({ status: "IN_PROGRESS", late: false, kanbanColumn: "EM_ANDAMENTO", to: "PLANEJADAS" }).kind).toBe(
+      "reject",
+    );
   });
 
   it("distinguishes dependency start blockage from stored BLOCKED", () => {

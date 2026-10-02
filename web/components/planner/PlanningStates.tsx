@@ -48,7 +48,7 @@ export function PlanningEmpty({ filtered }: { filtered: boolean }) {
       <p>
         {filtered
           ? "Ajuste ou limpe os filtros. A lista só mostra registros autorizados."
-          : "Ainda não há Tasks neste projeto. A criação de tarefas entra no próximo marco."}
+          : "Ainda não há Tasks neste projeto. Use Nova Tarefa para criar a primeira."}
       </p>
     </section>
   );

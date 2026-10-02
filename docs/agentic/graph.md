@@ -42,12 +42,15 @@ PF-1.7 DONE
                                                                                             └─ M4.3 MERGED (Issue #58 / PR #59)
                                                                                                  main @ a421e9f369bcbbf508538190efe4220164a94416
                                                                                                  Task operations + inspector
-                                                                                                 └─ M4.4 IN FLIGHT (Issue #60)
-                                                                                                      branch m4-4-dependencies-scheduling-constraints
+                                                                                                 └─ M4.4 MERGED (Issue #60 / PR #61)
+                                                                                                      main @ cd9a6caabae55bb173fd0a355ed3118d59543b85
                                                                                                       FS dependencies + scheduling constraints
-                                                                                                      LOCAL ONLY — no Vercel / Railway / M5
-                                                                                                      Independent Reviewer required
-                                                                                                 do not merge from Engineer pass
+                                                                                                      └─ M4.5 IN FLIGHT (Issue #62)
+                                                                                                           branch m4-5-kanban-projection
+                                                                                                           Kanban projection + command surface
+                                                                                                           LOCAL ONLY — no Vercel / Railway / M5
+                                                                                                           Independent Reviewer required
+                                                                                                      do not merge from Engineer pass
 ```
 
 ## Integration edges
@@ -71,6 +74,6 @@ PF-1.7 DONE
 - M2 integration is closed.
 - RC1 is **MERGED** and Bruno homologated LOCAL RC.
 - M3.9 audit WI is **MERGED**. Exit Gate **FAIL — ACCEPTED**. Accepted debt — not M4 scope. **Not M3 COMPLETE.**
-- **M4 ACTIVE / LOCAL ONLY.** M4.1–M4.3 MERGED. M4.4 in flight (Issue #60). M4.5–M4.9 later.
+- **M4 ACTIVE / LOCAL ONLY.** M4.1–M4.4 MERGED. M4.5 in flight (Issue #62). M4.6–M4.9 later.
 - Do not chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA / Vercel / Railway / public URL.
 - Residuals F-08 / F-10 / RPO-RTO / PaaS remain OPEN; WIN-PS1 accepted residual.

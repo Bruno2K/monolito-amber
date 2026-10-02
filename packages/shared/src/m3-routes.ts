@@ -74,7 +74,7 @@ export const M4_CANONICAL_UI_ROUTES: readonly UiRoutePlan[] = [
   {
     path: "/projects/:projectId/planner",
     lifecycle: "add",
-    purpose: "Planning shell + unified List projection (M4.2). Kanban/Gantt/Marcos remain later WIs.",
+    purpose: "Planning shell + unified List/Kanban projections (M4.2/M4.5). Gantt/Marcos remain later WIs.",
     implementedIn: "m4.2",
   },
 ];

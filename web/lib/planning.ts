@@ -1,6 +1,9 @@
 export const PLANNER_VIEWS = ["list", "kanban", "gantt", "milestones"] as const;
 export type PlannerView = (typeof PLANNER_VIEWS)[number];
 
+export type KanbanColumn = "PLANEJADAS" | "EM_ANDAMENTO" | "EM_RISCO" | "BLOQUEADAS";
+export const KANBAN_COLUMNS: KanbanColumn[] = ["PLANEJADAS", "EM_ANDAMENTO", "EM_RISCO", "BLOQUEADAS"];
+
 export interface PlanningPreview {
   issue?: { id: string; title: string; status: string; relation: "issue" };
   phase?: { id: string; name: string };
@@ -23,7 +26,7 @@ export interface PlanningTaskRow {
   description: string;
   status: string;
   late: boolean;
-  kanbanColumn: "PLANEJADAS" | "EM_ANDAMENTO" | "EM_RISCO" | "BLOQUEADAS" | null;
+  kanbanColumn: KanbanColumn | null;
   priority: string | null;
   responsibleDisciplineId: string | null;
   assigneeUserId: string | null;
@@ -94,7 +97,12 @@ export interface PlanningReadModel {
   milestones: PlanningMilestoneRow[];
   dependencies: PlanningDependencyRow[];
   page: { page: number; pageSize: number; total: number; sort: string; order: "asc" | "desc" | string };
-  counts: { total: number; late: number; byStatus: Record<string, number> };
+  counts: {
+    total: number;
+    late: number;
+    byStatus: Record<string, number>;
+    byKanbanColumn?: Record<KanbanColumn, number>;
+  };
   inspected: PlanningTaskRow | null;
 }
 
@@ -272,6 +280,128 @@ export function dependencyStartExplanation(blockers: PlanningStartBlocker[] | un
   }
   const names = blockers.map((item) => item.title || item.predecessorTaskId).join(", ");
   return `Início bloqueado: predecessor${blockers.length === 1 ? "" : "es"} ${names} ainda não concluído${blockers.length === 1 ? "" : "s"}. Isto não é o estado Bloqueada.`;
+}
+
+export function kanbanColumnLabel(column: KanbanColumn): string {
+  switch (column) {
+    case "PLANEJADAS":
+      return "Planejadas";
+    case "EM_ANDAMENTO":
+      return "Em andamento";
+    case "EM_RISCO":
+      return "Em risco";
+    case "BLOQUEADAS":
+      return "Bloqueadas";
+    default:
+      return column;
+  }
+}
+
+export function kanbanRiskExplanation(row: PlanningTaskRow): string {
+  if (row.status === "BLOCKED") {
+    return row.blockedReason
+      ? `Bloqueada (estado armazenado): ${row.blockedReason}. Isto não é um bloqueio por dependência.`
+      : "Bloqueada (estado armazenado). Isto não é um bloqueio por dependência.";
+  }
+  if (row.dependencyStartBlocked && row.status !== "BLOCKED") {
+    return dependencyStartExplanation(row.startBlockers);
+  }
+  if (row.late) {
+    return lateExplanation(row.status);
+  }
+  return "";
+}
+
+export type KanbanMoveIntent =
+  | { kind: "command"; command: "start" | "block" | "unblock" }
+  | { kind: "noop"; reason: "KANBAN_NOOP"; message: string }
+  | {
+      kind: "reject";
+      reason: "KANBAN_DERIVED_COLUMN" | "KANBAN_INVALID_TRANSITION" | "KANBAN_DATE_SHIFT_REQUIRED";
+      message: string;
+    };
+
+/**
+ * Command map only. Uses API `status` + `late` — does not recompute schedule risk or walk dependencies.
+ * Keep aligned with `@amber/shared` `resolveKanbanColumnMove`.
+ */
+export function resolveKanbanColumnMove(input: {
+  status: string;
+  late: boolean;
+  kanbanColumn: KanbanColumn | null;
+  to: KanbanColumn;
+}): KanbanMoveIntent {
+  if (input.kanbanColumn === input.to) {
+    return { kind: "noop", reason: "KANBAN_NOOP", message: "O cartão já projeta nesta coluna." };
+  }
+  if (input.to === "EM_RISCO") {
+    return {
+      kind: "reject",
+      reason: "KANBAN_DERIVED_COLUMN",
+      message: "EM RISCO é uma visão derivada de atraso (TODO ou Em andamento) — não é um estado armazenado.",
+    };
+  }
+  if (input.to === "PLANEJADAS") {
+    if (input.status === "TODO" && input.late) {
+      return {
+        kind: "reject",
+        reason: "KANBAN_DATE_SHIFT_REQUIRED",
+        message: "Sair de EM RISCO exige alterar o prazo no inspetor. Datas não são deslocadas automaticamente.",
+      };
+    }
+    return {
+      kind: "reject",
+      reason: "KANBAN_INVALID_TRANSITION",
+      message: "A tarefa não volta para A fazer. Planejadas é a projeção de TODO no prazo.",
+    };
+  }
+  if (input.to === "EM_ANDAMENTO") {
+    if (input.status === "TODO") {
+      return { kind: "command", command: "start" };
+    }
+    if (input.status === "BLOCKED") {
+      return { kind: "command", command: "unblock" };
+    }
+    if (input.status === "IN_PROGRESS" && input.late) {
+      return {
+        kind: "reject",
+        reason: "KANBAN_DATE_SHIFT_REQUIRED",
+        message: "A tarefa continua atrasada, por isso permanece em EM RISCO até o prazo mudar.",
+      };
+    }
+    return {
+      kind: "reject",
+      reason: "KANBAN_INVALID_TRANSITION",
+      message: `Transição inválida de ${taskStatusLabel(input.status)} para Em andamento.`,
+    };
+  }
+  if (input.status === "IN_PROGRESS") {
+    return { kind: "command", command: "block" };
+  }
+  return {
+    kind: "reject",
+    reason: "KANBAN_INVALID_TRANSITION",
+    message: `A tarefa não pode ir de ${taskStatusLabel(input.status)} para Bloqueada.`,
+  };
+}
+
+export function countVisibleKanbanColumns(tasks: PlanningTaskRow[]): Record<KanbanColumn, number> {
+  const counts: Record<KanbanColumn, number> = {
+    PLANEJADAS: 0,
+    EM_ANDAMENTO: 0,
+    EM_RISCO: 0,
+    BLOQUEADAS: 0,
+  };
+  for (const row of tasks) {
+    if (row.kanbanColumn) {
+      counts[row.kanbanColumn] += 1;
+    }
+  }
+  return counts;
+}
+
+export function compactTaskId(id: string): string {
+  return id.length > 8 ? id.slice(0, 8) : id;
 }
 
 export function newIdempotencyKey(prefix: string): string {

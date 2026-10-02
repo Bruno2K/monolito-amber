@@ -192,6 +192,33 @@ describe("M4.2 unified Planning read-model", () => {
     expect(JSON.stringify(res.body)).not.toMatch(/OVERDUE/);
   });
 
+  it("M4.5-HTTP-01 Kanban projection reuses the same authorized records and derived columns", async () => {
+    const list = await coordinator.get(`/api/v1/projects/${projectA}/planning?view=list&sort=title&order=asc`);
+    const board = await coordinator.get(`/api/v1/projects/${projectA}/planning?view=kanban&sort=title&order=asc`);
+    expect(board.status).toBe(200);
+    expect(board.body.view).toBe("kanban");
+    expect(board.body.tasks.map((row: { id: string }) => row.id)).toEqual(
+      list.body.tasks.map((row: { id: string }) => row.id),
+    );
+    expect(board.body.counts.total).toBe(list.body.counts.total);
+    const lateRow = board.body.tasks.find((row: { id: string }) => row.id === lateTaskId);
+    expect(lateRow.status).toBe("TODO");
+    expect(lateRow.kanbanColumn).toBe("EM_RISCO");
+    expect(lateRow.status).not.toBe("EM_RISCO");
+    expect(board.body.counts.byKanbanColumn.EM_RISCO).toBeGreaterThanOrEqual(1);
+    expect(
+      board.body.counts.byKanbanColumn.PLANEJADAS +
+        board.body.counts.byKanbanColumn.EM_ANDAMENTO +
+        board.body.counts.byKanbanColumn.EM_RISCO +
+        board.body.counts.byKanbanColumn.BLOQUEADAS,
+    ).toBeLessThanOrEqual(board.body.counts.total);
+    const persisted = await prisma.task.findUnique({ where: { id: lateTaskId } });
+    expect(persisted?.status).toBe("TODO");
+    expect(JSON.stringify(board.body.tasks.map((row: { status: string }) => row.status))).not.toMatch(
+      /PLANEJADAS|EM_RISCO|EM_ANDAMENTO|BLOQUEADAS|OVERDUE/,
+    );
+  });
+
   it("paginates, filters, and fail-closes unauthorized filter ids", async () => {
     const page = await coordinator.get(`/api/v1/projects/${projectA}/planning?page=1&pageSize=1&sort=title&order=asc`);
     expect(page.status).toBe(200);
