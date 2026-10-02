@@ -210,3 +210,17 @@ export class OperationsStateError extends AmberError {
     this.name = "OperationsStateError";
   }
 }
+
+export class CalendarStateError extends AmberError {
+  constructor(detail: string, extras?: Record<string, unknown>) {
+    super("CALENDAR_STATE", detail, 409, extras);
+    this.name = "CalendarStateError";
+  }
+}
+
+export class MessagingStateError extends AmberError {
+  constructor(detail: string, extras?: Record<string, unknown>) {
+    super("MESSAGING_STATE", detail, 409, extras);
+    this.name = "MessagingStateError";
+  }
+}

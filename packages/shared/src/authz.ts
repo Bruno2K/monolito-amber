@@ -6,6 +6,7 @@ import {
 import {
   isOrgScopedPermission,
   isProjectScopedPermission,
+  isReservedCollaborationPermission,
   type PermissionCode,
 } from "./permissions.js";
 import {
@@ -109,6 +110,11 @@ export function hasPermission(context: AuthzContext, required: PermissionCode): 
 }
 
 export function assertPermission(context: AuthzContext, required: PermissionCode): void {
+  if (isReservedCollaborationPermission(required)) {
+    throw new DenyByDefaultError(
+      `Reserved collaboration permission ${required} is fail-closed until an explicit audited policy grants it`,
+    );
+  }
   if (isOrgScopedPermission(required) || ORG_WIDE_PERMISSIONS.includes(required)) {
     denyExternalOrgWideAccess(
       context.membershipType,
@@ -162,6 +168,8 @@ export const HIGH_RISK_PERMISSIONS: readonly PermissionCode[] = [
   "exception.reject",
   "exception.revoke",
   "gate.release",
+  "calendar.admin",
+  "message.moderate",
 ];
 
 export function isHighRiskPermission(code: PermissionCode): boolean {

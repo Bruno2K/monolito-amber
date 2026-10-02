@@ -3,11 +3,13 @@ import {
   FORBIDDEN_PERMISSIONS,
   ORG_SCOPED_PERMISSIONS,
   PERMISSIONS,
+  RESERVED_COLLABORATION_PERMISSIONS,
   assertClosedCatalog,
   isForbiddenPermission,
   isOrgScopedPermission,
   isPermissionCode,
   isProjectScopedPermission,
+  isReservedCollaborationPermission,
 } from "./permissions.js";
 import { ROLE_TEMPLATES } from "./role-templates.js";
 
@@ -41,14 +43,30 @@ describe("0.2A closed permission catalog", () => {
     expect(isPermissionCode("work_package.complete")).toBe(true);
   });
 
-  it("splits org-scoped vs project-scoped permissions from the closed catalog", () => {
+  it("splits org-scoped vs project-scoped vs reserved collaboration permissions", () => {
     expect(ORG_SCOPED_PERMISSIONS).toContain("project.create");
     expect(ORG_SCOPED_PERMISSIONS).toContain("project.archive");
     expect(isOrgScopedPermission("organization.read")).toBe(true);
     expect(isProjectScopedPermission("project.read")).toBe(true);
     expect(isProjectScopedPermission("project.assign_roles")).toBe(true);
-    expect(PERMISSIONS.filter((code) => isOrgScopedPermission(code) || isProjectScopedPermission(code))).toHaveLength(
-      PERMISSIONS.length,
-    );
+    expect(isReservedCollaborationPermission("calendar.admin")).toBe(true);
+    expect(isReservedCollaborationPermission("message.moderate")).toBe(true);
+    expect(isOrgScopedPermission("calendar.admin")).toBe(false);
+    expect(isProjectScopedPermission("calendar.admin")).toBe(false);
+    expect(isProjectScopedPermission("message.moderate")).toBe(false);
+    expect(
+      PERMISSIONS.filter(
+        (code) =>
+          isOrgScopedPermission(code) || isProjectScopedPermission(code) || isReservedCollaborationPermission(code),
+      ),
+    ).toHaveLength(PERMISSIONS.length);
+    expect(RESERVED_COLLABORATION_PERMISSIONS).toEqual(["calendar.admin", "message.moderate"]);
+  });
+
+  it("does not assign reserved Calendar/Messaging codes to any role template", () => {
+    for (const template of ROLE_TEMPLATES) {
+      expect(template.permissions).not.toContain("calendar.admin");
+      expect(template.permissions).not.toContain("message.moderate");
+    }
   });
 });

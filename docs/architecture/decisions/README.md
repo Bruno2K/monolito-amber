@@ -24,3 +24,4 @@ Governance tables (Gate / Formal Exception / release evidence) are implemented i
 | [ADR-016](./ADR-016-planning-tasks-milestones.md) | Planning Tasks, finish-to-start deps, derived Milestone risk |
 | [ADR-017](./ADR-017-governance-gates-formal-exceptions.md) | Governance Gates, typed requirements, Formal Exceptions |
 | [ADR-018](./ADR-018-operations-module-state-transitions.md) | Operations module (Phase, Deliverable, WorkPackage) + M3.1 additive catalog |
+| [ADR-019](./ADR-019-calendar-messaging-modules.md) | Calendar + Messaging schemas, grant/participation AuthZ, reserved catalog codes |

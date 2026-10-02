@@ -59,13 +59,19 @@ PF-1.7 DONE
                                                                                                                                Bruno accepted Local RC 2026-10-02
                                                                                                                                └─ Polish A MERGED (Issue #72 / PR #73)
                                                                                                                                     main @ accce915f25d73d4da13f7505ac47d1abaa05590
-                                                                                                                                    └─ M4.9 IN FLIGHT (Issue #76)
-                                                                                                                                         branch m4-9-final-audit-exit-gate
-                                                                                                                                         FINAL AUDIT ONLY · LOCAL ONLY
-                                                                                                                                         Engineer recommendation only
-                                                                                                                                         do not self-PASS Exit Gate / M4 COMPLETE
-                                                                                                                                         do not open M5
-                                                                                                                                         Independent Reviewer required
+                                                                                                                                    └─ M4.9 MERGED (Issue #76 / PR)
+                                                                                                                                         main @ fc0aee18975ba85753f251fb2fb8b0b0f2dee8d8
+                                                                                                                                         Pack: M4 COMPLETE / locally approved
+                                                                                                                                         └─ Polish B/D/C MERGED
+                                                                                                                                              main @ 9159889de55b73bbe7cb4eb1e7700f7c4a57fcef
+                                                                                                                                              └─ M5 ACTIVE / LOCAL ONLY
+                                                                                                                                                   └─ M5.1 IN FLIGHT (Issue #82)
+                                                                                                                                                        branch m5-1-contract-schema-authz
+                                                                                                                                                        CONTRACT / SCHEMA / AUTHZ BASELINE
+                                                                                                                                                        M5.2–M5.9 LOCKED
+                                                                                                                                                        do not self-PASS Exit Gate
+                                                                                                                                                        do not unlock M5.2 / M5.4
+                                                                                                                                                        Independent Reviewer required
                                                                                                                      do not merge from Engineer pass
 ```
 
@@ -85,13 +91,16 @@ PF-1.7 DONE
 | `main` @ `762c3f3b…` | disposition #52 | `a3eaadcd…` |
 | `main` @ `a3eaadcd…` | M4.1 PR #55 | merge `6e47d9fb…` |
 | M4.1…M4.8.1 | Polish A PR #73 | `main` @ `accce915…` |
-| `main` @ `accce915…` | M4.9 branch `m4-9-final-audit-exit-gate` | in flight — final audit |
+| `main` @ `accce915…` | M4.9 | merge `fc0aee18…` — Pack: M4 COMPLETE / locally approved |
+| `main` @ `fc0aee18…` | UI Polish B/D/C | `main` @ `9159889…` (activation tip) |
+| `main` @ `9159889…` | M5.1 branch `m5-1-contract-schema-authz` | in flight — contract / schema / AuthZ baseline |
 
 ## Current boundary
 
 - M2 integration is closed.
 - RC1 is **MERGED** and Bruno homologated LOCAL RC.
-- M3.9 audit WI is **MERGED**. Exit Gate **FAIL — ACCEPTED**. Accepted debt — not M4 scope. **Not M3 COMPLETE.**
-- **M4 ACTIVE / LOCAL ONLY.** M4.1–M4.8.1 MERGED. Bruno accepted Local RC (`76d44de8…`). M4.9 in flight (Issue #76). Not M4 COMPLETE. Do not open M5.
+- M3.9 audit WI is **MERGED**. Exit Gate **FAIL — ACCEPTED**. Accepted debt. **Not M3 COMPLETE.**
+- **M4 COMPLETE / locally approved** (Pack). Do not reopen M4 feature work.
+- **M5 ACTIVE / LOCAL ONLY.** M5.1 in flight (Issue #82). M5.2–M5.9 LOCKED. Not M5 COMPLETE.
 - Do not chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA / Vercel / Railway / public URL.
 - Residuals F-08 / F-10 / RPO-RTO / PaaS remain OPEN; WIN-PS1 accepted residual.

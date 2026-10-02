@@ -30,7 +30,9 @@ This is not the Product Vision landing (`Bruno2K/amber`).
 | **M4.2 Planning Shell & Unified List** | **MERGED** | https://app.notion.com/p/3ec678e54c8d8155b715c1309a86627c |
 | **M4.3 Task Operations & Inspector** | **MERGED** | https://app.notion.com/p/3ec678e54c8d81299a9cd44035220532 |
 | **M4.8 Local RC** | **MERGED**; Bruno accepted Local RC | https://app.notion.com/p/3ec678e54c8d81319b25f4a0c317612c |
-| **M4.9 Final Audit / Exit Gate** | **IN FLIGHT** (LOCAL ONLY) | https://app.notion.com/p/3ec678e54c8d81c98327d5bec34db1c9 |
+| **M4.9 Final Audit / Exit Gate** | **MERGED**; Pack: M4 COMPLETE / locally approved | https://app.notion.com/p/3ec678e54c8d81c98327d5bec34db1c9 |
+| **M5 Execution Pack** | **ACTIVE / LOCAL ONLY** | https://app.notion.com/p/3ed678e54c8d819c870ff466a2738b4c |
+| **M5.1 Contract, Schema & AuthZ Baseline** | **IN FLIGHT** (LOCAL ONLY) | https://app.notion.com/p/3ed678e54c8d81dfaf88e9b4e55fe2f4 |
 
 Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED only. No foundation-only waiver.
 
@@ -46,7 +48,9 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [M3.1 Operations contract](./domain/m3-project-operations-contract.md) — MERGED / LOCAL ONLY
 - [M4.1 Planning contract](./domain/m4-planning-scheduling-contract.md) — MERGED / LOCAL ONLY
 - [M4.2 Planning List](./domain/m4.2-requirement-to-change-plan.md) — MERGED / LOCAL ONLY
-- [M4.9 matrix](./domain/m4.9-requirements-traceability.md) — IN FLIGHT / Engineer recommendation only
+- [M4.9 matrix](./domain/m4.9-requirements-traceability.md) — MERGED / Engineer recommendation PASS (Governor/Pack: M4 COMPLETE locally)
+- [M5.1 Calendars & Collaboration contract](./domain/m5-calendars-collaboration-contract.md) — IN FLIGHT / LOCAL ONLY
+- [M5.1 matrix](./domain/m5.1-requirements-traceability.md) — 15 ATENDIDO (baseline WI; not Exit Gate)
 
 ## Product UX evidence (M2)
 
@@ -75,7 +79,19 @@ Milestone 0 Exit Gate is **PASS AT SPECIFICATION LEVEL**. Encode FACT/APPROVED o
 - [M4.7 requirement-to-change plan](./domain/m4.7-requirement-to-change-plan.md) — Issue [#66](https://github.com/Bruno2K/monolito-amber/issues/66); published first
 - [M4.7 matrix](./domain/m4.7-requirements-traceability.md) · [Figma trace](./domain/m4.7-figma-trace.md) · [UI evidence](./ux/evidence/m4.7/)
 - [M4.8 Local RC evidence](./release/m4.8-local-rc-evidence-index.md) · [M4.9 audit](./development/m4.9-evidence/INDEX.md)
-- M3 Exit Gate **FAIL — ACCEPTED** remains accepted debt. **Not M3 COMPLETE.** M4.9 is the Exit Gate audit — **not M4 COMPLETE**.
+- M3 Exit Gate **FAIL — ACCEPTED** remains accepted debt. **Not M3 COMPLETE.** M5 does not reopen M4. M5.2–M5.9 remain LOCKED until M5.1 Exit Gate PASS + merge.
+
+## M5 — Calendars & Collaboration (ACTIVE / LOCAL ONLY)
+
+- [M5.1 requirement-to-change plan](./domain/m5.1-requirement-to-change-plan.md) — Issue [#82](https://github.com/Bruno2K/monolito-amber/issues/82); published first
+- [M5 Calendars & Collaboration contract](./domain/m5-calendars-collaboration-contract.md)
+- [M5.1 baseline inventory](./domain/m5.1-baseline-inventory.md)
+- [M5.1 AuthZ catalog](./security/m5-permission-catalog.md)
+- [M5.1 migration/seed/rollback](./domain/m5.1-migration-seed-rollback-plan.md)
+- [M5.1 Figma → route map](./domain/m5.1-figma-route-map.md) — documentary
+- [M5.1 test strategy](./domain/m5.1-test-strategy.md) · [R15 no-smuggling](./domain/m5.1-no-m6-cloud-attachment-evidence.md)
+- [M5 OpenAPI plan](./api/m5-openapi-plan.md) — planned; OpenAPI JSON unchanged this WI
+- [M5.1 matrix](./domain/m5.1-requirements-traceability.md) — 15 ATENDIDO (docs + additive schema + fail-closed stubs)
 
 ## M3 — Project Operations (Exit Gate FAIL — ACCEPTED / LOCAL ONLY)
 

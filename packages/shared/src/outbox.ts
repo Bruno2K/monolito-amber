@@ -65,6 +65,17 @@ export const OUTBOX_EVENT_TYPES = {
   WorkPackageDisassociated: "WorkPackageDisassociated",
   DocumentDeliverableLinked: "DocumentDeliverableLinked",
   DocumentDeliverableUnlinked: "DocumentDeliverableUnlinked",
+  CalendarCreated: "CalendarCreated",
+  CalendarShared: "CalendarShared",
+  CalendarAccessRevoked: "CalendarAccessRevoked",
+  CalendarEventCreated: "CalendarEventCreated",
+  CalendarEventUpdated: "CalendarEventUpdated",
+  CalendarEventDeleted: "CalendarEventDeleted",
+  DirectConversationCreated: "DirectConversationCreated",
+  TeamConversationCreated: "TeamConversationCreated",
+  MessageSent: "MessageSent",
+  MessageEdited: "MessageEdited",
+  MessageDeleted: "MessageDeleted",
 } as const;
 
 /**
