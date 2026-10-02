@@ -1,6 +1,6 @@
 # M3.1 test-data / seed design
 
-Deterministic, synthetic, **no real PII**. Idempotent or resettable on a disposable database. Writer for Phase/Discipline/Team/memberships/Deliverable/WorkPackage is `prisma/m3-seed.ts` (opt-in `AMBER_SEED_M3=1`). WorkPackage CRUD APIs are implemented in M3.5.
+Deterministic, synthetic, **no real PII**. Idempotent or resettable on a disposable database. Writer for Phase/Discipline/Team/memberships/Deliverable/WorkPackage is `prisma/m3-seed.ts` (opt-in `AMBER_SEED_M3=1`). WorkPackage CRUD APIs are implemented in M3.5. M4.8 adds Planning fixtures via `prisma/m4-seed.ts` on the same flag — see [m4-seed-design.md](./m4-seed-design.md).
 
 ## Inventory
 

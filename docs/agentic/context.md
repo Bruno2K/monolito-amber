@@ -6,22 +6,29 @@
 
 **M3 — Project Operations is ACTIVE / LOCAL ONLY with Exit Gate FAIL — ACCEPTED.** Audit WI Issue [#50](https://github.com/Bruno2K/monolito-amber/issues/50) / PR [#51](https://github.com/Bruno2K/monolito-amber/pull/51) squash-merged to `main` @ `762c3f3ba85ff899623cf4c3682e6bddad062bab`. Disposition sync #52 brought `main` to `a3eaadcd61c8f8153f61c6a51f920e37b8f362a0`. Reviewed tip `11d0782509b985eae1919101970e908b5b8e5048`; Independent Reviewer **PASS (audit WI only)**. Homologated Local RC narrative tip remains `6104276754607334c53c6864135d29c539db813e`. **This is not M3 COMPLETE.**
 
-**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** M4.1–M4.6 are MERGED (M4.6 @ `34d1b8e7ce107075b17a6b398762665be9690c8c`). **M4.7** is in flight (Issue [#66](https://github.com/Bruno2K/monolito-amber/issues/66), branch `m4-7-milestones-schedule-risk`): Milestones & derived schedule risk. M4.8–M4.9 remain LOCKED.
+**M4 — Planning & Scheduling is ACTIVE / LOCAL ONLY.** M4.1–M4.7 are MERGED (M4.7 @ `0c1cc2632b47685e3e7bb9107e1eb51be361512d`). **M4.8** is in flight (Issue [#68](https://github.com/Bruno2K/monolito-amber/issues/68), branch `m4-8-cross-domain-local-rc`): Cross-domain integration, E2E, Local RC. M4.9 remains LOCKED.
 
 Authorization: Bruno runway M4.1→M4.9 autonomous; LOCAL ONLY. **Forbidden:** inventing Vercel/Railway secrets or paid accounts; Engineer self-declaring Exit Gate PASS or M3/M4 completion.
 
 Residuals still OPEN: F-08 / F-10 / RPO-RTO / PaaS; WIN-PS1 accepted residual (supported path = Docker Desktop + WSL2 + bash). M3 cloud residuals are **accepted debt**, not M4 scope.
 
-## M4.7 (IN FLIGHT — LOCAL ONLY)
+## M4.8 (IN FLIGHT — LOCAL ONLY)
 
-- Issue [#66](https://github.com/Bruno2K/monolito-amber/issues/66)
-- Branch `m4-7-milestones-schedule-risk` from `34d1b8e7ce107075b17a6b398762665be9690c8c`
-- Canonical Notion: https://app.notion.com/p/3ec678e54c8d81079ac3dd07dff39f5e
+- Issue [#68](https://github.com/Bruno2K/monolito-amber/issues/68)
+- Branch `m4-8-cross-domain-local-rc` from `0c1cc2632b47685e3e7bb9107e1eb51be361512d`
+- Canonical Notion: https://app.notion.com/p/3ec678e54c8d81319b25f4a0c317612c
 - Pack: https://app.notion.com/p/3ec678e54c8d812d9936e6291e8d07f7
-- Plan: `docs/domain/m4.7-requirement-to-change-plan.md`
-- Matrix: `docs/domain/m4.7-requirements-traceability.md`
-- Product: explicit Milestone commands + explainable derived AT_RISK/MISSED over the unified Planning read-model
-- Non-goals: Gate release, templates, auto achievement, manual AT_RISK toggle, forecast, cloud/PaaS/M5
+- Plan: `docs/domain/m4.8-requirement-to-change-plan.md`
+- Matrix: `docs/domain/m4.8-requirements-traceability.md`
+- Product: Local RC spanning every M4 projection/command; golden path; evidence pack
+- Stop: **LOCAL RC READY FOR BRUNO**. Do not self-homologate. Do not begin M4.9.
+- Non-goals: cloud/PaaS/M5; silent status; auto-achieve; auto date propagation
+
+## M4.7 (MERGED — LOCAL ONLY)
+
+- Issue [#66](https://github.com/Bruno2K/monolito-amber/issues/66) / PR [#67](https://github.com/Bruno2K/monolito-amber/pull/67)
+- Merge tip `0c1cc2632b47685e3e7bb9107e1eb51be361512d`
+- Product: explicit Milestone commands + explainable derived AT_RISK/MISSED
 
 ## M4.6 (MERGED — LOCAL ONLY)
 

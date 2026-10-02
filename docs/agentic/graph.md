@@ -48,12 +48,18 @@ PF-1.7 DONE
                                                                                                       └─ M4.5 MERGED (Issue #62 / PR #63)
                                                                                                            main @ 8c099c4b72ec240f65f9538b8b38350eee6b1cb0
                                                                                                            Kanban projection + command surface
-                                                                                                           └─ M4.6 IN FLIGHT (Issue #64)
-                                                                                                                branch m4-6-gantt-projection
-                                                                                                                Timeline / Gantt projection
-                                                                                                                LOCAL ONLY — no Vercel / Railway / M5
-                                                                                                                Independent Reviewer required
-                                                                                                           do not merge from Engineer pass
+                                                                                                           └─ M4.6 MERGED (Issue #64 / PR #65)
+                                                                                                                main @ 34d1b8e7ce107075b17a6b398762665be9690c8c
+                                                                                                                └─ M4.7 MERGED (Issue #66 / PR #67)
+                                                                                                                     main @ 0c1cc2632b47685e3e7bb9107e1eb51be361512d
+                                                                                                                     └─ M4.8 IN FLIGHT (Issue #68)
+                                                                                                                          branch m4-8-cross-domain-local-rc
+                                                                                                                          Cross-domain Local RC
+                                                                                                                          LOCAL ONLY — no Vercel / Railway / M5
+                                                                                                                          LOCAL RC READY FOR BRUNO — not homologated
+                                                                                                                          Independent Reviewer required
+                                                                                                                          M4.9 LOCKED
+                                                                                                                     do not merge from Engineer pass
 ```
 
 ## Integration edges
@@ -77,6 +83,6 @@ PF-1.7 DONE
 - M2 integration is closed.
 - RC1 is **MERGED** and Bruno homologated LOCAL RC.
 - M3.9 audit WI is **MERGED**. Exit Gate **FAIL — ACCEPTED**. Accepted debt — not M4 scope. **Not M3 COMPLETE.**
-- **M4 ACTIVE / LOCAL ONLY.** M4.1–M4.5 MERGED. M4.6 in flight (Issue #64). M4.7–M4.9 later.
+- **M4 ACTIVE / LOCAL ONLY.** M4.1–M4.7 MERGED. M4.8 in flight (Issue #68). M4.9 LOCKED.
 - Do not chase EG-OPS-STAGING-URL / EG-OPS-PAAS-SHA / Vercel / Railway / public URL.
 - Residuals F-08 / F-10 / RPO-RTO / PaaS remain OPEN; WIN-PS1 accepted residual.
