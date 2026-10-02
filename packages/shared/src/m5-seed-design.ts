@@ -5,6 +5,8 @@
  */
 
 export const M5_SEED_APPLIED_IN_M51 = false;
+/** Calendar rows are written by M5.2 (`prisma/m5-seed.ts`) when `AMBER_SEED_M3=1`. Messaging remains M5.4. */
+export const M5_SEED_CALENDARS_APPLIED_IN_M52 = true;
 
 export interface M5SeedCalendar {
   key: string;

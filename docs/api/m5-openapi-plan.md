@@ -1,6 +1,6 @@
 # M5 OpenAPI / read-model plan
 
-**Status:** Planned only. `api/openapi/openapi.json` is **unchanged** by M5.1. Nest generation is M5.2 (Calendar) and M5.4 (Messaging).  
+**Status:** Calendar family is generated live by M5.2 Nest decorators. Messaging family remains planned until M5.4. `api/openapi/openapi.json` includes `/api/v1/calendars*` and `GET /api/v1/schedule` only.  
 **Issue:** [#82](https://github.com/Bruno2K/monolito-amber/issues/82).  
 **Prefix:** `/api/v1`. Errors: RFC 7807 + `correlationId`. Session Organization is authoritative.
 

@@ -5,6 +5,8 @@ import { describe, expect, it } from "vitest";
 import {
   M5_FORBIDDEN_API_PATH_TOKENS,
   M5_PLANNED_API_ROUTES,
+  M5_PLANNED_CALENDAR_API_ROUTES,
+  M5_PLANNED_MESSAGING_API_ROUTES,
   M5_PLANNED_UI_ROUTES,
   M5_PROTOTYPE_ONLY_UI_ROUTES,
 } from "./m5-routes.js";
@@ -12,7 +14,7 @@ import { FIGMA_PROTOTYPE_ROUTE_MAP } from "./m3-routes.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 
-describe("M5.1 planned routes", () => {
+describe("M5 planned routes", () => {
   it("keeps planned UI unique and does not ship Next product pages yet", () => {
     const paths = M5_PLANNED_UI_ROUTES.map((row) => row.path);
     expect(new Set(paths).size).toBe(paths.length);
@@ -25,16 +27,24 @@ describe("M5.1 planned routes", () => {
     expect(FIGMA_PROTOTYPE_ROUTE_MAP.find((row) => row.figmaPath === "/mensagens")?.productPath).toBeNull();
   });
 
-  it("plans Calendar/Messaging APIs without colliding with current OpenAPI or smuggling M6+", () => {
+  it("publishes Calendar APIs in OpenAPI while Messaging stays planned-only", () => {
     const openapi = JSON.parse(readFileSync(join(ROOT, "api/openapi/openapi.json"), "utf8")) as {
-      paths: Record<string, unknown>;
+      paths: Record<string, Record<string, unknown>>;
     };
     const existing = Object.keys(openapi.paths);
     const planned = M5_PLANNED_API_ROUTES.map((row) => `${row.method} ${row.path}`);
     expect(new Set(planned).size).toBe(planned.length);
-    for (const row of M5_PLANNED_API_ROUTES) {
-      expect(existing, row.path).not.toContain(row.path);
+    for (const row of M5_PLANNED_CALENDAR_API_ROUTES) {
+      expect(existing, row.path).toContain(row.path);
+      const method = row.method.toLowerCase();
+      expect(openapi.paths[row.path]?.[method], `${row.method} ${row.path}`).toBeTruthy();
       expect(row.auth.includes("project.read") && row.path.includes("/calendars")).toBe(false);
+      for (const token of M5_FORBIDDEN_API_PATH_TOKENS) {
+        expect(row.path).not.toContain(token);
+      }
+    }
+    for (const row of M5_PLANNED_MESSAGING_API_ROUTES) {
+      expect(existing, row.path).not.toContain(row.path);
       for (const token of M5_FORBIDDEN_API_PATH_TOKENS) {
         expect(row.path).not.toContain(token);
       }

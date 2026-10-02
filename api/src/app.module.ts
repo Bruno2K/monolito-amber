@@ -13,6 +13,7 @@ import { OrgModule } from "./org/org.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { GovernanceModule } from "./governance/governance.module";
 import { OperationsModule } from "./operations/operations.module";
+import { CalendarModule } from "./calendar/calendar.module";
 import { PlanningModule } from "./planning/planning.module";
 import { ProjectModule } from "./project/project.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
@@ -30,6 +31,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
     DocumentModule,
     CoordinationModule,
     PlanningModule,
+    CalendarModule,
     GovernanceModule,
     OperationsModule,
     FilesModule,

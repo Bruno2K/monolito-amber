@@ -48,16 +48,21 @@ describe("M5.1 baseline security (fail closed)", () => {
     expect(inaccessibleConversationLeaksCount()).toBe(false);
   });
 
-  it("does not ship Calendar/Messaging Nest modules or enable cloud deploy", () => {
-    expect(existsSync(join(ROOT, "api/src/calendar"))).toBe(false);
+  it("ships Calendar Nest/OpenAPI while Messaging and cloud stay closed", () => {
+    expect(existsSync(join(ROOT, "api/src/calendar"))).toBe(true);
     expect(existsSync(join(ROOT, "api/src/messaging"))).toBe(false);
     const deploy = readFileSync(join(ROOT, ".github/workflows/deploy-cloud.yml"), "utf8");
     expect(deploy).toMatch(/if:\s*false/);
     const openapi = JSON.parse(readFileSync(join(ROOT, "api/openapi/openapi.json"), "utf8")) as {
       paths: Record<string, unknown>;
     };
+    const paths = Object.keys(openapi.paths);
     for (const row of M5_PLANNED_API_ROUTES) {
-      expect(Object.keys(openapi.paths)).not.toContain(row.path);
+      if (row.implementedIn === "m5.2") {
+        expect(paths, row.path).toContain(row.path);
+      } else {
+        expect(paths, row.path).not.toContain(row.path);
+      }
     }
   });
 });

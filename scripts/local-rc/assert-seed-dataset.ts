@@ -2,19 +2,28 @@ import { createHash } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { M3_SEED_ORGANIZATIONS, M3_SEED_PROJECTS, M3_SEED_USERS } from "../../packages/shared/src/m3-seed-design.ts";
 import { M4_SEED_MILESTONES, M4_SEED_PRE_M4_TASK, M4_SEED_TASKS } from "../../packages/shared/src/m4-seed-design.ts";
+import { M5_SEED_CALENDARS } from "../../packages/shared/src/m5-seed-design.ts";
 
-function seedUuid(key: string): string {
-  const digest = createHash("sha256").update(`amber.m3.seed.${key}`).digest("hex");
+function seedUuid(namespace: string, key: string): string {
+  const digest = createHash("sha256").update(`${namespace}${key}`).digest("hex");
   return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-8${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
+}
+
+function m3Id(key: string): string {
+  return seedUuid("amber.m3.seed.", key);
+}
+
+function m5Id(key: string): string {
+  return seedUuid("amber.m5.seed.", key);
 }
 
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
-  const expectedOrgA = seedUuid("org:org-a");
-  const expectedOrgB = seedUuid("org:org-b");
-  const expectedProjectA1 = seedUuid("project:project-a1");
-  const expectedCoord = seedUuid("user:coord-a");
+  const expectedOrgA = m3Id("org:org-a");
+  const expectedOrgB = m3Id("org:org-b");
+  const expectedProjectA1 = m3Id("project:project-a1");
+  const expectedCoord = m3Id("user:coord-a");
 
   const orgA = await prisma.organization.findUnique({ where: { id: expectedOrgA } });
   const orgB = await prisma.organization.findUnique({ where: { id: expectedOrgB } });
@@ -42,9 +51,9 @@ async function main(): Promise<void> {
     throw new Error(`expected 2 seed orgs, found ${orgCount}`);
   }
 
-  const expectedTask = seedUuid("task:task-a1-todo");
-  const expectedMilestone = seedUuid("ms:ms-a1-planned");
-  const expectedIssue = seedUuid("issue:iss-a1-grid");
+  const expectedTask = m3Id("task:task-a1-todo");
+  const expectedMilestone = m3Id("ms:ms-a1-planned");
+  const expectedIssue = m3Id("issue:iss-a1-grid");
   const task = await prisma.task.findUnique({ where: { id: expectedTask } });
   const milestone = await prisma.milestone.findUnique({ where: { id: expectedMilestone } });
   const issue = await prisma.issue.findUnique({ where: { id: expectedIssue } });
@@ -75,6 +84,21 @@ async function main(): Promise<void> {
   if (process.env.AMBER_REQUIRE_PRE_M4 === "1" && !preM4) {
     throw new Error("pre-M4 activation Task missing after upgrade re-seed");
   }
+  const expectedCalendar = m5Id("cal:cal-owner-private");
+  const calendar = await prisma.calendar.findUnique({ where: { id: expectedCalendar } });
+  if (!calendar || calendar.name !== M5_SEED_CALENDARS[0]?.name) {
+    throw new Error(`M5 cal-owner-private missing or name mismatch (expected ${expectedCalendar})`);
+  }
+  const calendarCount = await prisma.calendar.count({
+    where: { name: { in: M5_SEED_CALENDARS.map((row) => row.name) } },
+  });
+  if (calendarCount !== M5_SEED_CALENDARS.length) {
+    throw new Error(`expected ${M5_SEED_CALENDARS.length} M5 seed calendars, found ${calendarCount}`);
+  }
+  const conversationCount = await prisma.conversation.count();
+  if (conversationCount !== 0) {
+    throw new Error(`M5.2 must not seed Messaging rows, found ${conversationCount} conversations`);
+  }
   console.log(`seed_org_a=${expectedOrgA}`);
   console.log(`seed_org_b=${expectedOrgB}`);
   console.log(`seed_project_a1=${expectedProjectA1}`);
@@ -83,6 +107,7 @@ async function main(): Promise<void> {
   console.log(`seed_ms_a1_planned=${expectedMilestone}`);
   console.log(`seed_issue_a1_grid=${expectedIssue}`);
   console.log(`pre_m4_activation_present=${preM4 ? "yes" : "no"}`);
+  console.log(`seed_cal_owner_private=${expectedCalendar}`);
   console.log("deterministic_seed=ok");
 }
 

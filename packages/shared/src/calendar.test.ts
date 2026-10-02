@@ -7,6 +7,7 @@ import {
   assertEventTimeBounds,
   assertGrantPrincipalXor,
   assertIanaTimeZone,
+  resolveLocalWallTime,
   calendarAccessGrantsProjectAccess,
   calendarActionAllowed,
   calendarEditsMutateSourceLifecycle,
@@ -25,8 +26,10 @@ describe("M5.1 Calendar contract", () => {
   it("validates IANA zones and all-day local dates", () => {
     expect(() => assertIanaTimeZone("America/Sao_Paulo")).not.toThrow();
     expect(() => assertIanaTimeZone("UTC")).not.toThrow();
+    expect(() => assertIanaTimeZone("Etc/UTC")).not.toThrow();
     expect(() => assertIanaTimeZone("EST")).toThrow(CalendarStateError);
     expect(() => assertIanaTimeZone("local")).toThrow(CalendarStateError);
+    expect(() => assertIanaTimeZone("Not/AZone")).toThrow(CalendarStateError);
     expect(() => assertAllDayLocalDate("2026-10-02")).not.toThrow();
     expect(() => assertAllDayLocalDate("10/02/2026")).toThrow(CalendarStateError);
   });
@@ -52,6 +55,31 @@ describe("M5.1 Calendar contract", () => {
         allDayEndDate: "2026-10-02",
       }),
     ).toThrow(CalendarStateError);
+    expect(() =>
+      resolveLocalWallTime({
+        localDateTime: "2026-03-08T02:30:00",
+        timeZone: "America/New_York",
+      }),
+    ).toThrow(CalendarStateError);
+    expect(() =>
+      resolveLocalWallTime({
+        localDateTime: "2026-11-01T01:30:00",
+        timeZone: "America/New_York",
+      }),
+    ).toThrow(CalendarStateError);
+    const disambiguated = resolveLocalWallTime({
+      localDateTime: "2026-11-01T01:30:00",
+      timeZone: "America/New_York",
+      chosenOffset: "-05:00",
+    });
+    expect(disambiguated.resolution).toBe("AMBIGUOUS");
+    expect(disambiguated.offset).toBe("-05:00");
+    const unambiguous = resolveLocalWallTime({
+      localDateTime: "2026-10-02T15:00:00",
+      timeZone: "America/Sao_Paulo",
+    });
+    expect(unambiguous.resolution).toBe("UNAMBIGUOUS");
+    expect(unambiguous.instant.toISOString()).toBe("2026-10-02T18:00:00.000Z");
   });
 
   it("enforces USER/TEAM grant XOR and overlapping max-role", () => {
