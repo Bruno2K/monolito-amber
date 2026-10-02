@@ -381,6 +381,26 @@ describe("M4.3 Task operations", () => {
     expect((await taskOf(coordinator, created.body.id)).status).toBe("TODO");
   });
 
+  it("M4.5-ADV concurrent start with stale version is OPTIMISTIC_LOCK, not same-status", async () => {
+    const created = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks`)
+      .set("Idempotency-Key", key("create-kanban-cas"))
+      .send({ title: "Kanban CAS" });
+    const started = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks/${created.body.id}/start`)
+      .set("Idempotency-Key", key("start-kanban-cas"))
+      .send({ expectedVersion: created.body.version });
+    expect(started.status).toBeLessThan(400);
+    const stale = await coordinator
+      .post(`/api/v1/projects/${projectA}/tasks/${created.body.id}/start`)
+      .set("Idempotency-Key", key("start-kanban-cas-stale"))
+      .send({ expectedVersion: created.body.version });
+    expect(stale.status).toBe(409);
+    expect(stale.body.code).toBe("OPTIMISTIC_LOCK");
+    expect(stale.body.detail).not.toMatch(/IN_PROGRESS to IN_PROGRESS/);
+    expect((await taskOf(coordinator, created.body.id)).status).toBe("IN_PROGRESS");
+  });
+
   it("M4.3-ADV-02 duplicate Idempotency-Key does not duplicate Task or extra audit", async () => {
     const first = await coordinator
       .post(`/api/v1/projects/${projectA}/tasks`)
