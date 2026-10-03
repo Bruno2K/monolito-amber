@@ -108,7 +108,10 @@ export type PendingLifecycle = "pending" | "failed" | "retrying";
 export interface PendingSend {
   localId: string;
   key: string;
+  /** Normalized body posted to the API. */
   body: string;
+  /** Exact composer text at submit. Whitespace is significant. Not a sentinel. */
+  raw: string;
   conversationId: string;
   lifecycle: PendingLifecycle;
 }
@@ -432,6 +435,44 @@ export function mergeTranscriptByVersion(current: readonly MessageRecord[], inco
 
 export function normalizeComposerBody(raw: string): string {
   return raw.trim();
+}
+
+export type ReadStateSettlement = "aborted" | "stale" | "denied" | "recoverable" | "applied";
+
+/** A superseded read-state is stale even if the request also aborted. Recoverable failures stay on the current transcript. */
+export function settleReadState(input: {
+  aborted: boolean;
+  stillCurrent: boolean;
+  ok: boolean;
+  status: number;
+}): ReadStateSettlement {
+  if (!input.stillCurrent) {
+    return "stale";
+  }
+  if (input.aborted) {
+    return "aborted";
+  }
+  if (input.ok) {
+    return "applied";
+  }
+  if (isAuthorizationMiss(input.status)) {
+    return "denied";
+  }
+  return "recoverable";
+}
+
+export function transcriptAfterReadState<T>(
+  settlement: ReadStateSettlement,
+  messages: T,
+): { status: "ready"; messages: T; readState: "applied" | "recoverable" } | { status: "aborted" | "stale" | "denied" } {
+  if (settlement === "applied" || settlement === "recoverable") {
+    return { status: "ready", messages, readState: settlement };
+  }
+  return { status: settlement };
+}
+
+export function mutationMayConsumeTranscript(status: "ready" | "stale" | "denied" | "failed" | "aborted"): boolean {
+  return status === "ready";
 }
 
 export function draftAfterSuccessfulSend(currentDraft: string, submittedRaw: string, sameContext: boolean): string {

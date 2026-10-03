@@ -19,7 +19,10 @@ import {
   contentFits,
   acceptTranscriptRefresh,
   draftAfterSuccessfulSend,
+  mutationMayConsumeTranscript,
   nextTombstoneAttempt,
+  settleReadState,
+  transcriptAfterReadState,
   normalizeComposerBody,
   discardFailedSends,
   conversationFailure,
@@ -174,7 +177,7 @@ describe("M5.5 messaging presentation", () => {
     expect(reuseSendKey({ key: "same", body: "oi" }, "outro")).toBeNull();
     expect(
       visiblePendingSends(
-        [{ localId: "local", key: "same", body: "oi", conversationId: "c", lifecycle: "pending" }],
+        [{ localId: "local", key: "same", body: "oi", raw: "oi", conversationId: "c", lifecycle: "pending" }],
         new Set(["m1"]),
         new Map([["local", "m1"]]),
       ),
@@ -384,12 +387,12 @@ describe("M5.5 messaging presentation", () => {
     expect(draftAfterSuccessfulSend("A", "A", true)).toBe("");
     expect(draftAfterSuccessfulSend("B", "A", true)).toBe("B");
     expect(draftAfterSuccessfulSend("novo", "A", false)).toBe("novo");
-    const failed = { localId: "a", key: "key-a", body: "A", conversationId: "c", lifecycle: "pending" as const };
+    const failed = { localId: "a", key: "key-a", body: "A", raw: "A", conversationId: "c", lifecycle: "pending" as const };
     const afterFail = applySendFailure([failed], "a", new Set());
     expect(afterFail[0]?.lifecycle).toBe("failed");
     const alongside = [
       ...afterFail,
-      { localId: "b", key: "key-b", body: "B", conversationId: "c", lifecycle: "pending" as const },
+      { localId: "b", key: "key-b", body: "B", raw: "B", conversationId: "c", lifecycle: "pending" as const },
     ];
     expect(alongside.filter((row) => row.lifecycle === "failed")).toHaveLength(1);
     expect(applySendFailure(alongside, "a", new Set(["a"]))).toEqual([alongside[1]]);
@@ -431,7 +434,7 @@ describe("M5.5 messaging presentation", () => {
   });
 
   it("discards a failed send when the draft changes and keeps it retryable otherwise", () => {
-    const failed = { localId: "p1", key: "same-key", body: "oi", conversationId: "A", lifecycle: "failed" as const };
+    const failed = { localId: "p1", key: "same-key", body: "oi", raw: "oi", conversationId: "A", lifecycle: "failed" as const };
     expect(discardFailedSends([failed, { ...failed, localId: "p2", lifecycle: "pending" }])).toEqual([
       { ...failed, localId: "p2", lifecycle: "pending" },
     ]);
@@ -583,6 +586,52 @@ describe("M5.5 messaging presentation", () => {
     ).toBe("stop");
   });
 });
+
+  it("retries oi without clearing a trailing-space draft or another context", () => {
+    const failed = { localId: "p1", key: "same-key", body: "oi", raw: "oi", conversationId: "A", lifecycle: "failed" as const };
+    expect(failed.raw).toBe("oi");
+    expect(failed.raw).not.toContain("\u0000");
+    expect(JSON.stringify(failed)).not.toContain("\\u0000");
+    const modified = "oi ";
+    expect(modified).not.toBe(failed.raw);
+    expect(draftAfterSuccessfulSend(modified, failed.raw, true)).toBe("oi ");
+    expect(draftAfterSuccessfulSend(failed.raw, failed.raw, true)).toBe("");
+    expect(draftAfterSuccessfulSend("oi ", failed.raw, false)).toBe("oi ");
+    expect(draftAfterSuccessfulSend("outro", failed.raw, false)).toBe("outro");
+    expect(reuseSendKey({ key: failed.key, body: failed.body }, failed.body)).toBe("same-key");
+    expect(reuseSendKey({ key: failed.key, body: failed.body }, "oi ")).toBeNull();
+  });
+
+  it("treats a superseded read-state as stale and keeps a recoverable failure visible", () => {
+    const snapshotA = [{ id: "m1", version: 2, lifecycle: "VISIBLE" as const, deletedAt: null }];
+    const superseded = settleReadState({ aborted: true, stillCurrent: false, ok: false, status: 0 });
+    expect(superseded).toBe("stale");
+    const lateA = transcriptAfterReadState(superseded, snapshotA);
+    expect(lateA).toEqual({ status: "stale" });
+    expect("messages" in lateA).toBe(false);
+    expect(mutationMayConsumeTranscript(lateA.status)).toBe(false);
+    expect(
+      nextTombstoneAttempt({
+        refresh: "stale",
+        message: snapshotA[0],
+        previousVersion: 2,
+        idempotencyKey: "edit-key",
+      }),
+    ).toEqual({ action: "stop", version: null, key: "edit-key" });
+    const snapshotB = [{ id: "m1", version: 5, lifecycle: "EDITED" as const, deletedAt: null }];
+    const current = transcriptAfterReadState(
+      settleReadState({ aborted: false, stillCurrent: true, ok: false, status: 503 }),
+      snapshotB,
+    );
+    expect(current).toEqual({ status: "ready", messages: snapshotB, readState: "recoverable" });
+    expect(mutationMayConsumeTranscript("ready")).toBe(true);
+    expect(settleReadState({ aborted: true, stillCurrent: true, ok: false, status: 0 })).toBe("aborted");
+    expect(settleReadState({ aborted: false, stillCurrent: true, ok: true, status: 204 })).toBe("applied");
+    for (const status of [401, 403, 404]) {
+      expect(settleReadState({ aborted: false, stillCurrent: true, ok: false, status })).toBe("denied");
+      expect(settleReadState({ aborted: false, stillCurrent: false, ok: false, status })).toBe("stale");
+    }
+  });
 
 function message(index: number): MessageRecord {
   return {

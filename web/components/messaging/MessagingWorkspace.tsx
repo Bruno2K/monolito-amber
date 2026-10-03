@@ -33,6 +33,8 @@ import {
   acceptTranscriptRefresh,
   draftAfterSuccessfulSend,
   normalizeComposerBody,
+  settleReadState,
+  transcriptAfterReadState,
   isReadOnlyConversation,
   mergeTranscriptByVersion,
   nextInboxIndex,
@@ -458,7 +460,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     mode: "replace" | "refresh",
     requestSeq: number,
     organizationId: string | null,
-  ): Promise<{ status: "ready"; messages: MessageRecord[] } | { status: "stale" | "denied" | "failed" }> {
+  ): Promise<{ status: "ready"; messages: MessageRecord[] } | { status: "stale" | "denied" | "failed" | "aborted" }> {
     const stillCurrent = () => transcriptRequestCurrent(requestSeq, generation, id, organizationId);
     const conversationResult = await request<InboxItem>(`/api/v1/conversations/${id}`, signal);
     if (conversationResult === "aborted" || !stillCurrent()) {
@@ -546,15 +548,26 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
       method: "PUT",
       body: JSON.stringify({ lastReadMessageId: target }),
     });
-    if (read === "aborted" || !stillCurrent()) {
-      return { status: "ready", messages: merged };
-    }
-    if (!read.ok) {
-      if (isAuthorizationMiss(read.status)) {
+    const settlement = settleReadState({
+      aborted: read === "aborted",
+      stillCurrent: stillCurrent(),
+      ok: read !== "aborted" && read.ok,
+      status: read === "aborted" ? 0 : read.status,
+    });
+    const settled = transcriptAfterReadState(settlement, merged);
+    if (settled.status === "denied") {
+      if (read !== "aborted" && !read.ok) {
         revokeThread(generation, id, read.problem.detail);
-        return { status: "denied" };
       }
-      setRefreshError(read.problem.detail);
+      return { status: "denied" };
+    }
+    if (settled.status !== "ready") {
+      return { status: settled.status };
+    }
+    if (settled.readState === "recoverable") {
+      if (read !== "aborted" && !read.ok) {
+        setRefreshError(read.problem.detail);
+      }
       return { status: "ready", messages: merged };
     }
     watermarkSent.current = `${id}:${target}`;
@@ -828,7 +841,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
       if (rows.some((row) => row.localId === lock.localId)) {
         return rows.map((row) => (row.localId === lock.localId ? { ...row, lifecycle: "retrying" } : row));
       }
-      return [...rows, { localId: lock.localId, key: lock.key, body, conversationId: lock.conversationId, lifecycle: "pending" }];
+      return [...rows, { localId: lock.localId, key: lock.key, body, raw: submittedRaw, conversationId: lock.conversationId, lifecycle: "pending" }];
     });
     const result = await request<MessageRecord>(`/api/v1/conversations/${lock.conversationId}/messages`, controller.signal, {
       method: "POST",
@@ -879,9 +892,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
     discardedSends.current.delete(row.localId);
     sendLock.current = decision.lock;
     setSending(true);
-    const rawAtRetry = draft;
-    const submittedRaw = normalizeComposerBody(rawAtRetry) === row.body ? rawAtRetry : `${rawAtRetry}\u0000`;
-    void send(decision.lock, row.body, submittedRaw);
+    void send(decision.lock, row.body, row.raw);
   }
 
   function submitDraft() {
@@ -953,7 +964,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
           request.organizationId,
         );
         setDialogPending(false);
-        if (!threadIsCurrent(generation, targetId) || reconciled.status === "stale" || reconciled.status === "denied") {
+        if (!threadIsCurrent(generation, targetId) || reconciled.status === "stale" || reconciled.status === "denied" || reconciled.status === "aborted") {
           return;
         }
         if (reconciled.status !== "ready") {
@@ -1019,7 +1030,7 @@ export function MessagingWorkspace({ conversationId }: { conversationId: string 
           request.organizationId,
         );
         setDialogPending(false);
-        if (!threadIsCurrent(generation, targetId) || reconciled.status === "stale" || reconciled.status === "denied") {
+        if (!threadIsCurrent(generation, targetId) || reconciled.status === "stale" || reconciled.status === "denied" || reconciled.status === "aborted") {
           return;
         }
         if (reconciled.status !== "ready") {

@@ -277,6 +277,85 @@ test.describe("M5.5 Direct and Team messaging UX", () => {
     expect(overflow).toBe(true);
     await expect(page.getByRole("button", { name: "Nova conversa" })).toBeVisible();
   });
+
+  test("failed retry keeps a whitespace-changed draft and does not clear another conversation", async ({ page }, testInfo) => {
+    test.setTimeout(180_000);
+    const stamp = `oi-${testInfo.project.name}-${Date.now()}`;
+    const failedBody = `oi ${stamp}`;
+    const changedDraft = `${failedBody} `;
+    await signInToOrg(page, "coord-a", "Amber Demo Alpha");
+    const direct = await apiJson(page, "POST", "/api/v1/conversations/direct", {
+      headers: { "Idempotency-Key": `m55-raw-${stamp}` },
+      data: { organizationMembershipId: CALENDAR_IDS.memContributorA },
+    });
+    expect(direct.status).toBeLessThan(300);
+    const conversationId = String(direct.body.id);
+    await page.goto(`/messages/${conversationId}`);
+    await expect(page.getByText("Carregando conversa")).toBeHidden();
+    const transcript = page.locator(".messages-transcript");
+    const composer = page.getByRole("textbox", { name: "Mensagem", exact: true });
+    await page.route(`**/api/v1/conversations/${conversationId}/messages`, async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ detail: "falha temporária" }) });
+        return;
+      }
+      await route.continue();
+    });
+    await composer.fill(failedBody);
+    await page.getByRole("button", { name: "Enviar" }).click();
+    await expect(page.getByText("Falha ao enviar", { exact: true })).toBeVisible();
+    await composer.fill(changedDraft);
+    await page.unroute(`**/api/v1/conversations/${conversationId}/messages`);
+    await page.getByRole("button", { name: "Tentar novamente" }).click();
+    await expect(transcript.getByText(failedBody, { exact: true })).toBeVisible();
+    await expect(composer).toHaveValue(changedDraft);
+    await page.route(`**/api/v1/conversations/${conversationId}/messages`, async (route) => {
+      if (route.request().method() === "POST") {
+        await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ detail: "falha temporária" }) });
+        return;
+      }
+      await route.continue();
+    });
+    const unchanged = `ok ${stamp}`;
+    await composer.fill(unchanged);
+    await page.getByRole("button", { name: "Enviar" }).click();
+    await expect(page.getByText("Falha ao enviar", { exact: true })).toBeVisible();
+    await page.unroute(`**/api/v1/conversations/${conversationId}/messages`);
+    await page.getByRole("button", { name: "Tentar novamente" }).last().click();
+    await expect(transcript.getByText(unchanged, { exact: true })).toBeVisible();
+    await expect(composer).toHaveValue("");
+
+    const other = await apiJson(page, "POST", "/api/v1/conversations/direct", {
+      headers: { "Idempotency-Key": `m55-raw-other-${stamp}` },
+      data: { organizationMembershipId: seedUuid("orgmem:org-a:discipline-a") },
+    });
+    expect(other.status).toBeLessThan(300);
+    const otherId = String(other.body.id);
+    expect(otherId).not.toBe(conversationId);
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route(`**/api/v1/conversations/${conversationId}/messages`, async (route) => {
+      if (route.request().method() !== "POST") {
+        await route.continue();
+        return;
+      }
+      await gate;
+      await route.continue();
+    });
+    const held = `ficar ${stamp}`;
+    const otherDraft = `novo contexto ${stamp}`;
+    await composer.fill(held);
+    await page.getByRole("button", { name: "Enviar" }).click();
+    await page.goto(`/messages/${otherId}`);
+    await expect(page.getByText("Carregando conversa")).toBeHidden();
+    const otherComposer = page.getByRole("textbox", { name: "Mensagem", exact: true });
+    await otherComposer.fill(otherDraft);
+    release();
+    await expect(otherComposer).toHaveValue(otherDraft);
+    await page.unroute(`**/api/v1/conversations/${conversationId}/messages`);
+  });
 });
 
 function unreadFor(items: unknown, conversationId: string): number {
