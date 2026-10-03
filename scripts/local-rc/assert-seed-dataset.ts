@@ -3,14 +3,17 @@ import { PrismaClient } from "@prisma/client";
 import { M3_SEED_ORGANIZATIONS, M3_SEED_PROJECTS, M3_SEED_USERS } from "../../packages/shared/src/m3-seed-design.ts";
 import { M4_SEED_MILESTONES, M4_SEED_PRE_M4_TASK, M4_SEED_TASKS } from "../../packages/shared/src/m4-seed-design.ts";
 import { M5_SEED_CALENDARS, M5_SEED_CONVERSATIONS } from "../../packages/shared/src/m5-seed-design.ts";
-import { countUnread } from "../../packages/shared/src/messaging.ts";
+import { isUsableMembership } from "../../packages/shared/src/membership.ts";
+import { countUnread, redactMessageProjection, teamConversationAccess } from "../../packages/shared/src/messaging.ts";
 import {
   M55_DEMO_CALENDARS,
   M55_DEMO_CONVERSATIONS,
   M55_DEMO_DELIVERABLES,
   M55_DEMO_DEPENDENCIES,
+  M55_DEMO_DOCUMENTS,
   M55_DEMO_EVENTS,
   M55_DEMO_GATES,
+  M55_DEMO_MESSAGES,
   M55_DEMO_MILESTONES,
   M55_DEMO_PHASES,
   M55_DEMO_PROJECT_MEMBERS,
@@ -19,7 +22,12 @@ import {
   M55_DEMO_TEAM_MEMBERS,
   M55_DEMO_TEAMS,
   M55_DEMO_USERS,
+  demoDeclaredReadStates,
+  demoMessageLifecycle,
+  demoMessageResource,
+  demoMessageVersion,
   demoSeedUuid,
+  encodeDemoMessageBody,
 } from "../../packages/shared/src/m55-demo-seed-design.ts";
 
 function seedUuid(namespace: string, key: string): string {
@@ -177,12 +185,32 @@ async function assertDemoPortfolio(orgAId: string, orgBId: string): Promise<void
   }
   const edited = await prisma.message.findUnique({ where: { id: demoSeedUuid("message:dm-arch-2") } });
   const tombstone = await prisma.message.findUnique({ where: { id: demoSeedUuid("message:dm-arch-3") } });
-  if (!edited?.editedAt) {
+  if (!edited?.editedAt || edited.version !== 2) {
     throw new Error("edited demo message drifted");
   }
-  if (!tombstone?.deletedAt || (tombstone.deletedAt ? null : tombstone.body) !== null) {
-    throw new Error("tombstoned demo message still exposes a body");
+  if (!tombstone?.deletedAt || !tombstone.body.trim()) {
+    throw new Error("tombstoned demo row must keep a non-empty stored body");
   }
+  const projectedTombstone = redactMessageProjection({
+    body: tombstone.body,
+    editedAt: tombstone.editedAt,
+    deletedAt: tombstone.deletedAt,
+    authorOrganizationMembershipId: tombstone.authorOrganizationMembershipId,
+    resourcePreviews: [{ type: "TASK", id: "protected", title: "protected preview", projectId: "secret-project" }],
+  });
+  if (
+    projectedTombstone.body !== null ||
+    projectedTombstone.lifecycle !== "TOMBSTONED" ||
+    projectedTombstone.authorOrganizationMembershipId !== memberships.get("coord-a") ||
+    projectedTombstone.resourcePreviews.length !== 0
+  ) {
+    throw new Error("tombstoned demo message projection leaked body or preview");
+  }
+  const projectedJson = JSON.stringify(projectedTombstone);
+  if (projectedJson.includes(tombstone.body) || projectedJson.includes("protected preview")) {
+    throw new Error("tombstoned demo message projection leaked stored text");
+  }
+  await assertDemoRecords(orgAId, memberships);
   const linkedTask = await prisma.task.findUnique({ where: { id: demoSeedUuid("task:hosp-clash") } });
   const linkedProject = await prisma.project.findUnique({ where: { id: demoSeedUuid("project:demo-hospital") } });
   const linkedDeliverable = await prisma.deliverable.findUnique({ where: { id: demoSeedUuid("deliverable:hosp-arch-model") } });
@@ -257,6 +285,134 @@ async function assertDemoPortfolio(orgAId: string, orgBId: string): Promise<void
     : null;
   if (!beta || beta.organizationId !== orgBId || betaOnHospital) {
     throw new Error("Alpha demo data must stay isolated from Beta");
+  }
+}
+
+
+async function assertDemoRecords(orgAId: string, memberships: Map<string, string>): Promise<void> {
+  for (const document of M55_DEMO_DOCUMENTS) {
+    const row = await prisma.document.findUnique({ where: { id: demoSeedUuid(`document:${document.key}`) } });
+    if (!row || row.code !== document.code || row.title !== document.title || row.status !== document.status) {
+      throw new Error(`document ${document.key} drifted`);
+    }
+    if (row.projectId !== demoSeedUuid(`project:${document.projectKey}`) || row.organizationId !== orgAId) {
+      throw new Error(`document ${document.key} project drifted`);
+    }
+  }
+  for (const conversation of M55_DEMO_CONVERSATIONS) {
+    const row = await prisma.conversation.findUnique({ where: { id: demoSeedUuid(`conversation:${conversation.key}`) } });
+    if (!row || row.kind !== conversation.kind || row.organizationId !== orgAId) {
+      throw new Error(`conversation ${conversation.key} drifted`);
+    }
+    if (conversation.kind === "TEAM" && row.teamId !== demoSeedUuid(`team:${conversation.teamKey}`)) {
+      throw new Error(`conversation ${conversation.key} team drifted`);
+    }
+  }
+  const messageIds = M55_DEMO_MESSAGES.map((message) => demoSeedUuid(`message:${message.key}`));
+  const messageCount = await prisma.message.count({ where: { id: { in: messageIds } } });
+  if (messageCount !== messageIds.length) {
+    throw new Error(`expected ${messageIds.length} demo messages, found ${messageCount}`);
+  }
+  for (const message of M55_DEMO_MESSAGES) {
+    const row = await prisma.message.findUnique({ where: { id: demoSeedUuid(`message:${message.key}`) } });
+    const resource = demoMessageResource(message);
+    const link = resource
+      ? { type: resource.type, id: demoSeedUuid(`${resource.type.toLowerCase()}:${resource.resourceKey}`) }
+      : null;
+    if (
+      !row ||
+      row.organizationId !== orgAId ||
+      row.conversationId !== demoSeedUuid(`conversation:${message.conversationKey}`) ||
+      row.authorOrganizationMembershipId !== memberships.get(message.authorKey) ||
+      row.createdAt.toISOString() !== message.at ||
+      row.version !== demoMessageVersion(message) ||
+      Boolean(row.editedAt) !== message.edited ||
+      Boolean(row.deletedAt) !== message.tombstone ||
+      row.body !== encodeDemoMessageBody(message.body, link)
+    ) {
+      throw new Error(`message ${message.key} drifted`);
+    }
+    const lifecycle = demoMessageLifecycle(message);
+    const projected = redactMessageProjection({
+      body: row.body,
+      editedAt: row.editedAt,
+      deletedAt: row.deletedAt,
+      authorOrganizationMembershipId: row.authorOrganizationMembershipId,
+      resourcePreviews: resource ? [{ type: resource.type, id: link?.id, title: "protected preview" }] : [],
+    });
+    if (projected.lifecycle !== lifecycle || projected.authorOrganizationMembershipId !== row.authorOrganizationMembershipId) {
+      throw new Error(`message ${message.key} projection drifted`);
+    }
+    if (message.tombstone) {
+      if (projected.body !== null || projected.resourcePreviews.length !== 0 || JSON.stringify(projected).includes(message.body)) {
+        throw new Error(`message ${message.key} tombstone projection leaked`);
+      }
+    }
+    if (!resource || !link) {
+      continue;
+    }
+    if (resource.type === "PROJECT") {
+      const project = await prisma.project.findUnique({ where: { id: link.id } });
+      if (!project || project.id !== demoSeedUuid(`project:${resource.projectKey}`)) {
+        throw new Error(`message ${message.key} project link drifted`);
+      }
+      continue;
+    }
+    const table = resource.type === "TASK" ? prisma.task : resource.type === "DELIVERABLE" ? prisma.deliverable : prisma.milestone;
+    const target = await table.findUnique({ where: { id: link.id } });
+    if (!target || target.projectId !== demoSeedUuid(`project:${resource.projectKey}`)) {
+      throw new Error(`message ${message.key} resource link drifted`);
+    }
+  }
+  for (const read of demoDeclaredReadStates()) {
+    const row = await prisma.messageReadState.findUnique({
+      where: {
+        conversationId_organizationMembershipId: {
+          conversationId: demoSeedUuid(`conversation:${read.conversationKey}`),
+          organizationMembershipId: memberships.get(read.readerKey)!,
+        },
+      },
+    });
+    if (!row || row.lastReadMessageId !== demoSeedUuid(`message:${read.messageKey}`)) {
+      throw new Error(`read state ${read.readerKey} on ${read.conversationKey} drifted`);
+    }
+  }
+  const otoId = memberships.get("contractor-a");
+  if (!otoId) {
+    throw new Error("Oto membership missing");
+  }
+  const otoProjects = await prisma.projectMembership.findMany({ where: { organizationMembershipId: otoId, status: "ACTIVE" } });
+  const expectedProjects = M55_DEMO_PROJECT_MEMBERS.filter((row) => row.userKey === "contractor-a").map((row) => demoSeedUuid(`project:${row.projectKey}`)).sort();
+  if (otoProjects.map((row) => row.projectId).sort().join() !== expectedProjects.join()) {
+    throw new Error("Oto project access drifted");
+  }
+  const otoTeams = await prisma.teamMembership.findMany({ where: { organizationMembershipId: otoId } });
+  const expectedTeams = M55_DEMO_TEAM_MEMBERS.filter((row) => row.userKey === "contractor-a").map((row) => demoSeedUuid(`team:${row.teamKey}`)).sort();
+  if (otoTeams.map((row) => row.teamId).sort().join() !== expectedTeams.join()) {
+    throw new Error("Oto team access drifted");
+  }
+  for (const [key, status] of [["suspended-a", "SUSPENDED"], ["removed-a", "REMOVED"]] as const) {
+    const membership = await prisma.organizationMembership.findUnique({ where: { id: m3Id(`orgmem:org-a:${key}`) } });
+    if (!membership || membership.status !== status || isUsableMembership(membership.status)) {
+      throw new Error(`${key} membership is still effective`);
+    }
+    const active = await prisma.projectMembership.count({
+      where: {
+        organizationMembershipId: membership.id,
+        status: "ACTIVE",
+        projectId: { in: M55_DEMO_PROJECTS.map((project) => demoSeedUuid(`project:${project.key}`)) },
+      },
+    });
+    if (active !== 0) {
+      throw new Error(`${key} still has demo project access`);
+    }
+    if (teamConversationAccess({ actorMembershipStatus: membership.status, teamMembershipActive: true, teamArchived: false }) !== "none") {
+      throw new Error(`${key} would still receive team conversation access`);
+    }
+  }
+  const site = await prisma.team.findUnique({ where: { id: demoSeedUuid("team:demo-site") } });
+  if (!site?.archivedAt || teamConversationAccess({ actorMembershipStatus: "ACTIVE", teamMembershipActive: true, teamArchived: Boolean(site.archivedAt) }) !== "read_only") {
+    throw new Error("archived Obra team must be read-only");
   }
 }
 

@@ -6,6 +6,7 @@ import {
   assertMaySend,
   compareMessageCursor,
   deepLinkPreviewRequiresTargetAuthorization,
+  redactMessageProjection,
   redactSecrets,
   type PermissionCode,
 } from "@amber/shared";
@@ -27,7 +28,6 @@ import {
   encodeCursor,
   encodeStoredBody,
   isResourceLinkType,
-  messageLifecycle,
 } from "./messaging.codec";
 
 @Injectable()
@@ -383,23 +383,24 @@ export class MessagesService {
       createdAt: Date;
     },
   ) {
-    const lifecycle = messageLifecycle(row);
     const decoded = decodeStoredBody(row.body);
-    const resourcePreviews = row.deletedAt
-      ? []
-      : await this.previewLinks(session, decoded.links);
+    const resourcePreviews = row.deletedAt ? [] : await this.previewLinks(session, decoded.links);
+    const projected = redactMessageProjection({
+      body: decoded.text,
+      editedAt: row.editedAt,
+      deletedAt: row.deletedAt,
+      authorOrganizationMembershipId: row.authorOrganizationMembershipId,
+      resourcePreviews,
+    });
     return {
       id: row.id,
       organizationId: row.organizationId,
       conversationId: row.conversationId,
-      authorOrganizationMembershipId: row.authorOrganizationMembershipId,
-      body: row.deletedAt ? null : decoded.text,
       createdAt: row.createdAt.toISOString(),
       editedAt: row.editedAt?.toISOString() ?? null,
       deletedAt: row.deletedAt?.toISOString() ?? null,
       version: row.version,
-      lifecycle,
-      resourcePreviews,
+      ...projected,
     };
   }
 

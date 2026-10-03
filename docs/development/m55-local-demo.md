@@ -5,9 +5,11 @@ Fictional portfolio for a local, disposable database. The catalog-only seed does
 1. `AMBER_SEED_M3=1`
 2. `AMBER_ALLOW_DEMO_SEED=1`
 3. `DATABASE_URL` parses as a PostgreSQL URL
-4. the host is loopback (`localhost`, `127.0.0.1`, `::1`) or the repository Compose service name `postgres`
+4. the host is loopback only: `localhost`, `127.0.0.1`, or `::1`
 
-`NODE_ENV=production` or `AMBER_ENV=production` always refuses the demo seed. A remote host is refused. There is no override that points this seed at a remote or production database. Error text names the failed check and does not include the database URL or password.
+`NODE_ENV` and `AMBER_ENV` are trimmed and compared case-insensitively. `production` in either variable always refuses the demo seed. A remote host is refused. The Compose DNS name `postgres` is not a seed target. Hostname alone is never enough, and there is no force, unsafe, or remote override. Error text names the failed check and does not include the database URL, username, or password.
+
+Seed from the host against the published loopback port. Do not run the demo seed inside the `api` container: that process uses the Compose service hostname, which the guard rejects. Prefer `scripts/local-rc/bootstrap.sh` or `scripts/local-rc/bootstrap.ps1`. Both set `AMBER_SEED_M3=1` and `AMBER_ALLOW_DEMO_SEED=1` only for the seed command. The PowerShell script restores the previous process environment afterwards and does not write user or machine environment variables. `reset.ps1` reaches that same bootstrap.
 
 Confirm the target before seeding. Print only the host:
 
@@ -31,12 +33,32 @@ pnpm prisma:migrate
 AMBER_SEED_M3=1 AMBER_ALLOW_DEMO_SEED=1 pnpm prisma:seed
 ```
 
-PowerShell:
+PowerShell, scoped to the seed command:
 
 ```powershell
 pnpm exec prisma migrate reset --force --skip-seed
 pnpm prisma:migrate
-$env:AMBER_SEED_M3='1'; $env:AMBER_ALLOW_DEMO_SEED='1'; pnpm prisma:seed
+$demoSeedFlags = @{
+  AMBER_SEED_M3 = "1"
+  AMBER_ALLOW_DEMO_SEED = "1"
+}
+$savedDemoSeedFlags = @{}
+foreach ($name in @($demoSeedFlags.Keys)) {
+  $savedDemoSeedFlags[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
+  Set-Item -Path "Env:$name" -Value $demoSeedFlags[$name]
+}
+try {
+  pnpm prisma:seed
+} finally {
+  foreach ($name in @($demoSeedFlags.Keys)) {
+    $previous = $savedDemoSeedFlags[$name]
+    if ([string]::IsNullOrEmpty($previous)) {
+      Remove-Item -Path "Env:$name" -ErrorAction SilentlyContinue
+    } else {
+      Set-Item -Path "Env:$name" -Value $previous
+    }
+  }
+}
 ```
 
 Running the seed again is idempotent. Drop, migrate, and seed again reproduce the same ids. Existing Alpha/Beta fixture ids used by tests stay unchanged.

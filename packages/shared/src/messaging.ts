@@ -175,6 +175,28 @@ export function compareMessageCursor(a: MessageCursor, b: MessageCursor): number
  * Unread = authorized Messages from *others* after the user watermark.
  * Own sends, edits, and tombstones do not create unread.
  */
+export function redactMessageProjection<T>(row: {
+  body: string;
+  editedAt: Date | string | null;
+  deletedAt: Date | string | null;
+  authorOrganizationMembershipId: string;
+  resourcePreviews?: readonly T[];
+}): {
+  body: string | null;
+  lifecycle: MessageLifecycle;
+  authorOrganizationMembershipId: string;
+  resourcePreviews: readonly T[];
+} {
+  const tombstoned = row.deletedAt != null;
+  const edited = row.editedAt != null;
+  return {
+    body: tombstoned ? null : row.body,
+    lifecycle: tombstoned ? "TOMBSTONED" : edited ? "EDITED" : "VISIBLE",
+    authorOrganizationMembershipId: row.authorOrganizationMembershipId,
+    resourcePreviews: tombstoned ? [] : (row.resourcePreviews ?? []),
+  };
+}
+
 export function messageCreatesUnread(input: {
   authorMembershipId: string;
   readerMembershipId: string;

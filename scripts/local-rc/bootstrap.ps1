@@ -19,6 +19,28 @@ Write-Host "==> host pnpm migrate+seed (web must use compose --profile apps; do 
 pnpm install --frozen-lockfile
 pnpm prisma:generate
 pnpm prisma:migrate
-$env:AMBER_SEED_M3 = "1"
-pnpm prisma:seed
+
+# Both demo flags, scoped to the seed command. Restore the process environment afterwards.
+$demoSeedFlags = @{
+  AMBER_SEED_M3 = "1"
+  AMBER_ALLOW_DEMO_SEED = "1"
+}
+$savedDemoSeedFlags = @{}
+foreach ($name in @($demoSeedFlags.Keys)) {
+  $savedDemoSeedFlags[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
+  Set-Item -Path "Env:$name" -Value $demoSeedFlags[$name]
+}
+try {
+  pnpm prisma:seed
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+} finally {
+  foreach ($name in @($demoSeedFlags.Keys)) {
+    $previous = $savedDemoSeedFlags[$name]
+    if ([string]::IsNullOrEmpty($previous)) {
+      Remove-Item -Path "Env:$name" -ErrorAction SilentlyContinue
+    } else {
+      Set-Item -Path "Env:$name" -Value $previous
+    }
+  }
+}
 Write-Host "bootstrap data plane ready. Next: .\scripts\local-rc\up.ps1"

@@ -32,21 +32,31 @@ export const M55_DEMO_ORG_MEMBERSHIPS = [
 ] as const;
 
 const DEMO_SEED_LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
-/** Compose service name from docker-compose.yml. Not a configurable remote bypass. */
-const DEMO_SEED_COMPOSE_HOST = "postgres";
+
+/** Flags that must travel with the seed command. Hostname is never an override. */
+export const DEMO_SEED_COMMAND_FLAGS = ["AMBER_SEED_M3", "AMBER_ALLOW_DEMO_SEED"] as const;
 
 export function demoSeedEnabled(env: { AMBER_SEED_M3?: string }): boolean {
   return env.AMBER_SEED_M3 === "1";
 }
 
+function runtimeLabel(value: string | undefined): string {
+  return (value ?? "").trim().toLowerCase();
+}
+
 export function assertLocalDemoSeedTarget(env: {
   NODE_ENV?: string;
   AMBER_ENV?: string;
+  AMBER_SEED_M3?: string;
   AMBER_ALLOW_DEMO_SEED?: string;
   DATABASE_URL?: string;
+  [extra: string]: string | undefined;
 }): void {
-  if (env.NODE_ENV === "production" || env.AMBER_ENV === "production") {
+  if (runtimeLabel(env.NODE_ENV) === "production" || runtimeLabel(env.AMBER_ENV) === "production") {
     throw new Error("Refusing demo seed: NODE_ENV or AMBER_ENV is production");
+  }
+  if (env.AMBER_SEED_M3 !== "1") {
+    throw new Error("Refusing demo seed: AMBER_SEED_M3=1 is required");
   }
   if (env.AMBER_ALLOW_DEMO_SEED !== "1") {
     throw new Error("Refusing demo seed: AMBER_ALLOW_DEMO_SEED=1 is required");
@@ -65,9 +75,45 @@ export function assertLocalDemoSeedTarget(env: {
     throw new Error("Refusing demo seed: DATABASE_URL must use the postgresql protocol");
   }
   const host = parsed.hostname.replace(/^\[|\]$/g, "").toLowerCase();
-  if (!DEMO_SEED_LOOPBACK_HOSTS.has(host) && host !== DEMO_SEED_COMPOSE_HOST) {
-    throw new Error(`Refusing demo seed: database host "${host}" is not a local or disposable target`);
+  if (!DEMO_SEED_LOOPBACK_HOSTS.has(host)) {
+    throw new Error("Refusing demo seed: database host is not loopback");
   }
+}
+
+/** Bash seed lines must set every required flag inline. PowerShell must use the same set, restored after the command. */
+export function demoSeedFlagsInBash(source: string): string[] {
+  const flags = new Set<string>();
+  for (const line of source.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+    if (!trimmed.includes("prisma:seed")) {
+      continue;
+    }
+    for (const match of trimmed.matchAll(/\b([A-Z0-9_]+)=1\b/g)) {
+      const name = match[1];
+      if (name) {
+        flags.add(name);
+      }
+    }
+  }
+  return [...flags].sort();
+}
+
+export function demoSeedFlagsInPowerShell(source: string): string[] {
+  const table = source.match(/\$demoSeedFlags\s*=\s*@\{([\s\S]*?)\}/);
+  if (!table?.[1] || !source.includes("pnpm prisma:seed") || !source.includes("finally")) {
+    return [];
+  }
+  const flags = new Set<string>();
+  for (const match of table[1].matchAll(/\b([A-Z0-9_]+)\s*=\s*"1"/g)) {
+    const name = match[1];
+    if (name) {
+      flags.add(name);
+    }
+  }
+  return [...flags].sort();
 }
 
 export const M55_DEMO_PROJECTS = [
@@ -208,3 +254,73 @@ export const M55_DEMO_MESSAGES = [
   { key: "team-bim-3", conversationKey: "team-bim", authorKey: "coord-a", body: "O marco de coordenação continua na segunda quinzena.", edited: false, tombstone: false, at: "2026-10-02T10:40:00.000Z", link: { type: "MILESTONE", milestoneKey: "hosp-coord" } },
   { key: "team-site-1", conversationKey: "team-site", authorKey: "contractor-a", body: "A equipe de obra foi arquivada. Este histórico fica somente leitura.", edited: false, tombstone: false, at: "2026-09-15T13:00:00.000Z" },
 ] as const;
+
+
+const DEMO_LINK_SENTINEL = "\n\n\u2060amber-links:";
+
+export function encodeDemoMessageBody(text: string, link: { type: string; id: string } | null): string {
+  if (!link) {
+    return text;
+  }
+  const payload = Buffer.from(JSON.stringify([link]), "utf8").toString("base64url");
+  return `${text}${DEMO_LINK_SENTINEL}${payload}`;
+}
+
+export function demoMessageLifecycle(message: { edited: boolean; tombstone: boolean }): "VISIBLE" | "EDITED" | "TOMBSTONED" {
+  if (message.tombstone) {
+    return "TOMBSTONED";
+  }
+  if (message.edited) {
+    return "EDITED";
+  }
+  return "VISIBLE";
+}
+
+export function demoMessageVersion(message: { edited: boolean; tombstone: boolean }): number {
+  return message.edited || message.tombstone ? 2 : 1;
+}
+
+export function demoMessageResource(
+  message: (typeof M55_DEMO_MESSAGES)[number],
+): { type: string; resourceKey: string; projectKey: string } | null {
+  if (!("link" in message) || !message.link) {
+    return null;
+  }
+  const link = message.link;
+  if (link.type === "TASK") {
+    const task = M55_DEMO_TASKS.find((row) => row.key === link.taskKey);
+    if (!task) {
+      throw new Error(`missing demo task ${link.taskKey}`);
+    }
+    return { type: "TASK", resourceKey: link.taskKey, projectKey: task.projectKey };
+  }
+  if (link.type === "DELIVERABLE") {
+    const deliverable = M55_DEMO_DELIVERABLES.find((row) => row.key === link.deliverableKey);
+    if (!deliverable) {
+      throw new Error(`missing demo deliverable ${link.deliverableKey}`);
+    }
+    return { type: "DELIVERABLE", resourceKey: link.deliverableKey, projectKey: deliverable.projectKey };
+  }
+  if (link.type === "MILESTONE") {
+    const milestone = M55_DEMO_MILESTONES.find((row) => row.key === link.milestoneKey);
+    if (!milestone) {
+      throw new Error(`missing demo milestone ${link.milestoneKey}`);
+    }
+    return { type: "MILESTONE", resourceKey: link.milestoneKey, projectKey: milestone.projectKey };
+  }
+  return { type: "PROJECT", resourceKey: link.projectKey, projectKey: link.projectKey };
+}
+
+export function demoDeclaredReadStates(): Array<{ conversationKey: string; readerKey: string; messageKey: string }> {
+  return M55_DEMO_CONVERSATIONS.flatMap((conversation) => {
+    const last = M55_DEMO_MESSAGES.filter((message) => message.conversationKey === conversation.key).at(-1);
+    if (!last) {
+      throw new Error(`conversation ${conversation.key} has no messages`);
+    }
+    return conversation.readBy.map((readerKey) => ({
+      conversationKey: conversation.key,
+      readerKey,
+      messageKey: last.key,
+    }));
+  });
+}

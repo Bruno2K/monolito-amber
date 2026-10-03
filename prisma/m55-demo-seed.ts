@@ -28,10 +28,10 @@ import {
   assertConversationShape,
   demoSeedUuid,
   directConversationPairKey,
+  encodeDemoMessageBody,
 } from "../packages/shared/src/index.ts";
 
 const ARGON2_PARAMETERS = { type: argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 } as const;
-const LINKS_SENTINEL = "\n\n\u2060amber-links:";
 
 function m3Id(key: string): string {
   const digest = createHash("sha256").update(`amber.m3.seed.${key}`).digest("hex");
@@ -44,13 +44,6 @@ function day(offset: number): Date {
   return date;
 }
 
-function withLink(text: string, link: { type: string; id: string } | null): string {
-  if (!link) {
-    return text;
-  }
-  const payload = Buffer.from(JSON.stringify([link]), "utf8").toString("base64url");
-  return `${text}${LINKS_SENTINEL}${payload}`;
-}
 
 export async function seedM55DemoDataset(prisma: PrismaClient): Promise<void> {
   const org = await prisma.organization.findUnique({ where: { slug: M3_SEED_ORGANIZATIONS[0].slug } });
@@ -567,7 +560,7 @@ export async function seedM55DemoDataset(prisma: PrismaClient): Promise<void> {
           organizationId: org.id,
           conversationId,
           authorOrganizationMembershipId,
-          body: withLink(message.body, link),
+          body: encodeDemoMessageBody(message.body, link),
           editedAt: message.edited ? createdAt : null,
           deletedAt: message.tombstone ? createdAt : null,
           version: message.edited || message.tombstone ? 2 : 1,

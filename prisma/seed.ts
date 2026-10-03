@@ -124,7 +124,13 @@ async function main() {
   }
 
   if (demoSeedEnabled(process.env)) {
-    assertLocalDemoSeedTarget(process.env);
+    assertLocalDemoSeedTarget({
+      NODE_ENV: process.env.NODE_ENV,
+      AMBER_ENV: process.env.AMBER_ENV,
+      AMBER_SEED_M3: process.env.AMBER_SEED_M3,
+      AMBER_ALLOW_DEMO_SEED: process.env.AMBER_ALLOW_DEMO_SEED,
+      DATABASE_URL: process.env.DATABASE_URL,
+    });
     await seedM3Dataset(prisma);
     await seedM4PlanningDataset(prisma);
     await seedM5CalendarDataset(prisma);
