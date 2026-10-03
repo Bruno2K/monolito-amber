@@ -58,7 +58,7 @@ describe("M5.1 baseline security (fail closed)", () => {
     };
     const paths = Object.keys(openapi.paths);
     for (const row of M5_PLANNED_API_ROUTES) {
-      if (row.implementedIn === "m5.2" || row.implementedIn === "m5.4") {
+      if (row.implementedIn === "m5.2" || row.implementedIn === "m5.4" || row.implementedIn === "m5.5") {
         expect(paths, row.path).toContain(row.path);
       } else {
         expect(paths, row.path).not.toContain(row.path);

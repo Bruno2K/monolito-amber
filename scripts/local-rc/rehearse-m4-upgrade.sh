@@ -30,13 +30,13 @@ echo "==> prisma migrate deploy (full chain from init)" | tee -a "$LOG"
 pnpm prisma:migrate | tee -a "$LOG"
 
 echo "==> AMBER_SEED_M3=1 prisma:seed (M3 operational + M4 planning fixtures)" | tee -a "$LOG"
-AMBER_SEED_M3=1 pnpm prisma:seed | tee -a "$LOG"
+AMBER_SEED_M3=1 AMBER_ALLOW_DEMO_SEED=1 pnpm prisma:seed | tee -a "$LOG"
 
 echo "==> insert representative pre-M4 activation Task" | tee -a "$LOG"
 pnpm exec tsx "${ROOT}/scripts/local-rc/insert-pre-m4-activation.ts" | tee -a "$LOG"
 
 echo "==> re-seed current tip (must not wipe pre-M4 or M3 ids)" | tee -a "$LOG"
-AMBER_SEED_M3=1 pnpm prisma:seed | tee -a "$LOG"
+AMBER_SEED_M3=1 AMBER_ALLOW_DEMO_SEED=1 pnpm prisma:seed | tee -a "$LOG"
 
 echo "==> assert deterministic seed IDs + M4 fixtures" | tee -a "$LOG"
 AMBER_REQUIRE_PRE_M4=1 pnpm exec tsx "${ROOT}/scripts/local-rc/assert-seed-dataset.ts" | tee -a "$LOG"

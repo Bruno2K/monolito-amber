@@ -122,4 +122,4 @@ No DDL. `pnpm prisma:seed` upserts `PERMISSIONS` and additively inserts missing 
 
 ## Rollback
 
-Forward-only. If this WI’s migration fails before merge to production: do not apply. If applied in a disposable local DB: reset the database (`prisma migrate reset`) — seeds are designed to be resettable (`AMBER_SEED_M3=1 pnpm prisma:seed` after catalog seed). Production cloud apply is **not authorized** in M3. Operational rollback of an applied local migration is restore-from-backup, not `DROP SCHEMA operations`.
+Forward-only. If this WI’s migration fails before merge to production: do not apply. If applied in a disposable local DB: reset the database (`prisma migrate reset`) — seeds are designed to be resettable (`AMBER_SEED_M3=1 AMBER_ALLOW_DEMO_SEED=1 pnpm prisma:seed` after catalog seed, loopback database only). Production cloud apply is **not authorized** in M3. Operational rollback of an applied local migration is restore-from-backup, not `DROP SCHEMA operations`.

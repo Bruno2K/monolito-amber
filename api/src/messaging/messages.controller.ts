@@ -106,6 +106,8 @@ export class MessagesController {
   @Get("messages")
   @ApiOperation({
     summary: "Cursor-ordered messages. Server createdAt + id tie-break. Tombstone body is omitted.",
+    description:
+      "Authorized resource previews include projectId only after an independent target authorization. Unauthorized previews omit title and projectId. Conversation access does not grant Project access.",
   })
   list(
     @CurrentSession() session: RequestSession,

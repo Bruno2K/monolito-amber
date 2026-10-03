@@ -49,6 +49,13 @@ class SearchQueryDto {
   pageSize?: string;
 }
 
+class DirectCandidatesQueryDto {
+  @ApiPropertyOptional({ description: "Optional display-name filter. Does not widen the candidate set." })
+  @IsOptional()
+  @IsString()
+  q?: string;
+}
+
 class FindOrCreateDirectDto {
   @ApiProperty({ format: "uuid", description: "Peer OrganizationMembership in the session Organization." })
   @IsUUID()
@@ -122,6 +129,15 @@ export class ConversationsController {
     @Body() body: EnsureTeamConversationDto,
   ) {
     return this.conversations.ensureTeam(this.auth.requireSession(session), idempotencyKey, body);
+  }
+
+  @Get("direct-candidates")
+  @ApiOperation({
+    summary:
+      "Direct peers in the session Organization who already share an authorized project and have an ACTIVE Organization membership. Not an org-wide directory.",
+  })
+  directCandidates(@CurrentSession() session: RequestSession, @Query() query: DirectCandidatesQueryDto) {
+    return this.conversations.directCandidates(this.auth.requireSession(session), query.q);
   }
 
   @Get(":conversationId")

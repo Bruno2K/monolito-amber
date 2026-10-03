@@ -14,6 +14,7 @@ import {
 import { Prisma } from "@prisma/client";
 import { AuditService } from "../audit/audit.service";
 import type { RequestSession } from "../auth/session.types";
+import { AuthzService } from "../authz/authz.service";
 import { FoundationService } from "../foundation/foundation.service";
 import { IdempotencyService } from "../foundation/idempotency.service";
 import { currentCorrelationId } from "../observability/request-context";
@@ -38,6 +39,7 @@ export class ConversationsService {
     private readonly audit: AuditService,
     private readonly foundation: FoundationService,
     private readonly idempotency: IdempotencyService,
+    private readonly authz: AuthzService,
   ) {}
 
   async list(
@@ -260,6 +262,63 @@ export class ConversationsService {
     return {
       items,
       nextCursor: rows.length > pageSize && last ? encodeCursor({ createdAt: last.createdAt.toISOString(), id: last.id }) : null,
+    };
+  }
+
+  async directCandidates(session: RequestSession, q?: string) {
+    const actor = await this.access.requireActor(session);
+    const ownProjects = await this.prisma.projectMembership.findMany({
+      where: {
+        organizationMembershipId: actor.membershipId,
+        status: "ACTIVE",
+        project: { organizationId: actor.organizationId },
+      },
+      select: { projectId: true },
+    });
+    const projectIds: string[] = [];
+    for (const row of ownProjects) {
+      try {
+        await this.authz.assert(session, "project.read", row.projectId);
+        projectIds.push(row.projectId);
+      } catch {
+        continue;
+      }
+    }
+    if (projectIds.length === 0) {
+      return { items: [] as Array<{ id: string; displayName: string }> };
+    }
+    const peers = await this.prisma.projectMembership.findMany({
+      where: {
+        projectId: { in: projectIds },
+        status: "ACTIVE",
+        organizationMembership: {
+          organizationId: actor.organizationId,
+          status: "ACTIVE",
+          id: { not: actor.membershipId },
+        },
+      },
+      include: { organizationMembership: { include: { user: { select: { displayName: true } } } } },
+    });
+    const query = q?.trim().toLowerCase() ?? "";
+    const byId = new Map<string, { id: string; displayName: string }>();
+    for (const row of peers) {
+      const membership = row.organizationMembership;
+      if (membership.status !== "ACTIVE" || membership.organizationId !== actor.organizationId) {
+        continue;
+      }
+      if (membership.id === actor.membershipId) {
+        continue;
+      }
+      const displayName = membership.user.displayName;
+      if (query && !displayName.toLowerCase().includes(query)) {
+        continue;
+      }
+      if (!byId.has(membership.id)) {
+        byId.set(membership.id, { id: membership.id, displayName });
+      }
+    }
+    return {
+      items: [...byId.values()].sort((left, right) => left.displayName.localeCompare(right.displayName, "pt")),
     };
   }
 

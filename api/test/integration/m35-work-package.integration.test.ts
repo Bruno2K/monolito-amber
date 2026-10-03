@@ -178,7 +178,7 @@ describe("M3.5 WorkPackage", () => {
   it("applies additive M3.5 migration without rewriting the M3.4 work_packages table", async () => {
     execFileSync("pnpm", ["exec", "tsx", "prisma/seed.ts"], {
       cwd: resolve(__dirname, "../../.."),
-      env: { ...process.env, DATABASE_URL: db.url, AMBER_SEED_M3: "1" },
+      env: { ...process.env, DATABASE_URL: db.url, AMBER_SEED_M3: "1", AMBER_ALLOW_DEMO_SEED: "1" },
       stdio: "inherit",
     });
     const orgs = await prisma.organization.findMany({

@@ -3,6 +3,7 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import "./gantt-m46.css";
 import "./calendar.css";
+import "./messages.css";
 
 const inter = Inter({
   subsets: ["latin"],

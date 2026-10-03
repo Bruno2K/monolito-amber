@@ -76,6 +76,7 @@ jobs:
       GIT_SHA: ${{ github.sha }}
       BUILD_ID: local-rc-ci
       AMBER_SEED_M3: "1"
+      AMBER_ALLOW_DEMO_SEED: "1"
       REDIS_URL: ""
       LOG_LEVEL: info
       S3_ENDPOINT: http://127.0.0.1:9000
@@ -114,7 +115,7 @@ jobs:
       - name: Migrate + M3 seed
         run: |
           pnpm prisma:migrate
-          AMBER_SEED_M3=1 pnpm prisma:seed
+          AMBER_SEED_M3=1 AMBER_ALLOW_DEMO_SEED=1 pnpm prisma:seed
       - name: Reset rehearsal (drop → migrate → seed + pre-M4 upgrade, assert deterministic IDs)
         run: bash scripts/local-rc/rehearse-reset.sh
       - name: Build API

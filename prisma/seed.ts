@@ -5,11 +5,14 @@ import {
   PERMISSION_DESCRIPTIONS,
   ROLE_TEMPLATES,
   assertClosedCatalog,
+  assertLocalDemoSeedTarget,
+  demoSeedEnabled,
 } from "../packages/shared/src/index.ts";
 import { seedM3Dataset } from "./m3-seed.ts";
 import { seedM4PlanningDataset } from "./m4-seed.ts";
 import { seedM5CalendarDataset } from "./m5-seed.ts";
 import { seedM5MessagingDataset } from "./m5-messaging-seed.ts";
+import { seedM55DemoDataset } from "./m55-demo-seed.ts";
 
 const prisma = new PrismaClient();
 
@@ -120,11 +123,19 @@ async function main() {
     }
   }
 
-  if (process.env.AMBER_SEED_M3 === "1") {
+  if (demoSeedEnabled(process.env)) {
+    assertLocalDemoSeedTarget({
+      NODE_ENV: process.env.NODE_ENV,
+      AMBER_ENV: process.env.AMBER_ENV,
+      AMBER_SEED_M3: process.env.AMBER_SEED_M3,
+      AMBER_ALLOW_DEMO_SEED: process.env.AMBER_ALLOW_DEMO_SEED,
+      DATABASE_URL: process.env.DATABASE_URL,
+    });
     await seedM3Dataset(prisma);
     await seedM4PlanningDataset(prisma);
     await seedM5CalendarDataset(prisma);
     await seedM5MessagingDataset(prisma);
+    await seedM55DemoDataset(prisma);
   }
 }
 

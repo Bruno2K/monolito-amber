@@ -1,3 +1,4 @@
+import { redactMessageProjection } from "@amber/shared";
 import { describe, expect, it } from "vitest";
 import {
   clampPageSize,
@@ -38,5 +39,30 @@ describe("messaging codec", () => {
     expect(messageLifecycle({ editedAt: null, deletedAt: new Date() })).toBe("TOMBSTONED");
     expect(snippetFromText("alpha secret-token omega", "secret-token")).toContain("secret-token");
     expect(snippetFromText("short")).toBe("short");
+  });
+
+  it("redacts a non-empty tombstoned body and drops protected previews", () => {
+    const stored = encodeStoredBody("segredo do shaft", [
+      { type: "TASK", id: "11111111-1111-4111-8111-111111111111" },
+    ]);
+    expect(stored.trim().length).toBeGreaterThan(0);
+    const projected = redactMessageProjection({
+      body: stored,
+      editedAt: null,
+      deletedAt: new Date("2026-10-02T16:20:00.000Z"),
+      authorOrganizationMembershipId: "author-1",
+      resourcePreviews: [
+        { type: "TASK", id: "11111111-1111-4111-8111-111111111111", authorized: true, title: "Clash secreto", projectId: "p1" },
+      ],
+    });
+    expect(projected.body).toBeNull();
+    expect(projected.lifecycle).toBe("TOMBSTONED");
+    expect(projected.lifecycle).toBe(messageLifecycle({ editedAt: null, deletedAt: new Date() }));
+    expect(projected.authorOrganizationMembershipId).toBe("author-1");
+    expect(projected.resourcePreviews).toEqual([]);
+    const serialized = JSON.stringify(projected);
+    expect(serialized).not.toContain("segredo do shaft");
+    expect(serialized).not.toContain("Clash secreto");
+    expect(serialized).not.toContain("11111111-1111-4111-8111-111111111111");
   });
 });

@@ -6,6 +6,7 @@ import {
   assertMaySend,
   compareMessageCursor,
   deepLinkPreviewRequiresTargetAuthorization,
+  redactMessageProjection,
   redactSecrets,
   type PermissionCode,
 } from "@amber/shared";
@@ -27,7 +28,6 @@ import {
   encodeCursor,
   encodeStoredBody,
   isResourceLinkType,
-  messageLifecycle,
 } from "./messaging.codec";
 
 @Injectable()
@@ -383,23 +383,24 @@ export class MessagesService {
       createdAt: Date;
     },
   ) {
-    const lifecycle = messageLifecycle(row);
     const decoded = decodeStoredBody(row.body);
-    const resourcePreviews = row.deletedAt
-      ? []
-      : await this.previewLinks(session, decoded.links);
+    const resourcePreviews = row.deletedAt ? [] : await this.previewLinks(session, decoded.links);
+    const projected = redactMessageProjection({
+      body: decoded.text,
+      editedAt: row.editedAt,
+      deletedAt: row.deletedAt,
+      authorOrganizationMembershipId: row.authorOrganizationMembershipId,
+      resourcePreviews,
+    });
     return {
       id: row.id,
       organizationId: row.organizationId,
       conversationId: row.conversationId,
-      authorOrganizationMembershipId: row.authorOrganizationMembershipId,
-      body: row.deletedAt ? null : decoded.text,
       createdAt: row.createdAt.toISOString(),
       editedAt: row.editedAt?.toISOString() ?? null,
       deletedAt: row.deletedAt?.toISOString() ?? null,
       version: row.version,
-      lifecycle,
-      resourcePreviews,
+      ...projected,
     };
   }
 
@@ -410,11 +411,18 @@ export class MessagesService {
       id: string;
       authorized: boolean;
       title?: string;
+      projectId?: string;
     }> = [];
     for (const link of links) {
       const preview = await this.authorizePreview(session, link);
-      if (preview.authorized) {
-        out.push({ type: link.type, id: link.id, authorized: true, title: preview.title });
+      if (preview.authorized && preview.projectId) {
+        out.push({
+          type: link.type,
+          id: link.id,
+          authorized: true,
+          title: preview.title,
+          projectId: preview.projectId,
+        });
       } else {
         out.push({ type: link.type, id: link.id, authorized: false });
       }
@@ -425,7 +433,7 @@ export class MessagesService {
   private async authorizePreview(
     session: RequestSession,
     link: ResourceLink,
-  ): Promise<{ authorized: boolean; title?: string }> {
+  ): Promise<{ authorized: boolean; title?: string; projectId?: string }> {
     if (!deepLinkPreviewRequiresTargetAuthorization()) {
       return { authorized: false };
     }
@@ -435,7 +443,7 @@ export class MessagesService {
     }
     try {
       await this.authz.assert(session, target.permission, target.projectId);
-      return { authorized: true, title: target.title };
+      return { authorized: true, title: target.title, projectId: target.projectId };
     } catch {
       return { authorized: false };
     }

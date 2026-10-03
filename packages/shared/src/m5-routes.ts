@@ -20,7 +20,7 @@ export interface M5ApiRoutePlan {
   idempotency: boolean;
   cas: boolean;
   purpose: string;
-  implementedIn: "m5.2" | "m5.4";
+  implementedIn: "m5.2" | "m5.4" | "m5.5";
 }
 
 export const M5_PLANNED_UI_ROUTES: readonly M5UiRoutePlan[] = [
@@ -278,6 +278,15 @@ export const M5_PLANNED_MESSAGING_API_ROUTES: readonly M5ApiRoutePlan[] = [
     cas: false,
     purpose: "Advance per-user watermark. Not audit-critical.",
     implementedIn: "m5.4",
+  },
+  {
+    method: "GET",
+    path: "/api/v1/conversations/direct-candidates",
+    auth: "session Organization; peers limited to the actor's authorized projects with ACTIVE Organization membership",
+    idempotency: false,
+    cas: false,
+    purpose: "Direct discovery. Not an Organization-wide directory and not ProjectMembership status.",
+    implementedIn: "m5.5",
   },
   {
     method: "GET",

@@ -21,9 +21,9 @@ echo "==> migrate"
 pnpm prisma:migrate
 
 echo "==> catalog seed + M3 synthetic dataset"
-AMBER_SEED_M3=1 pnpm prisma:seed
+AMBER_SEED_M3=1 AMBER_ALLOW_DEMO_SEED=1 pnpm prisma:seed
 
 echo "bootstrap data plane ready"
-echo "  postgres  localhost:5432  (service: postgres)"
+echo "  postgres  localhost:5432  (demo seed accepts loopback only, not the compose DNS name)"
 echo "  minio     localhost:9000 / console 9001  (service: minio, bucket amber-files)"
 echo "Next: scripts/local-rc/up.sh   (host API + web)  OR  docker compose --profile apps up -d --build"

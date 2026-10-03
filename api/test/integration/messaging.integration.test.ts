@@ -247,6 +247,21 @@ describe("M5.4 Messaging HTTP", () => {
     expect(tombstoned.body.lifecycle).toBe("TOMBSTONED");
     expect(tombstoned.body.body).toBeNull();
     expect(tombstoned.body.deletedAt).toBeTruthy();
+    expect(tombstoned.body.authorOrganizationMembershipId).toBe(aliceMembershipId);
+    expect(tombstoned.body.resourcePreviews).toEqual([]);
+    expect(JSON.stringify(tombstoned.body)).not.toContain("hello bob");
+    expect(JSON.stringify(tombstoned.body)).not.toContain(taskA);
+    const stored = await prisma.message.findUnique({ where: { id: tombstoned.body.id } });
+    expect(stored?.deletedAt).toBeTruthy();
+    expect((stored?.body ?? "").trim().length).toBeGreaterThan(0);
+    const listed = await alice.get(`/api/v1/conversations/${directId}/messages?pageSize=100`);
+    const projected = (listed.body.items as Array<{ id: string; body: string | null; lifecycle: string; authorOrganizationMembershipId: string; resourcePreviews: unknown[] }>).find(
+      (row) => row.id === tombstoned.body.id,
+    );
+    expect(projected?.body).toBeNull();
+    expect(projected?.lifecycle).toBe("TOMBSTONED");
+    expect(projected?.authorOrganizationMembershipId).toBe(aliceMembershipId);
+    expect(projected?.resourcePreviews).toEqual([]);
     const tombReplay = await alice
       .post(`/api/v1/conversations/${directId}/messages/${sent.body.id}/tombstone`)
       .set("Idempotency-Key", tombstoneKey)
