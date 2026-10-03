@@ -52,7 +52,9 @@ export function assertLocalDemoSeedTarget(env: {
   DATABASE_URL?: string;
   [extra: string]: string | undefined;
 }): void {
-  if (runtimeLabel(env.NODE_ENV) === "production" || runtimeLabel(env.AMBER_ENV) === "production") {
+  const nodeEnv = runtimeLabel(env.NODE_ENV);
+  const amberEnv = runtimeLabel(env.AMBER_ENV);
+  if (nodeEnv === "production" || nodeEnv === "prod" || amberEnv === "production" || amberEnv === "prod") {
     throw new Error("Refusing demo seed: NODE_ENV or AMBER_ENV is production");
   }
   if (env.AMBER_SEED_M3 !== "1") {

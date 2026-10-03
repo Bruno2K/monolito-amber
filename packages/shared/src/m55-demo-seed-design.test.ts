@@ -133,10 +133,10 @@ describe("M5.5 local demo seed design", () => {
     expect(() => assertLocalDemoSeedTarget({ ...allowed, DATABASE_URL: "   " })).toThrow(/DATABASE_URL is missing/);
     expect(() => assertLocalDemoSeedTarget({ ...allowed, DATABASE_URL: "not a url" })).toThrow(/malformed/);
     expect(() => assertLocalDemoSeedTarget({ ...allowed, DATABASE_URL: "mysql://seeduser:super-secret-password@127.0.0.1:5432/amber" })).toThrow(/postgresql protocol/);
-    for (const nodeEnv of ["production", "Production", " PRODUCTION "]) {
+    for (const nodeEnv of ["production", "Production", " PRODUCTION ", "prod", "Prod", " Prod "]) {
       expect(() => assertLocalDemoSeedTarget({ ...allowed, NODE_ENV: nodeEnv, DATABASE_URL: local })).toThrow(/production/);
     }
-    for (const amberEnv of ["production", "PRODUCTION", " production"]) {
+    for (const amberEnv of ["production", "PRODUCTION", " production", "prod", "Prod", " Prod "]) {
       expect(() => assertLocalDemoSeedTarget({ ...allowed, AMBER_ENV: amberEnv, NODE_ENV: "development", DATABASE_URL: local })).toThrow(/production/);
     }
     expect(() => assertLocalDemoSeedTarget({ AMBER_ALLOW_DEMO_SEED: "1", DATABASE_URL: local })).toThrow(/AMBER_SEED_M3=1 is required/);
